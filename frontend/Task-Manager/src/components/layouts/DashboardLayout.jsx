@@ -79,15 +79,15 @@ const DashboardLayout = ({ children, activeMenu }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar />
 
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 gap-8">
-        <div className="hidden lg:block w-72 shrink-0">
+      <div className="flex flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 gap-8">
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-24 h-[calc(100vh-8rem)]">
           <SideMenu activeMenu={activeMenu} />
-        </div>
+        </aside>
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 pb-20 lg:pb-0">
           {children}
         </main>
       </div>
@@ -99,7 +99,7 @@ const DashboardLayout = ({ children, activeMenu }) => {
         />
       )}
       
-      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-auto bg-white">
+      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-auto bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4">
           © 2025 Raval & Trivedi Associates. All rights reserved | Developed by Hemant Ladhani (7726886835) | Report Bug: admin@trivedigranimarmo.com
         </div>
