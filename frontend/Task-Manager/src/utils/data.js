@@ -5,8 +5,6 @@ import {
   LuLayoutDashboard,
   LuReceipt,
   LuUsers,
-  LuUserCheck,
-  LuHouse, 
 } from "react-icons/lu";
 
 export const SIDE_MENU_DATA = [
@@ -30,12 +28,6 @@ export const SIDE_MENU_DATA = [
   },
   {
     id: "04",
-    label: "Clients",
-    icon: LuUserCheck,
-    path: "/admin/clients",
-  },
-  {
-    id: "05",
     label: "Documents",
     icon: LuFileStack,
     path: "/admin/documents",
@@ -60,15 +52,6 @@ export const SIDE_MENU_USER_DATA = [
     label: "Documents",
     icon: LuFileStack,
     path: "/user/documents",
-  },
-];
-
-export const SIDE_MENU_CLIENT_DATA = [
-  {
-    id: "01",
-    label: "Home",
-    icon: LuHouse,
-    path: "/client/home",
   },
 ];
 

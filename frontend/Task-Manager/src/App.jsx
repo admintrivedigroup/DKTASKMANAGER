@@ -1,5 +1,5 @@
 import React, { Suspense, useContext, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import PrivateRoute from "./routes/PrivateRoute";
 
 import UserProvider, { UserContext } from "./context/userContext.jsx";
@@ -7,11 +7,11 @@ import LayoutProvider from "./context/layoutContext.jsx";
 import { Toaster } from "react-hot-toast";
 import { getDefaultRouteForRole } from "./utils/roleUtils";
 import LoadingOverlay from "./components/LoadingOverlay";
+import ThemeToggle from "./components/ThemeToggle.jsx";
 const AdminDashboard = React.lazy(() => import("./pages/Admin/Dashboard"));
 const Login = React.lazy(() => import("./pages/Auth/Login"));
 const AdminTasks = React.lazy(() => import("./pages/Admin/Tasks"));
 const AdminManageEmployees = React.lazy(() => import("./pages/Admin/ManageEmployees"));
-const AdminManageClients = React.lazy(() => import("./pages/Admin/ManageClients"));
 const AdminUserDetails = React.lazy(() => import("./pages/Admin/UserDetails"));
 const AdminDocuments = React.lazy(() => import("./pages/Admin/Documents"));
 const ProfileSettings = React.lazy(() => import("./pages/Profile/ProfileSettings"));
@@ -24,12 +24,8 @@ const UserDocuments = React.lazy(() => import("./pages/User/Documents"));
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdmin/Dashboard.jsx"));
 const SuperAdminTasks = React.lazy(() => import("./pages/SuperAdmin/Tasks.jsx"));
 const SuperAdminManageEmployees = React.lazy(() => import("./pages/SuperAdmin/ManageEmployees.jsx"));
-const SuperAdminManageClients = React.lazy(() => import("./pages/SuperAdmin/ManageClients.jsx"));
 const SuperAdminUserDetails = React.lazy(() => import("./pages/SuperAdmin/UserDetails.jsx"));
 const SuperAdminDocuments = React.lazy(() => import("./pages/SuperAdmin/Documents.jsx"));
-const ClientHome = React.lazy(() => import("./pages/Client/Home"));
-const ClientProjects = React.lazy(() => import("./pages/Client/ClientProjects"));
-const ClientViewTaskDetails = React.lazy(() => import("./pages/Client/ViewTaskDetails"));
 const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
@@ -57,10 +53,9 @@ const App = () => {
                 <Route
                   path="/admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
-                />                
+                />
                 <Route path="/admin/documents/*" element={<AdminDocuments />} />
                 <Route path="/admin/employees" element={<AdminManageEmployees />} />
-                <Route path="/admin/clients" element={<AdminManageClients />} />
                 <Route path="/admin/users/:userId" element={<AdminUserDetails />} />
                 <Route path="/admin/profile-settings" element={<ProfileSettings />} />
               </Route>
@@ -85,10 +80,6 @@ const App = () => {
                   element={<SuperAdminManageEmployees />}
                 />
                 <Route
-                  path="/super-admin/clients"
-                  element={<SuperAdminManageClients />}
-                />
-                <Route
                   path="/super-admin/users/:userId"
                   element={<SuperAdminUserDetails />}
                 />
@@ -105,17 +96,6 @@ const App = () => {
                 <Route path="/user/task-details/:id" element={<ViewTaskDetails />} />
                 <Route path="/user/documents/*" element={<UserDocuments />} />
                 <Route path="/user/profile-settings" element={<ProfileSettings />} />
-              </Route>
-
-              {/* Client Routes */}
-              <Route element={<PrivateRoute allowedRoles={["client"]} />}>
-                <Route path="/client">
-                  <Route index element={<Navigate to="home" replace />} />
-                  <Route path="home" element={<ClientHome />} />
-                  <Route path="projects" element={<ClientProjects />} />
-                  <Route path="task-details/:id" element={<ClientViewTaskDetails />} />
-                  <Route path="profile-settings" element={<ProfileSettings />} />
-                </Route>
               </Route>
 
               <Route element={<PrivateRoute />}>
@@ -136,6 +116,7 @@ const App = () => {
             },
           }}
         />
+        <ThemeToggle placement="floating" />
       </LayoutProvider>
     </UserProvider>
   );

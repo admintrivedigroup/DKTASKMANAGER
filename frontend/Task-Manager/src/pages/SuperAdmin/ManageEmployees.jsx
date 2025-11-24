@@ -52,7 +52,6 @@ const ManageEmployees = () => {
             super_admin: 0,
             admin: 1,
             member: 2,
-            client: 3,            
           };
 
           const normalizedRoleA = normalizeRole(userA?.role);

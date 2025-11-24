@@ -1,19 +1,16 @@
 import React, { useCallback, useContext } from "react";
-import { LuLogOut, LuMoonStar, LuSun } from "react-icons/lu";
+import { LuLogOut } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import NotificationBell from "../Notifications/NotificationBell";
 import logo from "../../assets/images/logo.png";
 import { UserContext } from "../../context/userContext.jsx";
 import { useLayoutContext } from "../../context/layoutContext.jsx";
+import ThemeToggle from "../ThemeToggle.jsx";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { clearUser } = useContext(UserContext);
-  const { isDarkMode, toggleDarkMode, resetThemePreference } = useLayoutContext();
-
-  const handleThemeToggle = useCallback(() => {
-    toggleDarkMode();
-  }, [toggleDarkMode]);
+  const { resetThemePreference } = useLayoutContext();
 
   const handleLogout = useCallback(() => {
     const confirmed = window.confirm("Are you sure you want to logout?");
@@ -33,9 +30,6 @@ const Navbar = () => {
     clearUser?.();
     navigate("/login");
   }, [clearUser, navigate, resetThemePreference]);
-
-  const ThemeIcon = isDarkMode ? LuSun : LuMoonStar;
-  const themeLabel = isDarkMode ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-md shadow-sm transition-all duration-200 dark:border-slate-800/70 dark:bg-slate-900/85">
@@ -64,16 +58,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={handleThemeToggle}
-              aria-label={themeLabel}
-              aria-pressed={isDarkMode}
-              className="group relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-primary dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-indigo-200"
-            >
-              <ThemeIcon className="text-xl transition-transform duration-200 group-active:scale-95" />
-              <span className="sr-only">{themeLabel}</span>
-            </button>
+            <ThemeToggle />
 
             <NotificationBell />
             <div className="hidden h-6 w-px bg-slate-200 dark:bg-slate-700 sm:block" />

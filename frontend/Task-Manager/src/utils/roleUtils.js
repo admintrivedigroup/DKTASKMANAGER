@@ -47,10 +47,6 @@ export const getRoleLabel = (role) => {
     return "Member";
   }
 
-  if (matchesRole(role, "client")) {
-    return "Client";
-  }
-
   return "";
 };
 
@@ -90,10 +86,6 @@ export const getDefaultRouteForRole = (role) => {
 
   if (matchesRole(role, "admin")) {
     return "/admin/dashboard";
-  }
-
-  if (matchesRole(role, "client")) {
-    return "/client/home";
   }
 
   return "/user/dashboard";
