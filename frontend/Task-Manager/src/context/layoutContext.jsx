@@ -35,6 +35,28 @@ const defaultContextValue = {
   setDarkMode: createGuardedAction("setDarkMode"),
   toggleDarkMode: createGuardedAction("toggleDarkMode"),
   resetThemePreference: createGuardedAction("resetThemePreference"),
+  // Sidebar collapse state
+  isSidebarCollapsed: false,
+  toggleSidebar: createGuardedAction("toggleSidebar"),
+  setSidebarCollapsed: createGuardedAction("setSidebarCollapsed"),
+  // Command palette state
+  isCommandPaletteOpen: false,
+  openCommandPalette: createGuardedAction("openCommandPalette"),
+  closeCommandPalette: createGuardedAction("closeCommandPalette"),
+  toggleCommandPalette: createGuardedAction("toggleCommandPalette"),
+  // Right sidebar state
+  isRightSidebarOpen: false,
+  toggleRightSidebar: createGuardedAction("toggleRightSidebar"),
+  setRightSidebarOpen: createGuardedAction("setRightSidebarOpen"),
+  // Theme variant
+  themeVariant: "default",
+  setThemeVariant: createGuardedAction("setThemeVariant"),
+  // Font size
+  fontSize: "medium",
+  setFontSize: createGuardedAction("setFontSize"),
+  // Onboarding
+  hasCompletedTour: false,
+  setTourCompleted: createGuardedAction("setTourCompleted"),
 };
 
 const LayoutContext = createContext(defaultContextValue);
@@ -129,6 +151,43 @@ const LayoutProvider = ({ children }) => {
   );
   const [isDarkMode, setIsDarkMode] = useState(getInitialThemePreference);
   const hasStoredPreferenceRef = useRef(getStoredThemePreference() !== null);
+  
+  // New state variables
+  const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebar-collapsed');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpenState] = useState(false);
+  
+  const [themeVariant, setThemeVariantState] = useState(() => {
+    try {
+      return localStorage.getItem('theme-variant') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
+  
+  const [fontSize, setFontSizeState] = useState(() => {
+    try {
+      return localStorage.getItem('font-size') || 'medium';
+    } catch {
+      return 'medium';
+    }
+  });
+  
+  const [hasCompletedTour, setHasCompletedTourState] = useState(() => {
+    try {
+      return localStorage.getItem('onboarding-completed') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     applyThemeToDocument(isDarkMode);
@@ -211,6 +270,74 @@ const LayoutProvider = ({ children }) => {
     setIsDarkMode(getInitialThemePreference());
   }, []);
 
+  // Sidebar collapse callbacks
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsedState((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sidebar-collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const setSidebarCollapsed = useCallback((value) => {
+    setIsSidebarCollapsedState(value);
+    try {
+      localStorage.setItem('sidebar-collapsed', String(value));
+    } catch {}
+  }, []);
+
+  // Command palette callbacks
+  const openCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen(true);
+  }, []);
+
+  const closeCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen(false);
+  }, []);
+
+  const toggleCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen((prev) => !prev);
+  }, []);
+
+  // Right sidebar callbacks
+  const toggleRightSidebar = useCallback(() => {
+    setIsRightSidebarOpenState((prev) => !prev);
+  }, []);
+
+  const setRightSidebarOpen = useCallback((value) => {
+    setIsRightSidebarOpenState(value);
+  }, []);
+
+  // Theme variant callbacks
+  const setThemeVariant = useCallback((variant) => {
+    setThemeVariantState(variant);
+    try {
+      localStorage.setItem('theme-variant', variant);
+    } catch {}
+  }, []);
+
+  // Font size callbacks
+  const setFontSize = useCallback((size) => {
+    setFontSizeState(size);
+    try {
+      localStorage.setItem('font-size', size);
+    } catch {}
+    // Apply font size to document
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-font-size', size);
+    }
+  }, []);
+
+  // Onboarding callbacks
+  const setTourCompleted = useCallback((value) => {
+    setHasCompletedTourState(value);
+    try {
+      localStorage.setItem('onboarding-completed', String(value));
+    } catch {}
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       activeMenu,
@@ -223,6 +350,22 @@ const LayoutProvider = ({ children }) => {
       setDarkMode,
       toggleDarkMode,
       resetThemePreference,
+      isSidebarCollapsed,
+      toggleSidebar,
+      setSidebarCollapsed,
+      isCommandPaletteOpen,
+      openCommandPalette,
+      closeCommandPalette,
+      toggleCommandPalette,
+      isRightSidebarOpen,
+      toggleRightSidebar,
+      setRightSidebarOpen,
+      themeVariant,
+      setThemeVariant,
+      fontSize,
+      setFontSize,
+      hasCompletedTour,
+      setTourCompleted,
     }),
     [
       activeMenu,
@@ -235,6 +378,22 @@ const LayoutProvider = ({ children }) => {
       setDarkMode,
       toggleDarkMode,
       resetThemePreference,
+      isSidebarCollapsed,
+      toggleSidebar,
+      setSidebarCollapsed,
+      isCommandPaletteOpen,
+      openCommandPalette,
+      closeCommandPalette,
+      toggleCommandPalette,
+      isRightSidebarOpen,
+      toggleRightSidebar,
+      setRightSidebarOpen,
+      themeVariant,
+      setThemeVariant,
+      fontSize,
+      setFontSize,
+      hasCompletedTour,
+      setTourCompleted,
     ],
   );
 

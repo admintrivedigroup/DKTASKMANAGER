@@ -11,7 +11,7 @@ import {
   resolvePrivilegedPath,  
 } from "../../utils/roleUtils";
 
-const SideMenu = ({ activeMenu }) => {
+const SideMenu = ({ activeMenu, collapsed = false }) => {
   const { user } = useContext(UserContext);
   const [sideMenuData, setSideMenuData] = useState([]);
 
@@ -86,7 +86,8 @@ const SideMenu = ({ activeMenu }) => {
 
   return (
     <aside className="w-full h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+      {/* Sidebar header - hide text when collapsed */}
+      <div className={`border-b border-slate-100 bg-slate-50/50 transition-all duration-300 ${collapsed ? 'p-3' : 'p-6'}`}>
         <div className="flex items-center gap-4">
           <div className="relative shrink-0 group">
             {user?.profileImageUrl ? (
@@ -110,15 +111,17 @@ const SideMenu = ({ activeMenu }) => {
               </button>
             )}
           </div>
-          <div className="min-w-0 flex-1">
-            <h5 className="text-sm font-bold text-slate-900 truncate">{user?.name || "User"}</h5>
-            <p className="text-xs text-slate-500 truncate mb-1">{user?.email || ""}</p>
-            {isPrivilegedUser && roleBadgeLabel && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100">
-                {roleBadgeLabel}
-              </span>
-            )}
-          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <h5 className="text-sm font-bold text-slate-900 truncate">{user?.name || "User"}</h5>
+              <p className="text-xs text-slate-500 truncate mb-1">{user?.email || ""}</p>
+              {isPrivilegedUser && roleBadgeLabel && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  {roleBadgeLabel}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -150,8 +153,9 @@ const SideMenu = ({ activeMenu }) => {
                 isActive
                   ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm"
-              }`}
+              } ${collapsed ? 'justify-center' : ''}`}
               onClick={() => handleClick(item?.path)}
+              title={collapsed ? item.label : ''}
             >
               {isActive && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-l-lg"></div>
@@ -162,7 +166,7 @@ const SideMenu = ({ activeMenu }) => {
                   <Icon />
                 </span>
               )}
-              <span className="relative z-10">{item.label}</span>
+              {!collapsed && <span className="relative z-10">{item.label}</span>}
             </button>
           );
         })}

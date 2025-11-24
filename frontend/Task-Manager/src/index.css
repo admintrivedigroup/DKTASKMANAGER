@@ -9,7 +9,7 @@
   
   /* Enhanced Color Variables */
   --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
+  --color-indigo-hover: #4338ca;
   --color-bg-body: #f8fafc;
   --color-text-main: #0f172a;
   --color-text-muted: #64748b;
@@ -159,7 +159,7 @@
 
   /* Button Variants */
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md active:transform active:scale-95;
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-sm hover:shadow-md active:transform active:scale-95;
   }
 
   .btn-secondary {
@@ -187,7 +187,7 @@
   }
 
   .btn-outline-primary {
-    @apply border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500 dark:hover:bg-primary-950;
+    @apply border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500 dark:hover:bg-indigo-950;
   }
 
   .btn-outline-secondary {
@@ -279,7 +279,7 @@
   }
 
   .input-field {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-primary-400;
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400;
   }
 
   .input-field-sm {
@@ -334,7 +334,7 @@
 
   .input-floating .input-field:focus ~ .input-floating-label,
   .input-floating .input-field:not(:placeholder-shown) ~ .input-floating-label {
-    @apply -top-2 left-2 bg-white px-1 text-xs text-primary-600 dark:bg-slate-900 dark:text-primary-400;
+    @apply -top-2 left-2 bg-white px-1 text-xs text-indigo-600 dark:bg-slate-900 dark:text-indigo-400;
   }
 
   /* ============================================
@@ -353,7 +353,7 @@
   }
 
   .badge-primary {
-    @apply bg-primary-50 text-primary-700 ring-primary-600/10 dark:bg-primary-950 dark:text-primary-400 dark:ring-primary-400/20;
+    @apply bg-indigo-50 text-indigo-700 ring-indigo-600/10 dark:bg-indigo-950 dark:text-indigo-400 dark:ring-indigo-400/20;
   }
 
   .badge-success {
@@ -383,7 +383,7 @@
   }
 
   .badge-primary.badge-dot::before {
-    @apply bg-primary-600 dark:bg-primary-400;
+    @apply bg-indigo-600 dark:bg-indigo-400;
   }
 
   .badge-success.badge-dot::before {
@@ -406,7 +406,7 @@
   }
 
   .alert-primary {
-    @apply bg-primary-50 border-primary-200 text-primary-800 dark:bg-primary-950 dark:border-primary-800 dark:text-primary-200;
+    @apply bg-indigo-50 border-indigo-200 text-indigo-800 dark:bg-indigo-950 dark:border-indigo-800 dark:text-indigo-200;
   }
 
   .alert-success {
@@ -476,7 +476,7 @@
   }
 
   .progress-bar {
-    @apply h-full bg-primary-600 transition-all duration-300 dark:bg-primary-500;
+    @apply h-full bg-indigo-600 transition-all duration-300 dark:bg-indigo-500;
   }
 
   .progress-sm {
@@ -620,7 +620,7 @@
 @layer utilities {
   /* Text Gradient */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-indigo-400;
   }
 
   .text-gradient-success {
