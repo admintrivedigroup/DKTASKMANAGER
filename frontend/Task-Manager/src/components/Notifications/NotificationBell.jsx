@@ -186,7 +186,7 @@ const NotificationBell = () => {
       <button
         type="button"
         onClick={toggleDropdown}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-primary"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-primary dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-indigo-200"
       >
         <LuBell className="text-xl" />
         {showBadge && (
@@ -196,34 +196,34 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {open && (
-        <div className="dropdown-panel absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur">
-          <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3">
-            <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
-            <div className="flex items-center gap-2">
-              {isPrivilegedUser && (
+        {open && (
+          <div className="dropdown-panel absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/95 dark:shadow-[0_18px_45px_rgba(2,6,23,0.45)]">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3">
+              <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+              <div className="flex items-center gap-2">
+                {isPrivilegedUser && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoticeModalOpen(true);
+                      setOpen(false);
+                    }}
+                    className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:bg-primary/20"
+                  >
+                    Notice
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    setNoticeModalOpen(true);
-                    setOpen(false);
-                  }}
-                                    className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:bg-primary/20"
+                  onClick={handleOpenNotificationCenter}
+                  className="text-xs font-medium text-primary transition hover:text-primary/80"
                 >
-                  Notice
+                  See all
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={handleOpenNotificationCenter}
-                className="text-xs font-medium text-primary transition hover:text-primary/80"
-              >
-                See all
-              </button>
+              </div>
             </div>
-          </div>
 
-          <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-slate-500">
                 <LuLoader className="h-4 w-4 animate-spin" />

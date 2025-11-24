@@ -29,6 +29,7 @@
     color: var(--color-text-main);
     min-height: 100vh;
     overflow-x: hidden;
+    @apply transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50;
   }
 
   /* Scrollbar Styling */
