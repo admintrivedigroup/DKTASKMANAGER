@@ -79,33 +79,47 @@ const DashboardLayout = ({ children, activeMenu }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Navbar />
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 flex flex-col font-sans">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.06),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.05),transparent_28%),radial-gradient(circle_at_50%_100%,rgba(15,23,42,0.06),transparent_30%)]"
+      />
 
-      <div className="flex flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 gap-8">
-        <aside className="hidden lg:block w-72 shrink-0 sticky top-24 h-[calc(100vh-8rem)]">
-          <SideMenu activeMenu={activeMenu} />
+      <div className="relative z-10">
+        <Navbar />
+      </div>
+
+      <div className="relative z-10 flex flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 py-10 gap-6 lg:gap-8">
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-24 h-[calc(100vh-9rem)]">
+          <div className="h-full rounded-2xl border border-slate-200 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur">
+            <SideMenu activeMenu={activeMenu} />
+          </div>
         </aside>
 
-        <main className="flex-1 min-w-0 pb-20 lg:pb-0">
-          {children}
+        <main className="flex-1 min-w-0 pb-20 lg:pb-8">
+          <div className="h-full rounded-2xl border border-slate-200 bg-white/90 shadow-md shadow-slate-200/60 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-6">
+            {children}
+          </div>
         </main>
       </div>
-      
+
       {showBirthdayModal && (
         <BirthdayModal
           name={user?.name}
           onClose={() => setShowBirthdayModal(false)}
         />
       )}
-      
-      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-auto bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          © 2025 Raval & Trivedi Associates. All rights reserved | Developed by Hemant Ladhani (7726886835) | Report Bug: admin@trivedigranimarmo.com
+
+      <footer className="relative z-10 mt-auto bg-white/70 backdrop-blur-sm border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left text-xs text-slate-500">
+          <span>© 2025 Raval & Trivedi Associates. All rights reserved.</span>
+          <span className="text-slate-400">Developed by Hemant Ladhani (7726886835) | Report Bug: admin@trivedigranimarmo.com</span>
         </div>
       </footer>
 
-      <MobileNavigation />
+      <div className="relative z-20">
+        <MobileNavigation />
+      </div>
     </div>
   );
 };
