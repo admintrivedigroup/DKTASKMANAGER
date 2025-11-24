@@ -381,7 +381,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.All || 0
         ),
-        color: "from-primary via-indigo-500 to-sky-400",
+        color: "text-indigo-600 bg-indigo-50",
         icon: LuClipboardList,
         filterStatus: "All"
       },
@@ -390,7 +390,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Pending || 0
         ),
-        color: "from-amber-400 via-orange-500 to-red-400",
+        color: "text-amber-600 bg-amber-50",
         icon: LuClock3,
         filterStatus: "Pending"
       },
@@ -399,7 +399,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.InProgress || 0
         ),
-        color: "from-sky-400 via-cyan-500 to-emerald-400",
+        color: "text-sky-600 bg-sky-50",
         icon: LuRefreshCcw,
         filterStatus: "In Progress"
       },
@@ -408,7 +408,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Completed || 0
         ),
-        color: "from-emerald-400 via-lime-400 to-green-500",
+        color: "text-emerald-600 bg-emerald-50",
         icon: LuBadgeCheck,
         filterStatus: "Completed"
       }
@@ -562,7 +562,7 @@ const Dashboard = () => {
         <>
           <Suspense
             fallback={
-              <div className="card mb-6 animate-pulse bg-white/60 text-sm text-slate-500">
+              <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500">
                 Loading announcements...
               </div>
             }
@@ -570,95 +570,64 @@ const Dashboard = () => {
             <NoticeBoard notices={activeNotices} />
           </Suspense>
 
-          <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-sky-500 px-4 py-8 text-white shadow-[0_20px_45px_rgba(59,130,246,0.25)] sm:px-6 sm:py-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent_65%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(255,255,255,0.18),_transparent_60%)]" />
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-4 text-sm lg:max-w-[420px] lg:flex-1">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">Welcome Back</p>
-                  <LiveGreeting userName={user?.name || "User"} />
-                </div>
-              </div>
+          <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                {getGreetingMessage(new Date().getHours())}, {user?.name || "User"}
+              </h1>
+              <p className="text-slate-500">
+                Here's what's happening in your workspace today.
+              </p>
+            </div>
 
-               <div className="w-full rounded-3xl border border-white/40 bg-white/10 px-5 py-3 text-sm backdrop-blur-sm sm:px-7 lg:w-[500px]">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
-                    Date Range
-                  </p>
-                  {activeRangeLabel ? (
-                    <p className="text-sm font-medium text-white/80">
-                      {activeRangeLabel}
-                    </p>
-                  ) : null}
-                </div>
-
-                <form
-                  className="mt-3 space-y-2"
-                  onSubmit={handleDateFilterSubmit}
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-xs text-white/70">
-                      <span className="uppercase tracking-[0.18em]">From</span>
-                      <input
-                        type="date"
-                        value={pendingDateRange.startDate}
-                        onChange={({ target }) =>
-                          handleDateInputChange("startDate", target.value)
-                        }
-                        className="w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/70"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs text-white/70">
-                      <span className="uppercase tracking-[0.18em]">To</span>
-                      <input
-                        type="date"
-                        value={pendingDateRange.endDate}
-                        onChange={({ target }) =>
-                          handleDateInputChange("endDate", target.value)
-                        }
-                        className="w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/70"
-                      />
-                    </label>
-                  </div>
-
-                  {showRangeError ? (
-                    <p className="text-xs font-medium text-rose-100">
-                      Start date must be on or before the end date.
-                    </p>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1">
+                {PRESET_RANGES.map(({ label, rangeFactory }) => {
+                  const isActive = label === activePresetLabel;
+                  return (
                     <button
-                      type="submit"
-                      disabled={!isRangeValid}
-                      className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-white/90 disabled:cursor-not-allowed disabled:bg-white/50 disabled:text-white/70"
+                      key={label}
+                      onClick={() => handlePresetRange(rangeFactory)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
                     >
-                      Apply
+                      {label}
                     </button>
-                    {PRESET_RANGES.map(({ label, rangeFactory }) => {
-                      const isActive = label === activePresetLabel;
-
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => handlePresetRange(rangeFactory)}
-                          className={`inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                            isActive
-                              ? "border-white bg-white text-primary shadow"
-                              : "border-white/40 bg-white/10 text-white hover:bg-white/20"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </form>
-                </div>
+                  );
+                })}
               </div>
-          </section>{/* ✅ Close the gradient hero section */}
+
+              <form onSubmit={handleDateFilterSubmit} className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={pendingDateRange.startDate}
+                  onChange={({ target }) =>
+                    handleDateInputChange("startDate", target.value)
+                  }
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <span className="text-slate-400">-</span>
+                <input
+                  type="date"
+                  value={pendingDateRange.endDate}
+                  onChange={({ target }) =>
+                    handleDateInputChange("endDate", target.value)
+                  }
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!isRangeValid}
+                  className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Apply
+                </button>
+              </form>
+            </div>
+          </section>
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {infoCards.map((card) => (
@@ -673,11 +642,11 @@ const Dashboard = () => {
             ))}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
+          <section className="mt-8 grid gap-6 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   Overview
                 </span>
               </div>
@@ -689,14 +658,16 @@ const Dashboard = () => {
                   </div>
                 }
               >
-                <CustomPieChart data={pieChartData} colors={COLORS} />
+                <div className="mt-4">
+                  <CustomPieChart data={pieChartData} colors={COLORS} />
+                </div>
               </Suspense>
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   Priority Mix
                 </span>
               </div>
@@ -708,13 +679,15 @@ const Dashboard = () => {
                   </div>
                 }
               >
-                <CustomBarChart data={barChartData} />
+                <div className="mt-4">
+                  <CustomBarChart data={barChartData} />
+                </div>
               </Suspense>
             </div>
           </section>
 
-          <section className="card">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section className="card mt-8">
+            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
                 <p className="text-sm text-slate-500">
@@ -722,8 +695,8 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              <button className="card-btn" onClick={onSeeMore}>
-                See All <LuArrowRight className="text-base" />
+              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700" onClick={onSeeMore}>
+                View All Tasks <LuArrowRight className="ml-1 inline text-base" />
               </button>
             </div>
 
@@ -738,8 +711,8 @@ const Dashboard = () => {
             </Suspense>
           </section>
           
-          <section className="card">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <section className="card mt-8">
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">
                   Employee Leaderboard
@@ -748,11 +721,11 @@ const Dashboard = () => {
                   Celebrate on-time delivery and shine a light on the most reliable teammates.
                 </p>
                 {visibleTopPerformer ? (
-                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                     Top Performer · {visibleTopPerformer.name} · Score {topPerformerScore}
                   </p>
                 ) : (
-                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  <p className="mt-2 text-xs font-medium text-slate-400">
                     Leaderboard updates once work is completed.
                   </p>
                 )}
@@ -761,57 +734,53 @@ const Dashboard = () => {
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-end sm:gap-4">
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500"
+                    className="text-xs font-medium text-slate-700"
                     htmlFor="leaderboard-role-filter"
                   >
                     Team Role
                   </label>
-                  <div className="custom-select mt-2 min-w-[180px] sm:min-w-[200px]">
-                    <select
-                      id="leaderboard-role-filter"
-                      value={leaderboardFilter}
-                      onChange={(event) => setLeaderboardFilter(event.target.value)}
-                      className="custom-select__field"
-                    >
-                      {leaderboardRoleFilters.map((filter) => (
-                        <option key={filter} value={filter}>
-                          {filter}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    id="leaderboard-role-filter"
+                    value={leaderboardFilter}
+                    onChange={(event) => setLeaderboardFilter(event.target.value)}
+                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px]"
+                  >
+                    {leaderboardRoleFilters.map((filter) => (
+                      <option key={filter} value={filter}>
+                        {filter}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500"
+                    className="text-xs font-medium text-slate-700"
                     htmlFor="leaderboard-office-filter"
                   >
                     Office
                   </label>
-                  <div className="custom-select mt-2 min-w-[180px] sm:min-w-[200px]">
-                    <select
-                      id="leaderboard-office-filter"
-                      value={leaderboardOfficeFilter}
-                      onChange={(event) =>
-                        setLeaderboardOfficeFilter(event.target.value)
-                      }
-                      className="custom-select__field"
-                    >
-                      {leaderboardOfficeFilters.map((filter) => (
-                        <option key={filter} value={filter}>
-                          {filter}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    id="leaderboard-office-filter"
+                    value={leaderboardOfficeFilter}
+                    onChange={(event) =>
+                      setLeaderboardOfficeFilter(event.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px]"
+                  >
+                    {leaderboardOfficeFilters.map((filter) => (
+                      <option key={filter} value={filter}>
+                        {filter}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
 
             <Suspense
               fallback={
-                <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-32 items-center justify-center text-sm text-slate-500">
                   Loading leaderboard...
                 </div>
               }

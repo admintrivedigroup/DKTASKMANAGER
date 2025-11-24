@@ -2,7 +2,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import ProfilePhotoSelector from '../../components/inputs/ProfilePhotoSelector';
-import Input from '../../components/inputs/input';
+import Input from '../../components/inputs/Input';
 import { validateEmail } from '../../utils/helper';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
@@ -298,8 +298,8 @@ const SignUp = () => {
             </div>
           )}
 
-          <button type="submit" className="auth-submit">
-            Launch my workspace
+          <button type="submit" className="w-full btn btn-primary py-2.5">
+            Create Account
           </button>
 
           <p className="text-center text-xs text-slate-500">

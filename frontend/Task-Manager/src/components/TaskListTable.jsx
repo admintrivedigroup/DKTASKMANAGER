@@ -118,7 +118,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
   };
 
   const containerClassName = [
-    "mt-4 overflow-hidden rounded-[28px] border border-white/60 bg-white/80 shadow-[0_20px_45px_rgba(15,23,42,0.08)]",
+    "mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
     className,
   ]
     .filter(Boolean)
@@ -127,18 +127,18 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
   return (
     <div className={containerClassName}>
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full divide-y divide-white/60">
-          <thead className="bg-white/70">
-            <tr className="text-left text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4">Priority</th>
-              <th className="hidden px-6 py-4 md:table-cell">Due Date</th>
-              <th className="hidden px-6 py-4 md:table-cell">Assigned To</th>
-              <th className="hidden px-6 py-4 md:table-cell">Created On</th>
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50">
+            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th className="px-6 py-3">Name</th>
+              <th className="px-6 py-3">Status</th>
+              <th className="px-6 py-3">Priority</th>
+              <th className="hidden px-6 py-3 md:table-cell">Due Date</th>
+              <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
+              <th className="hidden px-6 py-3 md:table-cell">Created On</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/50 bg-white/60">
+          <tbody className="divide-y divide-slate-200 bg-white">
             {safeTableData.map((task, index) => {
               const progressMeta = getProgressMeta(task);
 
@@ -146,21 +146,19 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 <tr
                   key={task._id}
                   className={getInteractiveRowClasses(
-                    `text-sm text-slate-600 transition hover:bg-white ${
-                      index % 2 === 0 ? "bg-white/80" : "bg-white/60"
-                    }`
+                    "text-sm text-slate-600 transition hover:bg-slate-50"
                   )}
                   {...interactiveRowProps(task)}
                 >
-                <td className="px-6 py-4 text-[13px] font-medium text-slate-900">
+                <td className="px-6 py-4 text-sm font-medium text-slate-900">
                   <div className="space-y-2">
                     <span className="line-clamp-1">{task.title}</span>
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         <span>Progress</span>
                         <span>{progressMeta.rounded}%</span>
                       </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
                           className={`${progressMeta.colorClass} h-full transition-all duration-500`}
                           style={{ width: `${progressMeta.percentage}%` }}
@@ -172,7 +170,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getStatusBadgeColor(
+                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
                       task.status
                     )}`}
                   >
@@ -181,20 +179,20 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getPriorityBadgeColor(
+                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getPriorityBadgeColor(
                       task.priority
                     )}`}
                   >
                     {task.priority}
                   </span>
                 </td>
-                <td className="hidden px-6 py-4 text-[13px] font-medium text-slate-700 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
                   {formatDate(task.dueDate)}
                 </td>
-                <td className="hidden px-6 py-4 text-[13px] font-medium text-slate-700 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
                   {getAssigneeNames(task.assignedTo)}
                 </td>
-                <td className="hidden px-6 py-4 text-[13px] font-medium text-slate-700 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
                   {formatDate(task.createdAt)}
                 </td>
               </tr>
@@ -213,7 +211,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
               <article
                 key={task._id}
                 className={getInteractiveRowClasses(
-                  "rounded-2xl border border-white/70 bg-white/95 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+                  "rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
                 )}
                 {...interactiveRowProps(task)}
               >
@@ -222,7 +220,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                     {task.title}
                   </h3>
                   <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getStatusBadgeColor(
+                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
                       task.status
                     )}`}
                   >
@@ -230,16 +228,16 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   </span>
                 </div>
 
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   {task.priority}
                 </div>
                 
                 <div className="mt-4 space-y-1">
-                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                     <span>Progress</span>
                     <span>{progressMeta.rounded}%</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
                       className={`${progressMeta.colorClass} h-full transition-all duration-500`}
                       style={{ width: `${progressMeta.percentage}%` }}
@@ -251,33 +249,33 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 <dl className="mt-4 space-y-2 text-xs text-slate-500">
                   <div className="flex items-center gap-2">
                     <LuCalendar className="text-slate-400" />
-                    <dt className="font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    <dt className="font-medium text-slate-500">
                       Due
                     </dt>
-                    <dd className="text-slate-600">{formatDate(task.dueDate)}</dd>
+                    <dd className="text-slate-700">{formatDate(task.dueDate)}</dd>
                   </div>
                   <div className="flex items-center gap-2">
                     <LuUser className="text-slate-400" />
-                    <dt className="font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    <dt className="font-medium text-slate-500">
                       Assignees
                     </dt>
-                    <dd className="text-slate-600">
+                    <dd className="text-slate-700">
                       {getAssigneeNames(task.assignedTo)}
                     </dd>
                   </div>
                   <div className="flex items-center gap-2">
                     <LuClock3 className="text-slate-400" />
-                    <dt className="font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    <dt className="font-medium text-slate-500">
                       Created
                     </dt>
-                    <dd className="text-slate-600">{formatDate(task.createdAt)}</dd>
+                    <dd className="text-slate-700">{formatDate(task.createdAt)}</dd>
                   </div>
                 </dl>
               </article>
             );
           })
         ) : (
-          <p className="rounded-2xl border border-dashed border-slate-200 bg-white/90 py-6 text-center text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
             No tasks available yet.
           </p>
         )}

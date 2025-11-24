@@ -59,29 +59,29 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
 
   if (!data.length) {
     return (
-      <p className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white/90 py-6 text-center text-sm text-slate-500">
+      <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
         Leaderboard data will appear once tasks are assigned and completed.
       </p>
     );
   }
 
   return (
-    <div className="mt-4 overflow-hidden rounded-[28px] border border-white/60 bg-white/80 shadow-[0_20px_45px_rgba(15,23,42,0.08)]">
+    <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="hidden md:block">
         <div className="max-h-[420px] overflow-y-auto overflow-x-auto pr-1">
-          <table className="min-w-full divide-y divide-white/60">
-            <thead className="sticky top-0 z-10 bg-white/80 backdrop-blur">
-              <tr className="text-left text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                <th className="px-6 py-4">Rank</th>
-                <th className="px-6 py-4">Team Member</th>
-                <th className="px-6 py-4">Score</th>
-                <th className="px-6 py-4">Completed</th>
-                <th className="px-6 py-4">On-Time</th>
-                <th className="px-6 py-4">Late</th>
-                <th className="px-6 py-4">Overdue</th>
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="sticky top-0 z-10 bg-slate-50">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-3">Rank</th>
+                <th className="px-6 py-3">Team Member</th>
+                <th className="px-6 py-3">Score</th>
+                <th className="px-6 py-3">Completed</th>
+                <th className="px-6 py-3">On-Time</th>
+                <th className="px-6 py-3">Late</th>
+                <th className="px-6 py-3">Overdue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/50 bg-white/60">
+            <tbody className="divide-y divide-slate-200 bg-white">
               {data.map((entry, index) => {
                 const isInteractive =
                   typeof onEntryClick === "function" && entry?.userId;
@@ -89,9 +89,7 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
                 return (
                   <tr
                     key={entry.userId || index}
-                    className={`text-sm text-slate-600 transition ${
-                      index % 2 === 0 ? "bg-white/80" : "bg-white/60"
-                    } ${isInteractive ? "cursor-pointer hover:bg-white" : "hover:bg-white"}`}
+                    className={`text-sm text-slate-600 transition hover:bg-slate-50 ${isInteractive ? "cursor-pointer" : ""}`}
                     onClick={
                       isInteractive
                         ? () => {
@@ -112,7 +110,7 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
                         : undefined
                     }
                   >
-                    <td className="px-6 py-4 text-[13px] font-semibold text-slate-900">
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                       #{entry.rank}
                     </td>
                     <td className="px-6 py-4">
@@ -122,34 +120,34 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
                           profileImageUrl={entry.profileImageUrl}
                         />
                         <div>
-                          <p className="text-[13px] font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-slate-900">
                             {entry.name}
                           </p>
-                          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-slate-400">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                             {getRoleLabel(entry.role)}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-semibold text-slate-900">
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                       {Number(entry.score || 0).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-slate-700">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-700">
                       {formatRatio(entry.completedTasks, entry.totalAssigned)}
-                      <span className="ml-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-500">
+                      <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-emerald-600">
                         {formatPercentage(entry.completionRate)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-slate-700">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-700">
                       {entry.onTimeCompletions}
-                      <span className="ml-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-500">
+                      <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-sky-600">
                         {formatPercentage(entry.onTimeRate)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-slate-700">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-700">
                       {entry.lateCompletions}
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-slate-700">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-700">
                       {entry.overdueTasks}
                     </td>
                   </tr>
@@ -164,9 +162,9 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
         {data.map((entry, index) => (
           <article
             key={entry.userId || index}
-            className={`rounded-2xl border border-white/70 bg-white/95 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.08)] ${
+            className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${
               typeof onEntryClick === "function" && entry?.userId
-                ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(15,23,42,0.12)]"
+                ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md"
                 : ""
             }`}
             onClick={
@@ -194,7 +192,7 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
             }
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
+              <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                 Rank #{entry.rank}
               </span>
               <span className="text-sm font-semibold text-slate-900">
@@ -206,45 +204,45 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
               <Avatar name={entry.name} profileImageUrl={entry.profileImageUrl} />
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{entry.name}</h3>
-                <p className="text-xs font-medium uppercase tracking-[0.24em] text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                   {getRoleLabel(entry.role)}
                 </p>
               </div>
             </div>
 
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-[11px] text-slate-600">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <dt className="font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-600">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="font-medium uppercase tracking-wider text-slate-500">
                   Completed
                 </dt>
                 <dd className="mt-1 text-sm font-semibold text-slate-900">
                   {formatRatio(entry.completedTasks, entry.totalAssigned)}
                 </dd>
-                <dd className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-500">
+                <dd className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
                   {formatPercentage(entry.completionRate)}
                 </dd>
               </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <dt className="font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="font-medium uppercase tracking-wider text-slate-500">
                   On-Time
                 </dt>
                 <dd className="mt-1 text-sm font-semibold text-slate-900">
                   {entry.onTimeCompletions}
                 </dd>
-                <dd className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-500">
+                <dd className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">
                   {formatPercentage(entry.onTimeRate)}
                 </dd>
               </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <dt className="font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="font-medium uppercase tracking-wider text-slate-500">
                   Late
                 </dt>
                 <dd className="mt-1 text-sm font-semibold text-slate-900">
                   {entry.lateCompletions}
                 </dd>
               </div>
-              <div className="rounded-xl bg-slate-50 p-3">
-                <dt className="font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="font-medium uppercase tracking-wider text-slate-500">
                   Overdue
                 </dt>
                 <dd className="mt-1 text-sm font-semibold text-slate-900">

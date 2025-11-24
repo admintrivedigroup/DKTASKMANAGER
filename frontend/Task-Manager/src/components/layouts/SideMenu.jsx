@@ -95,50 +95,43 @@ const SideMenu = ({ activeMenu }) => {
   }, [isPrivilegedUser, normalizedRole, user]);
 
   return (
-    <aside className="relative w-full overflow-hidden rounded-[26px] border border-white/50 bg-white/75 p-6 shadow-[0_24px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-colors duration-300 dark:border-slate-800/60 dark:bg-slate-900/60 dark:shadow-[0_26px_60px_rgba(2,6,23,0.55)] lg:sticky lg:top-28">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.08),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.18),_transparent_60%)]" />
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.12),_transparent_60%)] dark:bg-[radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.2),_transparent_55%)]" />
-
-      <div className="relative flex flex-col items-center justify-center rounded-2xl border border-white/50 bg-white/60 px-4 py-5 text-center shadow-inner transition-colors duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200">
-        {profileSettingsPath && (
-          <button
-            type="button"
-            onClick={() => handleClick(profileSettingsPath)}
-            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/70 bg-white/80 text-slate-500 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/90 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-indigo-400 dark:hover:bg-indigo-500/80"
-            aria-label="Open profile settings"
-          >
-            <LuUserCog className="h-4 w-4" />
-          </button>
-        )}
-        <div className="relative">
-        <span className="absolute inset-0 -z-10 animate-pulse rounded-full bg-gradient-to-tr from-primary/30 to-cyan-200/30 blur-xl" />
-        {user?.profileImageUrl 
-        ? <img
-            src={user?.profileImageUrl || ""}
-            alt="Profile Image"
-            className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-lg shadow-primary/20"
-          /> : <FaUser
-            className={`text-4xl ${
-              normalizedGender === "female"
-                ? "text-rose-300 drop-shadow-[0_12px_24px_rgba(244,114,182,0.25)]"
-                : normalizedGender === "male"
-                ? "text-primary drop-shadow-[0_12px_24px_rgba(79,70,229,0.25)]"
-                : "text-indigo-200 drop-shadow-[0_10px_20px_rgba(79,70,229,0.18)]"
-            }`}
-          />}
-        </div>
-
-        {isPrivilegedUser && roleBadgeLabel && (
-          <div className="mt-3 rounded-full bg-gradient-to-r from-primary via-indigo-500 to-sky-400 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.26em] text-white shadow-md">
-            {roleBadgeLabel}
+    <aside className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            {user?.profileImageUrl ? (
+              <img
+                src={user?.profileImageUrl || ""}
+                alt="Profile"
+                className="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                <FaUser className="text-xl" />
+              </div>
+            )}
+            {profileSettingsPath && (
+              <button
+                onClick={() => handleClick(profileSettingsPath)}
+                className="absolute -bottom-1 -right-1 h-6 w-6 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm"
+              >
+                <LuUserCog className="h-3 w-3" />
+              </button>
+            )}
           </div>
-        )}
-
-        <h5 className="mt-4 text-base font-semibold text-slate-900 transition-colors duration-300 dark:text-slate-100">{user?.name || ""}</h5>
-        <p className="text-xs text-slate-500 transition-colors duration-300 dark:text-slate-400">{user?.email || ""}</p>
+          <div className="min-w-0 flex-1">
+            <h5 className="text-sm font-semibold text-slate-900 truncate">{user?.name || "User"}</h5>
+            <p className="text-xs text-slate-500 truncate">{user?.email || ""}</p>
+            {isPrivilegedUser && roleBadgeLabel && (
+              <span className="inline-flex mt-1 items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700">
+                {roleBadgeLabel}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <nav className="mt-8 space-y-1.5">
+      <nav className="p-3 space-y-1">
         {(Array.isArray(sideMenuData)
           ? sideMenuData.filter((menu) => menu && typeof menu.label === "string")
           : []
@@ -162,25 +155,22 @@ const SideMenu = ({ activeMenu }) => {
           return (
             <button
               key={`menu_${index}`}
-              className={`group flex w-full items-center gap-4 cursor-pointer rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+              className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                 isActive
-                  ? "border-transparent bg-gradient-to-r from-primary/90 via-indigo-500 to-sky-400 text-white shadow-[0_18px_40px_rgba(59,130,246,0.35)]"
-                  : "border-white/60 bg-white/60 text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.08)] hover:border-primary/40 hover:bg-blue-50/70 hover:text-primary dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:text-indigo-300"
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
               onClick={() => handleClick(item?.path)}
             >
               {Icon && (
-                <span
-                  className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-base transition ${
-                    isActive
-                      ? "border-white/40 bg-white/20 text-white"
-                      : "border-slate-200 bg-white/80 text-primary/70 group-hover:border-primary/30 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-indigo-200"
-                  }`}
-                >
+                <span className={`text-lg ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`}>
                   <Icon />
                 </span>
               )}
               <span>{item.label}</span>
+              {isActive && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
+              )}
             </button>
           );
         })}

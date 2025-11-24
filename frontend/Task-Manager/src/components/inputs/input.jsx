@@ -15,21 +15,23 @@ const Input = ({ value, onChange, label, placeholder, type = "text", id, name, c
   const labelFor = inputId;
 
   return (
-    <div className="space-y-2">
-      <label
-        htmlFor={labelFor}
-        className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
-      >
-        {label}
-      </label>
+    <div className="space-y-1.5">
+      {label && (
+        <label
+          htmlFor={labelFor}
+          className="block text-sm font-medium text-slate-700"
+        >
+          {label}
+        </label>
+      )}
   
-      <div className="input-box">
+      <div className="relative">
         <input
           id={inputId}
           name={inputName}
           type={inputType}
           placeholder={placeholder}
-          className={`w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-700 outline-none dark:text-slate-50 dark:placeholder:text-slate-200 ${className}`.trim()}
+          className={`w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 ${className}`.trim()}
           value={value}
           onChange={(e) => onChange(e)}
           {...props}
@@ -37,16 +39,16 @@ const Input = ({ value, onChange, label, placeholder, type = "text", id, name, c
 
         {type === "password" && (
           <button
-          type="button"
-          onClick={toggleShowPassword}
-          className="text-blue-500 transition hover:text-blue-600 dark:text-indigo-300 dark:hover:text-indigo-200"
-          aria-label={showPassword ? "Hide password" : "Show password"}
-          title={showPassword ? "Hide password" : "Show password"}
-        >
+            type="button"
+            onClick={toggleShowPassword}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            title={showPassword ? "Hide password" : "Show password"}
+          >
             {showPassword ? (
-              <FaRegEye size={20} />
+              <FaRegEye size={16} />
             ) : (
-              <FaRegEyeSlash size={20} className="text-slate-400 dark:text-slate-300" />
+              <FaRegEyeSlash size={16} />
             )}
           </button>
         )}

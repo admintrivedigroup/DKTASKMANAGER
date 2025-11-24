@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext.jsx";
-import Input from "../../components/inputs/input";
+import Input from "../../components/inputs/Input";
 import { getStoredTokenPreference, getToken } from "../../utils/tokenStorage";
 import { getDefaultRouteForRole } from "../../utils/roleUtils";
 
@@ -416,7 +416,7 @@ const Login = () => {
 
           <button
             type="submit"
-            className="auth-submit flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full btn btn-primary py-2.5"
             disabled={isLoggingIn}
             aria-busy={isLoggingIn}
           >
@@ -445,7 +445,7 @@ const Login = () => {
                 Signing in...
               </>
             ) : (
-              "Continue to Workspace"
+              "Sign in"
             )}
           </button>
         </form>

@@ -119,7 +119,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.All || 0
       ),
-      color: "from-primary via-indigo-500 to-sky-400",
+      color: "text-indigo-600 bg-indigo-50",
       icon: LuClipboardList,
     },
     {
@@ -127,7 +127,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.Pending || 0
       ),
-      color: "from-amber-400 via-orange-500 to-red-400",
+      color: "text-amber-600 bg-amber-50",
       icon: LuClock3,
     },
     {
@@ -135,7 +135,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.InProgress || 0
       ),
-      color: "from-sky-400 via-cyan-500 to-emerald-400",
+      color: "text-sky-600 bg-sky-50",
       icon: LuRefreshCcw,
     },
     {
@@ -143,7 +143,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.Completed || 0
       ),
-      color: "from-emerald-400 via-lime-400 to-green-500",
+      color: "text-emerald-600 bg-emerald-50",
       icon: LuBadgeCheck,
     },
   ];
@@ -156,7 +156,7 @@ const UserDashboard = () => {
         <>
           <Suspense
             fallback={
-              <div className="card mb-6 animate-pulse bg-white/60 text-sm text-slate-500">
+              <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500">
                 Loading announcements...
               </div>
             }
@@ -164,24 +164,21 @@ const UserDashboard = () => {
             <NoticeBoard notices={activeNotices} />
           </Suspense>
 
-          <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-slate-900 via-indigo-700 to-sky-600 px-4 py-8 text-white shadow-[0_20px_45px_rgba(30,64,175,0.35)] sm:px-6 sm:py-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.22),_transparent_60%)]" />
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/60">Hello</p>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-                  {getGreetingMessage()}, {user?.name}
-                </h2>
-                <p className="mt-3 text-sm text-white/70">{formattedTimestamp}</p>
-              </div>
+          <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                {getGreetingMessage()}, {user?.name}
+              </h1>
+              <p className="mt-1 text-slate-500">
+                {formattedTimestamp}
+              </p>
+            </div>
 
-              <div className="rounded-3xl border border-white/40 bg-white/15 px-4 py-4 text-sm backdrop-blur sm:px-6">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/70">Momentum</p>
-                <p className="mt-2 text-base font-medium">
-                  Tick off tasks, celebrate the wins and keep the flow going.
-                </p>
-              </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Momentum</p>
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                Tick off tasks, celebrate the wins and keep the flow going.
+              </p>
             </div>
           </section>
 
@@ -197,11 +194,11 @@ const UserDashboard = () => {
             ))}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
+          <section className="mt-8 grid gap-6 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   Progress Mix
                 </span>
               </div>
@@ -213,14 +210,16 @@ const UserDashboard = () => {
                   </div>
                 }
               >
-                <CustomPieChart data={pieChartData} colors={COLORS} />
+                <div className="mt-4">
+                  <CustomPieChart data={pieChartData} colors={COLORS} />
+                </div>
               </Suspense>
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                   Priorities
                 </span>
               </div>
@@ -232,13 +231,15 @@ const UserDashboard = () => {
                   </div>
                 }
               >
-                <CustomBarChart data={barChartData} />
+                <div className="mt-4">
+                  <CustomBarChart data={barChartData} />
+                </div>
               </Suspense>
             </div>
           </section>
 
-          <section className="card">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section className="card mt-8">
+            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
                 <p className="text-sm text-slate-500">
@@ -246,8 +247,8 @@ const UserDashboard = () => {
                 </p>
               </div>
 
-              <button className="card-btn" onClick={onSeeMore}>
-                See All <LuArrowRight className="text-base" />
+              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700" onClick={onSeeMore}>
+                View All Tasks <LuArrowRight className="ml-1 inline text-base" />
               </button>
             </div>
 
