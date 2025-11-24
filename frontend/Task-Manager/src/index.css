@@ -14,6 +14,74 @@
   --color-text-main: #0f172a;
   --color-text-muted: #64748b;
   --color-border: #e2e8f0;
+
+  /* Tailwind color scale tokens (semantic) */
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+  --color-primary-950: #1e1b4b;
+
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+  --color-success-950: #0f172a;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+  --color-danger-950: #450a0a;
+
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-300: #7dd3fc;
+  --color-info-400: #38bdf8;
+  --color-info-500: #0ea5e9;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+  --color-info-800: #075985;
+  --color-info-900: #0c4a6e;
+  --color-info-950: #0a3a55;
+
+  /* Shadow tokens for semantic variants */
+  --shadow-primary: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+  --shadow-success: 0 10px 20px -5px rgba(34, 197, 94, 0.3);
+  --shadow-warning: 0 10px 20px -5px rgba(245, 158, 11, 0.3);
+  --shadow-danger: 0 10px 20px -5px rgba(239, 68, 68, 0.3);
+  --shadow-info: 0 10px 20px -5px rgba(14, 165, 233, 0.3);
   
   /* Glassmorphism variables */
   --glass-bg: rgba(255, 255, 255, 0.7);
@@ -256,7 +324,7 @@
 
   /* Stat Card */
   .stat-card {
-    @apply card flex items-start gap-4;
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-4 dark:bg-slate-900 dark:border-slate-800;
   }
 
   .stat-card-icon {
@@ -345,7 +413,7 @@
   }
 
   .badge-sm {
-    @apply px-2 py-0.5 text-2xs rounded-full;
+    @apply px-2 py-0.5 text-[0.625rem] leading-[0.75rem] rounded-full;
   }
 
   .badge-lg {
@@ -526,12 +594,36 @@
   /* ============================================
      ANIMATION UTILITIES
      ============================================ */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
   .animate-in {
-    @apply animate-fade-in;
+    animation: fade-in 0.3s ease-in-out;
   }
 
   .animate-out {
-    @apply animate-fade-out;
+    animation: fade-out 0.3s ease-in-out;
   }
 
   /* Hover Lift Effect */
@@ -548,7 +640,7 @@
      TOOLTIP
      ============================================ */
   .tooltip {
-    @apply absolute z-tooltip px-2 py-1 text-xs text-white bg-slate-900 rounded shadow-lg pointer-events-none opacity-0 transition-opacity duration-200 dark:bg-slate-700;
+    @apply absolute z-[1070] px-2 py-1 text-xs text-white bg-slate-900 rounded shadow-lg pointer-events-none opacity-0 transition-opacity duration-200 dark:bg-slate-700;
   }
 
   .tooltip-visible {
@@ -559,7 +651,7 @@
      DROPDOWN
      ============================================ */
   .dropdown {
-    @apply absolute z-dropdown mt-2 min-w-[12rem] rounded-lg bg-white border border-slate-200 shadow-lg py-1 dark:bg-slate-900 dark:border-slate-800;
+    @apply absolute z-[1000] mt-2 min-w-[12rem] rounded-lg bg-white border border-slate-200 shadow-lg py-1 dark:bg-slate-900 dark:border-slate-800;
   }
 
   .dropdown-item {
@@ -574,11 +666,11 @@
      MODAL
      ============================================ */
   .modal-backdrop {
-    @apply fixed inset-0 z-modal-backdrop bg-black/50 backdrop-blur-sm;
+    @apply fixed inset-0 z-[1040] bg-black/50 backdrop-blur-sm;
   }
 
   .modal-container {
-    @apply fixed inset-0 z-modal flex items-center justify-center p-4;
+    @apply fixed inset-0 z-[1050] flex items-center justify-center p-4;
   }
 
   .modal-content {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LuChevronRight, LuHome } from 'react-icons/lu';
+import { LuChevronRight, LuHouse } from 'react-icons/lu';
 
 /**
  * Breadcrumb navigation component
@@ -23,7 +23,7 @@ const Breadcrumb = ({ items }) => {
         className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50 transition-colors"
         aria-label="Home"
       >
-        <LuHome className="w-4 h-4" />
+        <LuHouse className="w-4 h-4" />
       </Link>
 
       {breadcrumbs.map((crumb, index) => {

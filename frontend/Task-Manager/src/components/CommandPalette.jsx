@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLayoutContext } from '../context/layoutContext';
 import {
   LuSearch,
-  LuHome,
+  LuHouse,
   LuUsers,
   LuFileText,
   LuSettings,
@@ -31,7 +31,7 @@ const CommandPalette = () => {
   // Command items
   const commands = [
     // Navigation
-    { icon: LuHome, label: 'Dashboard', action: () => navigate('/admin/dashboard'), group: 'Navigation' },
+    { icon: LuHouse, label: 'Dashboard', action: () => navigate('/admin/dashboard'), group: 'Navigation' },
     { icon: LuUsers, label: 'Users', action: () => navigate('/admin/users'), group: 'Navigation' },
     { icon: LuFileText, label: 'Tasks', action: () => navigate('/admin/tasks'), group: 'Navigation' },
     { icon: LuSettings, label: 'Settings', action: () => navigate('/admin/settings'), group: 'Navigation' },

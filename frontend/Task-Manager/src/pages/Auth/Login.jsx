@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext.jsx";
-import Input from "../../components/inputs/Input";
+import Input from "../../components/inputs/input";
 import { getStoredTokenPreference, getToken } from "../../utils/tokenStorage";
 import { getDefaultRouteForRole } from "../../utils/roleUtils";
 

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "../../utils/motionShim";
 import { UserContext } from "../../context/userContext.jsx";
 import { useLayoutContext } from "../../context/layoutContext.jsx";
 import useKeyboardShortcuts from "../../hooks/useKeyboardShortcuts";

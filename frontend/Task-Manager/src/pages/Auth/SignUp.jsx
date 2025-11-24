@@ -2,7 +2,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import ProfilePhotoSelector from '../../components/inputs/ProfilePhotoSelector';
-import Input from '../../components/inputs/Input';
+import Input from '../../components/inputs/input';
 import { validateEmail } from '../../utils/helper';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';

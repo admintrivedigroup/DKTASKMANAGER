@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from "../utils/motionShim";
 import { LuPlus, LuX } from 'react-icons/lu';
 
 /**
