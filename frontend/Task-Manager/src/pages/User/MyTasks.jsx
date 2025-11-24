@@ -69,22 +69,20 @@ const MyTasks = () => {
                 progress={item.progress}
                 createdAt={item.createdAt}
                 dueDate={item.dueDate}
-                assignedTo={
-                  Array.isArray(item.assignedTo)
-                    ? item.assignedTo
-                    : item.assignedTo
-                    ? [item.assignedTo]
-                    : []
-                }
-                attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
-                completedTodoCount={item.completedTodoCount || 0}
-                todoChecklist={item.todoChecklist || []}
-                matter={item.matter}
-                caseFile={item.caseFile}                
-                onClick={() => {
-                  handleClick(item._id);
-                }}
-              />
+                  assignedTo={
+                    Array.isArray(item.assignedTo)
+                      ? item.assignedTo
+                      : item.assignedTo
+                      ? [item.assignedTo]
+                      : []
+                  }
+                  attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
+                  completedTodoCount={item.completedTodoCount || 0}
+                  todoChecklist={item.todoChecklist || []}
+                  onClick={() => {
+                    handleClick(item._id);
+                  }}
+                />
             ))}
 
             {!allTasks.length && (

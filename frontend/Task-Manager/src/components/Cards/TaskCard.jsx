@@ -20,9 +20,7 @@ const TaskCard = ({
   attachmentCount = 0,
   completedTodoCount,
   todoChecklist,
-  matter,
-  caseFile,
-  onClick
+  onClick,
 }) => {
   const assigneeAvatars = Array.isArray(assignedTo)
   ? assignedTo.map((user) => {
@@ -50,32 +48,6 @@ const totalAttachments =
 typeof attachmentCount === "number" && !Number.isNaN(attachmentCount)
   ? attachmentCount
   : 0;
-
-const matterLabel = (() => {
-  if (!matter || typeof matter !== "object") {
-    return "";
-  }
-
-  const matterTitle = matter.title || matter.name || "";
-  const clientName =
-    (matter.client && (matter.client.name || matter.client.fullName)) ||
-    matter.clientName ||
-    "";
-
-  if (matterTitle && clientName) {
-    return `${matterTitle} — ${clientName}`;
-  }
-
-  return matterTitle || clientName || "";
-})();
-
-const caseLabel = (() => {
-  if (!caseFile || typeof caseFile !== "object") {
-    return "";
-  }
-
-  return caseFile.title || caseFile.name || caseFile.caseNumber || "";
-})();
 
 const completionPercentage = calculateTaskCompletion({
   progress,
@@ -143,21 +115,7 @@ const roundedCompletion = Math.round(completionPercentage);
         <h3 className="text-lg font-semibold leading-tight text-slate-900 transition-colors duration-300 dark:text-slate-100 line-clamp-2">{title}</h3>
         <p className="text-sm leading-relaxed text-slate-600 transition-colors duration-300 dark:text-slate-300 line-clamp-3">{description}</p>
       </div>
-      {(matterLabel || caseLabel) && (
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
-          {matterLabel && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">
-              Matter: {matterLabel}
-            </span>
-          )}
-          {caseLabel && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-600 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-200">
-              Case: {caseLabel}
-            </span>
-          )}
-        </div>
-      )}      
-      <div className="mt-5 rounded-2xl border border-white/60 bg-white/80 p-4 transition-colors duration-300 dark:border-slate-800/60 dark:bg-slate-900/60">
+        <div className="mt-5 rounded-2xl border border-white/60 bg-white/80 p-4 transition-colors duration-300 dark:border-slate-800/60 dark:bg-slate-900/60">
         <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500 transition-colors duration-300 dark:text-slate-400">
           Task Done
         </p>

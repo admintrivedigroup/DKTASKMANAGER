@@ -37,47 +37,16 @@ const normalizeStatusFilter = (statusFilter) => {
   return trimmed;
 };
 
-const normalizeResourceId = (value) => {
-  if (!value) {
-    return undefined;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed || undefined;
-  }
-
-  if (typeof value === "object") {
-    return (
-      normalizeResourceId(value._id || value.id || value.value || value.key) ||
-      undefined
-    );
-  }
-
-  return undefined;
-};
-
 const useTasks = ({
   statusFilter = "All",
   scope,
   includePrioritySort = false,
   enabled = true,
   errorMessage = "Failed to fetch tasks. Please try again later.",
-  matterId,
-  caseFileId,  
 } = {}) => {
   const [tasks, setTasks] = useState([]);
   const [statusSummary, setStatusSummary] = useState(DEFAULT_SUMMARY);
   const [isLoading, setIsLoading] = useState(false);
-
-  const normalizedMatterId = useMemo(
-    () => normalizeResourceId(matterId),
-    [matterId]
-  );
-  const normalizedCaseFileId = useMemo(
-    () => normalizeResourceId(caseFileId),
-    [caseFileId]
-  );
 
   const fetchTasks = useCallback(async () => {
     if (!enabled) {
@@ -97,14 +66,6 @@ const useTasks = ({
 
       if (normalizedScope) {
         params.scope = normalizedScope;
-      }
-
-      if (normalizedMatterId) {
-        params.matter = normalizedMatterId;
-      }
-
-      if (normalizedCaseFileId) {
-        params.caseFile = normalizedCaseFileId;
       }
 
       const response = await axiosInstance.get(API_PATHS.TASKS.GET_ALL_TASKS, {
@@ -132,8 +93,6 @@ const useTasks = ({
     enabled,
     errorMessage,
     includePrioritySort,
-    normalizedCaseFileId,
-    normalizedMatterId,
     scope,
     statusFilter,
   ]);

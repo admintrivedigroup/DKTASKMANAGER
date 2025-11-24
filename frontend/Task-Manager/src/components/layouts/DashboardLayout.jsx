@@ -79,7 +79,7 @@ const DashboardLayout = ({ children, activeMenu }) => {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 flex flex-col font-sans">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 flex flex-col font-sans pt-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.06),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.05),transparent_28%),radial-gradient(circle_at_50%_100%,rgba(15,23,42,0.06),transparent_30%)]"

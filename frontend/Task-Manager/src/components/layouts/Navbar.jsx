@@ -35,7 +35,7 @@ const Navbar = () => {
    }, [clearUser, navigate, resetThemePreference]);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm transition-all duration-200">
+    <header className="fixed inset-x-0 top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/60 shadow-sm transition-all duration-200">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">

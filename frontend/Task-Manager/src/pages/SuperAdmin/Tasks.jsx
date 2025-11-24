@@ -193,19 +193,17 @@ const Tasks = () => {
                   progress={item.progress}
                   createdAt={item.createdAt}
                   dueDate={item.dueDate}
-                  assignedTo={Array.isArray(item.assignedTo)
-                    ? item.assignedTo
-                    : item.assignedTo
-                    ? [item.assignedTo]
-                    : []}
-                  attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
-                  completedTodoCount={item.completedTodoCount || 0}
-                  todoChecklist={item.todoChecklist || []}
-                  matter={item.matter}
-                  caseFile={item.caseFile}
-                  onClick={() => handleTaskCardClick(item._id)}
-                />
-              ))}
+                    assignedTo={Array.isArray(item.assignedTo)
+                      ? item.assignedTo
+                      : item.assignedTo
+                      ? [item.assignedTo]
+                      : []}
+                    attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
+                    completedTodoCount={item.completedTodoCount || 0}
+                    todoChecklist={item.todoChecklist || []}
+                    onClick={() => handleTaskCardClick(item._id)}
+                  />
+                ))}
 
               {!filteredTasks.length && (
                 <div className="md:col-span-2 xl:col-span-3">

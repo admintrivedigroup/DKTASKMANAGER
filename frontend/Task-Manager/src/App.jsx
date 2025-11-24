@@ -13,29 +13,23 @@ const AdminTasks = React.lazy(() => import("./pages/Admin/Tasks"));
 const AdminManageEmployees = React.lazy(() => import("./pages/Admin/ManageEmployees"));
 const AdminManageClients = React.lazy(() => import("./pages/Admin/ManageClients"));
 const AdminUserDetails = React.lazy(() => import("./pages/Admin/UserDetails"));
-const AdminMatters = React.lazy(() => import("./pages/Admin/Matters"));
 const AdminDocuments = React.lazy(() => import("./pages/Admin/Documents"));
-const AdminInvoices = React.lazy(() => import("./pages/Admin/Invoices"));
 const ProfileSettings = React.lazy(() => import("./pages/Profile/ProfileSettings"));
 const SignUp = React.lazy(() => import("./pages/Auth/SignUp"));
 const Unauthorized = React.lazy(() => import("./pages/Errors/Unauthorized"));
 const UserDashboard = React.lazy(() => import("./pages/User/UserDashboard"));
 const MyTasks = React.lazy(() => import("./pages/User/MyTasks"));
 const ViewTaskDetails = React.lazy(() => import("./pages/User/ViewTaskDetails"));
-const UserMatters = React.lazy(() => import("./pages/User/Matters"));
 const UserDocuments = React.lazy(() => import("./pages/User/Documents"));
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdmin/Dashboard.jsx"));
 const SuperAdminTasks = React.lazy(() => import("./pages/SuperAdmin/Tasks.jsx"));
 const SuperAdminManageEmployees = React.lazy(() => import("./pages/SuperAdmin/ManageEmployees.jsx"));
 const SuperAdminManageClients = React.lazy(() => import("./pages/SuperAdmin/ManageClients.jsx"));
 const SuperAdminUserDetails = React.lazy(() => import("./pages/SuperAdmin/UserDetails.jsx"));
-const SuperAdminMatters = React.lazy(() => import("./pages/SuperAdmin/Matters.jsx"));
 const SuperAdminDocuments = React.lazy(() => import("./pages/SuperAdmin/Documents.jsx"));
-const SuperAdminInvoices = React.lazy(() => import("./pages/SuperAdmin/Invoices.jsx"));
 const ClientHome = React.lazy(() => import("./pages/Client/Home"));
 const ClientProjects = React.lazy(() => import("./pages/Client/ClientProjects"));
 const ClientViewTaskDetails = React.lazy(() => import("./pages/Client/ViewTaskDetails"));
-const ClientInvoices = React.lazy(() => import("./pages/Client/Invoices"));
 const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
@@ -64,9 +58,7 @@ const App = () => {
                   path="/admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />                
-                <Route path="/admin/matters/*" element={<AdminMatters />} />
                 <Route path="/admin/documents/*" element={<AdminDocuments />} />
-                <Route path="/admin/invoices" element={<AdminInvoices />} />                
                 <Route path="/admin/employees" element={<AdminManageEmployees />} />
                 <Route path="/admin/clients" element={<AdminManageClients />} />
                 <Route path="/admin/users/:userId" element={<AdminUserDetails />} />
@@ -85,16 +77,8 @@ const App = () => {
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />                
                 <Route
-                  path="/super-admin/matters/*"
-                  element={<SuperAdminMatters />}
-                />
-                <Route
                   path="/super-admin/documents/*"
                   element={<SuperAdminDocuments />}
-                />
-                <Route
-                  path="/super-admin/invoices"
-                  element={<SuperAdminInvoices />}
                 />
                 <Route
                   path="/super-admin/employees"
@@ -119,7 +103,6 @@ const App = () => {
                 <Route path="/user/dashboard" element={<UserDashboard />} />
                 <Route path="/user/tasks" element={<MyTasks />} />
                 <Route path="/user/task-details/:id" element={<ViewTaskDetails />} />
-                <Route path="/user/matters/*" element={<UserMatters />} />
                 <Route path="/user/documents/*" element={<UserDocuments />} />
                 <Route path="/user/profile-settings" element={<ProfileSettings />} />
               </Route>
@@ -130,7 +113,6 @@ const App = () => {
                   <Route index element={<Navigate to="home" replace />} />
                   <Route path="home" element={<ClientHome />} />
                   <Route path="projects" element={<ClientProjects />} />
-                  <Route path="invoices" element={<ClientInvoices />} />                  
                   <Route path="task-details/:id" element={<ClientViewTaskDetails />} />
                   <Route path="profile-settings" element={<ProfileSettings />} />
                 </Route>

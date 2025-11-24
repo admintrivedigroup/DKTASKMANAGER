@@ -23,35 +23,23 @@ export const SIDE_MENU_DATA = [
     path: "/admin/tasks",
   },
   {
-    id: "03",  
-    label: "Matters",
-    icon: LuFolderTree,
-    path: "/admin/matters",
-  },
-  {
-    id: "04",
-    label: "Invoices",
-    icon: LuReceipt,
-    path: "/admin/invoices",
-  },
-  {
-    id: "05",    
+    id: "03",
     label: "Employees",
     icon: LuUsers,
     path: "/admin/employees",
   },
   {
-    id: "06",
+    id: "04",
     label: "Clients",
     icon: LuUserCheck,
     path: "/admin/clients",
   },
   {
-    id: "07",    
+    id: "05",
     label: "Documents",
     icon: LuFileStack,
     path: "/admin/documents",
-  },  
+  },
 ];
 
 export const SIDE_MENU_USER_DATA = [
@@ -68,17 +56,11 @@ export const SIDE_MENU_USER_DATA = [
     path: "/user/tasks",
   },
   {
-    id: "03",  
-    label: "Matters",
-    icon: LuFolderTree,
-    path: "/user/matters",
-  },
-  {
-    id: "04",
+    id: "03",
     label: "Documents",
     icon: LuFileStack,
     path: "/user/documents",
-  },  
+  },
 ];
 
 export const SIDE_MENU_CLIENT_DATA = [
@@ -88,12 +70,6 @@ export const SIDE_MENU_CLIENT_DATA = [
     icon: LuHouse,
     path: "/client/home",
   },
-  {
-    id: "02",
-    label: "Invoices",
-    icon: LuReceipt,
-    path: "/client/invoices",
-  },  
 ];
 
 export const PRIORITY_DATA = [

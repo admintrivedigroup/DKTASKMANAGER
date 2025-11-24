@@ -265,19 +265,10 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
 
-  const matterClientIdRaw = task?.matter?.client
-    ? typeof task.matter.client === "object"
-      ? task.matter.client._id || task.matter.client.id || task.matter.client
-      : task.matter.client
-    : null;
-  const normalizedMatterClientId = matterClientIdRaw
-    ? matterClientIdRaw.toString()
-    : "";
-
-  const isAssignedMember = assignedMembers.some((member) => {
-    if (!member) {
-      return false;
-    }
+    const isAssignedMember = assignedMembers.some((member) => {
+      if (!member) {
+        return false;
+      }
 
     const memberId =
       typeof member === "object" && member !== null
@@ -285,35 +276,17 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         : member;
 
     return memberId && normalizedUserId && memberId.toString() === normalizedUserId;
-  });
+    });
 
-  const isTaskClient =
-    normalizedMatterClientId && normalizedMatterClientId === normalizedUserId;
+    const canUploadDocumentByRole = isPrivilegedUser || isAssignedMember;
+    const canUploadDocument =
+      canUploadDocumentByRole && isDocumentUploadEnabled;
+    const showUploadDisabledMessage =
+      canUploadDocumentByRole && !isDocumentUploadEnabled;
 
-  const canUploadDocumentByRole =
-    isPrivilegedUser || isAssignedMember || isTaskClient;
-  const canUploadDocument =
-    canUploadDocumentByRole && isDocumentUploadEnabled;
-  const showUploadDisabledMessage =
-    canUploadDocumentByRole && !isDocumentUploadEnabled;
-
-  const matterClientLabel =
-    task?.matter?.client?.name || task?.matter?.clientName || "";    
-  const matterLabel = task?.matter
-    ? `${task.matter?.title || "Matter"}${
-        matterClientLabel ? " — " + matterClientLabel : ""
-      }`
-    : "Not linked";
-
-  const caseLabel = task?.caseFile
-    ? task.caseFile?.title || task.caseFile?.caseNumber || "Linked case"
-    : task?.matter
-    ? "General matter"
-    : "Not linked";
-
-  const relatedDocuments = Array.isArray(task?.relatedDocuments)
-    ? task.relatedDocuments
-    : [];
+    const relatedDocuments = Array.isArray(task?.relatedDocuments)
+      ? task.relatedDocuments
+      : [];
 
   return (
     <DashboardLayout activeMenu={activeMenu}>
@@ -359,11 +332,6 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
                         />
                       </div>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <InfoBox label="Matter" value={matterLabel} />
-                    <InfoBox label="Case File" value={caseLabel} />
                   </div>
 
                   <div>

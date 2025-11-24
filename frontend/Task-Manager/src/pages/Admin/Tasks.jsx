@@ -214,8 +214,6 @@ const Tasks = () => {
                   attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
                   completedTodoCount={item.completedTodoCount || 0}
                   todoChecklist={item.todoChecklist || []}
-                  matter={item.matter}
-                  caseFile={item.caseFile}
                   onClick={() => handleTaskCardClick(item._id)}
                 />
               ))}
