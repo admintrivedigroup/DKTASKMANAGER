@@ -26,7 +26,7 @@ const AuthLayout = ({ children }) => {
               </div>
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.28em] text-indigo-100/80 font-semibold">
-                  Raval & Trivedi Associates
+                  Vijay Trivedi Group
                 </p>
                 <p className="text-sm text-indigo-100/70">Task &amp; Matter Management Suite</p>
               </div>
@@ -55,7 +55,7 @@ const AuthLayout = ({ children }) => {
                 </div>
               </div>
               <p className="text-xs text-indigo-100/60 font-medium tracking-wide">
-                © 2025 Raval & Trivedi Associates. All rights reserved.
+                © 2025 Vijay Trivedi Group. All rights reserved.
               </p>
             </div>
           </div>
@@ -69,7 +69,7 @@ const AuthLayout = ({ children }) => {
                 <img src={logo} alt="Logo" className="h-10 w-10 object-contain" />
               </div>
               <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-slate-900">Raval & Trivedi Associates</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Vijay Trivedi Group</h2>
                 <p className="text-sm text-slate-500">Task &amp; Matter Management Suite</p>
               </div>
             </div>

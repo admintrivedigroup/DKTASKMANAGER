@@ -184,7 +184,7 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
         {/* Enhanced footer */}
         <footer className="relative z-10 mt-auto border-t border-slate-200 bg-white/70 px-4 py-6 text-xs text-slate-500 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-            <span>© 2025 Raval & Trivedi Associates. All rights reserved.</span>
+            <span>© 2025 Vijay Trivedi Group. All rights reserved.</span>
             <div className="flex items-center gap-4">
               <span className="text-slate-400 dark:text-slate-500">
                 Developed by Hemant Ladhani (7726886835)

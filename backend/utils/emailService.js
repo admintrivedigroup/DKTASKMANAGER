@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 let transporter = null;
-const DEFAULT_FROM_EMAIL = "helpdesk@ravaladvocates.com";
+const DEFAULT_FROM_EMAIL = "admin@trivedigranimarmo.com";
 
 const getAdminNotificationEmails = () => {
   const rawAdminEmails =

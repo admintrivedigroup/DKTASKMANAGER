@@ -52,7 +52,7 @@ const Navbar = () => {
                 Task Manager
               </p>
               <h1 className="text-sm font-bold leading-none text-slate-900 dark:text-white">
-                RAVAL & TRIVEDI ASSOCIATES
+                VIJAY TRIVEDI GROUP
               </h1>
             </div>
           </div>
