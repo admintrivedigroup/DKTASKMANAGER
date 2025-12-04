@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserAuth } from "../../hooks/useUserAuth";
 import { UserContext } from "../../context/userContext.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import PageHeader from "../../components/layouts/PageHeader";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { addThousandsSeparator } from "../../utils/helper";
@@ -374,6 +375,21 @@ const Dashboard = () => {
     return foundPreset?.label || "";
   }, [activeDateRange.endDate, activeDateRange.startDate]);
 
+  const activeRangeSummary = useMemo(() => {
+    if (!activeDateRange.startDate || !activeDateRange.endDate) {
+      return "No range selected";
+    }
+
+    const startLabel = formatDateLabel(activeDateRange.startDate);
+    const endLabel = formatDateLabel(activeDateRange.endDate);
+
+    if (startLabel === endLabel) {
+      return startLabel;
+    }
+
+    return `${startLabel} – ${endLabel}`;
+  }, [activeDateRange.endDate, activeDateRange.startDate]);
+
   const infoCards = useMemo(
     () => [
       {
@@ -415,6 +431,8 @@ const Dashboard = () => {
     ],
     [dashboardData?.charts?.taskDistribution]
   );
+
+  const totalNotices = Array.isArray(activeNotices) ? activeNotices.length : 0;
 
   const handleCardClick = (filterStatus) => {
     navigate(`${privilegedBasePath}/tasks`, { state: { filterStatus } });
@@ -559,7 +577,7 @@ const Dashboard = () => {
      {isLoading ? (
         <LoadingOverlay message="Loading workspace overview..." className="py-24" />
       ) : (
-        <>
+        <div className="page-shell">
           <Suspense
             fallback={
               <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500">
@@ -570,64 +588,68 @@ const Dashboard = () => {
             <NoticeBoard notices={activeNotices} />
           </Suspense>
 
-          <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                {getGreetingMessage(new Date().getHours())}, {user?.name || "User"}
-              </h1>
-              <p className="text-slate-500">
-                Here's what's happening in your workspace today.
-              </p>
-            </div>
+          <PageHeader
+            tone="primary"
+            eyebrow="Workspace Overview"
+            title={<LiveGreeting userName={user?.name || "User"} />}
+            description="Stay on top of execution, unblock teams quickly, and keep every deliverable moving with clear focus."
+            meta={[
+              `Range: ${activeRangeSummary}`,
+              `Preset: ${activePresetLabel || "Custom"}`,
+              `${totalNotices} active notice${totalNotices === 1 ? "" : "s"}`,
+            ]}
+            actions={
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+                  Date range
+                </p>
+                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25">
+                  {PRESET_RANGES.map(({ label, rangeFactory }) => {
+                    const isActive = label === activePresetLabel;
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => handlePresetRange(rangeFactory)}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${isActive ? "bg-white text-indigo-700 shadow-sm shadow-indigo-900/20" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1">
-                {PRESET_RANGES.map(({ label, rangeFactory }) => {
-                  const isActive = label === activePresetLabel;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => handlePresetRange(rangeFactory)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                        isActive
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <form onSubmit={handleDateFilterSubmit} className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={pendingDateRange.startDate}
-                  onChange={({ target }) =>
-                    handleDateInputChange("startDate", target.value)
-                  }
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-                <span className="text-slate-400">-</span>
-                <input
-                  type="date"
-                  value={pendingDateRange.endDate}
-                  onChange={({ target }) =>
-                    handleDateInputChange("endDate", target.value)
-                  }
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-                <button
-                  type="submit"
-                  disabled={!isRangeValid}
-                  className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                <form
+                  onSubmit={handleDateFilterSubmit}
+                  className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
                 >
-                  Apply
-                </button>
-              </form>
-            </div>
-          </section>
+                  <input
+                    type="date"
+                    value={pendingDateRange.startDate}
+                    onChange={({ target }) =>
+                      handleDateInputChange("startDate", target.value)
+                    }
+                    className="w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                  />
+                  <span className="text-white/70 sm:mx-1">—</span>
+                  <input
+                    type="date"
+                    value={pendingDateRange.endDate}
+                    onChange={({ target }) =>
+                      handleDateInputChange("endDate", target.value)
+                    }
+                    className="w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!isRangeValid}
+                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60"
+                  >
+                    Apply Range
+                  </button>
+                </form>
+              </div>
+            }
+          />
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {infoCards.map((card) => (
@@ -642,7 +664,7 @@ const Dashboard = () => {
             ))}
           </section>
 
-          <section className="mt-8 grid gap-6 lg:grid-cols-2">
+          <section className="grid gap-6 lg:grid-cols-2">
             <div className="card">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
@@ -686,7 +708,7 @@ const Dashboard = () => {
             </div>
           </section>
 
-          <section className="card mt-8">
+          <section className="card">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
@@ -711,7 +733,7 @@ const Dashboard = () => {
             </Suspense>
           </section>
           
-          <section className="card mt-8">
+          <section className="card">
             <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">
@@ -791,7 +813,7 @@ const Dashboard = () => {
               />
             </Suspense>
           </section>
-        </>
+        </div>
       )}
     </DashboardLayout>
   );

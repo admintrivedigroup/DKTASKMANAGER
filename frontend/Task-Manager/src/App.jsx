@@ -7,7 +7,6 @@ import LayoutProvider from "./context/layoutContext.jsx";
 import { Toaster } from "react-hot-toast";
 import { getDefaultRouteForRole } from "./utils/roleUtils";
 import LoadingOverlay from "./components/LoadingOverlay";
-import ThemeToggle from "./components/ThemeToggle.jsx";
 const AdminDashboard = React.lazy(() => import("./pages/Admin/Dashboard"));
 const Login = React.lazy(() => import("./pages/Auth/Login"));
 const AdminTasks = React.lazy(() => import("./pages/Admin/Tasks"));
@@ -104,9 +103,9 @@ const App = () => {
 
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="*" element={<RootRedirect />} />
-          </Routes>
-        </Suspense>
-      </div>
+            </Routes>
+          </Suspense>
+        </div>
 
         <Toaster
           toastOptions={{
@@ -116,7 +115,6 @@ const App = () => {
             },
           }}
         />
-        <ThemeToggle placement="floating" />
       </LayoutProvider>
     </UserProvider>
   );

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LuPlus, LuRotateCcw, LuSearch } from "react-icons/lu";
 
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import PageHeader from "../../components/layouts/PageHeader";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import TaskCard from "../../components/Cards/TaskCard";
 import LoadingOverlay from "../../components/LoadingOverlay";
@@ -94,54 +95,69 @@ const Tasks = () => {
     });
   }, [tasks, searchQuery, selectedDate]);
 
+  const filteredTaskCount = filteredTasks.length;
+  const totalTasksCount = tasks.length;
+
   return (
     <DashboardLayout activeMenu="Tasks">
-      <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-sky-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(59,130,246,0.25)] sm:px-6 sm:py-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(255,255,255,0.2),_transparent_60%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">Task Hub</p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Tasks</h2>
-            <p className="mt-3 text-sm text-white/70">
-              Curate, assign and elevate every deliverable with confidence.
-            </p>
-          </div>
+      <div className="page-shell">
+        <PageHeader
+          tone="primary"
+          eyebrow="Task Hub"
+          title="Tasks"
+          description="Curate, assign and elevate every deliverable with confidence."
+          meta={[
+            `Scope: ${taskScope}`,
+            `Showing ${filteredTaskCount} of ${totalTasksCount || 0}`,
+            viewMode === "grid" ? "Card view" : "Table view",
+          ]}
+          actions={
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <select
+                value={taskScope}
+                onChange={(event) => setTaskScope(event.target.value)}
+                className="rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white outline-none transition hover:-translate-y-0.5 hover:bg-white/25 focus:border-white focus:ring-2 focus:ring-white/50"
+              >
+                <option>All Tasks</option>
+                <option>My Task</option>
+              </select>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                onClick={() => openTaskForm()}
+              >
+                <LuPlus className="text-base" /> Create
+              </button>
+            </div>
+          }
+        />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <select
-              value={taskScope}
-              onChange={(event) => setTaskScope(event.target.value)}
-              className="rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/90 hover:to-sky-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option>All Tasks</option>
-              <option>My Task</option>
-            </select>            
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/90 hover:to-sky-500 hover:text-white"
-              onClick={() => openTaskForm()}
-            >
-              <LuPlus className="text-base" /> Create
-            </button>
-          </div>
-        </div>
-      </section>
+        {isLoading ? (
+          <LoadingOverlay message="Loading tasks..." className="py-24" />
+        ) : (
+          <>
+            {(tabs.length > 0 || tasks.length > 0) && (
+              <div className="page-surface space-y-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <TaskStatusTabs
+                    tabs={tabs}
+                    activeTab={filterStatus}
+                    setActiveTab={setFilterStatus}
+                  />
 
-      {isLoading ? (
-        <LoadingOverlay message="Loading tasks..." className="py-24" />
-      ) : (
-        <>
-          {(tabs.length > 0 || tasks.length > 0) && (
-            <div className="flex flex-col gap-4 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-[0_20px_45px_rgba(15,23,42,0.08)] transition-colors duration-300 dark:border-slate-800/60 dark:bg-slate-900/60 dark:shadow-[0_26px_60px_rgba(2,6,23,0.55)]">
-              <TaskStatusTabs
-                tabs={tabs}
-                activeTab={filterStatus}
-                setActiveTab={setFilterStatus}
-              />
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200"
+                      onClick={handleResetFilters}
+                    >
+                      <LuRotateCcw className="text-base" /> Reset Filters
+                    </button>
+                  )}
+                </div>
 
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-[1.6fr_auto] lg:items-center">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <label className="group flex flex-col text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 transition-colors duration-300 dark:text-slate-500">
                       Search Task
                       <div className="relative mt-2">
@@ -179,70 +195,59 @@ const Tasks = () => {
                     />
                   </div>
                 </div>
+              </div>
+            )}
 
-              {hasActiveFilters && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-gradient-to-r hover:from-primary/90 hover:to-sky-500 hover:text-white dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200"
-                    onClick={handleResetFilters}
-                  >
-                    <LuRotateCcw className="text-base" /> Reset Filters
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+            {viewMode === "grid" ? (
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredTasks?.map((item) => (
+                  <TaskCard
+                    key={item._id}
+                    title={item.title}
+                    description={item.description}
+                    priority={item.priority}
+                    status={item.status}
+                    progress={item.progress}
+                    createdAt={item.createdAt}
+                    dueDate={item.dueDate}
+                    assignedTo={Array.isArray(item.assignedTo)
+                      ? item.assignedTo
+                      : item.assignedTo
+                      ? [item.assignedTo]
+                      : []}
+                    attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
+                    completedTodoCount={item.completedTodoCount || 0}
+                    todoChecklist={item.todoChecklist || []}
+                    onClick={() => handleTaskCardClick(item._id)}
+                  />
+                ))}
 
-          {viewMode === "grid" ? (
-            <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredTasks?.map((item) => (
-                <TaskCard
-                  key={item._id}
-                  title={item.title}
-                  description={item.description}
-                  priority={item.priority}
-                  status={item.status}
-                  progress={item.progress}
-                  createdAt={item.createdAt}
-                  dueDate={item.dueDate}
-                  assignedTo={Array.isArray(item.assignedTo)
-                    ? item.assignedTo
-                    : item.assignedTo
-                    ? [item.assignedTo]
-                    : []}
-                  attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
-                  completedTodoCount={item.completedTodoCount || 0}
-                  todoChecklist={item.todoChecklist || []}
-                  onClick={() => handleTaskCardClick(item._id)}
-                />
-              ))}
-
-              {!filteredTasks.length && (
-                <div className="md:col-span-2 xl:col-span-3">
+                {!filteredTasks.length && (
+                  <div className="md:col-span-2 xl:col-span-3">
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 transition-colors duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300">
+                      No tasks match the selected filters.
+                    </div>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section>
+                {filteredTasks.length ? (
+                  <TaskListTable
+                    tableData={filteredTasks}
+                    onTaskClick={(task) => handleTaskCardClick(task?._id)}
+                    className="mt-0"
+                  />
+                ) : (
                   <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 transition-colors duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300">
                     No tasks match the selected filters.
                   </div>
-                </div>
-              )}
-            </section>
-          ) : (
-            <section className="mt-6">
-              {filteredTasks.length ? (
-                <TaskListTable
-                  tableData={filteredTasks}
-                  onTaskClick={(task) => handleTaskCardClick(task?._id)}
-                  className="mt-0"
-                />
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 transition-colors duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300">
-                  No tasks match the selected filters.
-                </div>
-              )}
-            </section>
-          )}
-        </>
-      )}
+                )}
+              </section>
+            )}
+          </>
+        )}
+      </div>
 
       <TaskFormModal
         isOpen={isTaskFormOpen}

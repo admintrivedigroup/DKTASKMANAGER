@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserAuth } from "../../hooks/useUserAuth";
 import { UserContext } from "../../context/userContext.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import PageHeader from "../../components/layouts/PageHeader";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { addThousandsSeparator, getGreetingMessage } from "../../utils/helper";
@@ -148,15 +149,19 @@ const UserDashboard = () => {
     },
   ];
 
+  const recentTasksCount = Array.isArray(dashboardData?.recentTasks)
+    ? dashboardData.recentTasks.length
+    : 0;
+
   return (
     <DashboardLayout activeMenu="Dashboard">
-     {isLoading ? (
+      {isLoading ? (
         <LoadingOverlay message="Loading your dashboard..." className="py-24" />
       ) : (
-        <>
+        <div className="page-shell">
           <Suspense
             fallback={
-              <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500">
+              <div className="card animate-pulse bg-slate-50 text-sm text-slate-500">
                 Loading announcements...
               </div>
             }
@@ -164,23 +169,22 @@ const UserDashboard = () => {
             <NoticeBoard notices={activeNotices} />
           </Suspense>
 
-          <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                {getGreetingMessage()}, {user?.name}
-              </h1>
-              <p className="mt-1 text-slate-500">
-                {formattedTimestamp}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Momentum</p>
-              <p className="mt-1 text-sm font-medium text-slate-900">
-                Tick off tasks, celebrate the wins and keep the flow going.
-              </p>
-            </div>
-          </section>
+          <PageHeader
+            eyebrow="My Workspace"
+            title={`${getGreetingMessage()}, ${user?.name}`}
+            description="Your personal queue and progress at a glance. Keep momentum without losing context."
+            meta={[`Now: ${formattedTimestamp}`, `${recentTasksCount} recent task${recentTasksCount === 1 ? "" : "s"}`]}
+            actions={
+              <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-4 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                  Momentum
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Tick off tasks, celebrate the wins and keep the flow going.
+                </p>
+              </div>
+            }
+          />
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {infoCards.map((card) => (
@@ -194,7 +198,7 @@ const UserDashboard = () => {
             ))}
           </section>
 
-          <section className="mt-8 grid gap-6 lg:grid-cols-2">
+          <section className="grid gap-6 lg:grid-cols-2">
             <div className="card">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
@@ -238,7 +242,7 @@ const UserDashboard = () => {
             </div>
           </section>
 
-          <section className="card mt-8">
+          <section className="card">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
@@ -262,7 +266,7 @@ const UserDashboard = () => {
               <TaskListTable tableData={dashboardData?.recentTasks || []} />
             </Suspense>
           </section>
-        </>
+        </div>
       )}
     </DashboardLayout>
   );

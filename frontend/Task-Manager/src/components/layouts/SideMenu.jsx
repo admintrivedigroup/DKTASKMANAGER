@@ -85,9 +85,9 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
   }, [isPrivilegedUser, normalizedRole, user]);
 
   return (
-    <aside className="w-full h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <aside className="w-full h-full rounded-[22px] border border-slate-200/80 bg-white/92 shadow-[0_22px_70px_rgba(17,25,40,0.08)] backdrop-blur-sm overflow-hidden flex flex-col dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
       {/* Sidebar header - hide text when collapsed */}
-      <div className={`border-b border-slate-100 bg-slate-50/50 transition-all duration-300 ${collapsed ? 'p-3' : 'p-6'}`}>
+      <div className={`border-b border-slate-100/80 bg-gradient-to-r from-indigo-50/80 via-white to-primary-50/60 transition-all duration-300 dark:border-slate-800 dark:from-slate-900/70 dark:via-slate-900 dark:to-slate-900/70 ${collapsed ? 'p-3' : 'p-6'}`}>
         <div className="flex items-center gap-4">
           <div className="relative shrink-0 group">
             {user?.profileImageUrl ? (
@@ -104,7 +104,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
             {profileSettingsPath && (
               <button
                 onClick={() => handleClick(profileSettingsPath)}
-                className="absolute -bottom-1 -right-1 h-7 w-7 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                className="absolute -bottom-1 -right-1 h-7 w-7 bg-white rounded-full border border-slate-200/80 flex items-center justify-center text-slate-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:border-indigo-200 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-700/70"
                 title="Profile Settings"
               >
                 <LuUserCog className="h-3.5 w-3.5" />
@@ -149,16 +149,16 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
           return (
             <button
               key={`menu_${index}`}
-              className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group relative overflow-hidden ${
+              className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 group relative overflow-hidden ${
                 isActive
-                  ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
+                  ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm"
               } ${collapsed ? 'justify-center' : ''}`}
               onClick={() => handleClick(item?.path)}
               title={collapsed ? item.label : ''}
             >
               {isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-l-lg"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-600 rounded-r-lg"></div>
               )}
               
               {Icon && (
@@ -172,8 +172,8 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
         })}
       </nav>
       
-      <div className="p-4 border-t border-slate-100 bg-slate-50/30">
-        <p className="text-[10px] text-center text-slate-400">
+      <div className="p-4 border-t border-slate-100/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/70">
+        <p className="text-[10px] text-center text-slate-400 tracking-[0.14em]">
           v1.0.0 • Vijay Trivedi Group
         </p>
       </div>

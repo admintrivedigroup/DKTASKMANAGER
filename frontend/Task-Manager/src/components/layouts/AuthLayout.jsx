@@ -3,17 +3,18 @@ import logo from "../../assets/images/logo.png";
 
 const AuthLayout = ({ children }) => {
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 text-slate-900">
+    <div className="relative min-h-screen bg-gradient-to-br from-[#eaf3ff] via-[#f5f9ff] to-[#eef6ff] text-slate-900">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-70 mix-blend-overlay bg-[radial-gradient(circle_at_20%_20%,rgba(79,70,229,0.12),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.08),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(15,23,42,0.1),transparent_32%)]"
+        className="pointer-events-none absolute inset-0 opacity-80 mix-blend-overlay bg-[radial-gradient(circle_at_20%_20%,rgba(61,154,248,0.14),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(59,87,255,0.12),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.14),transparent_32%)]"
       />
 
       <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
         {/* Brand Side */}
         <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 bg-slate-900 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 opacity-95" />
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_600px_at_20%_20%,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_420px_at_80%_10%,rgba(255,255,255,0.12),transparent_30%),radial-gradient(circle_520px_at_50%_80%,rgba(255,255,255,0.1),transparent_32%)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-800 via-primary-600 to-cyan-500 opacity-95" />
+          <div className="absolute inset-0 opacity-35 bg-[radial-gradient(circle_600px_at_20%_20%,rgba(255,255,255,0.24),transparent_36%),radial-gradient(circle_420px_at_80%_10%,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_520px_at_50%_80%,rgba(255,255,255,0.14),transparent_32%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:120px_120px] opacity-20" />
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-12 xl:p-14">
             <div className="flex items-center gap-4">
@@ -34,11 +35,11 @@ const AuthLayout = ({ children }) => {
 
             <div className="space-y-6 max-w-xl">
               <h1 className="text-5xl font-semibold leading-tight tracking-tight">
-                Manage your projects with
-                <span className="block text-indigo-100 font-bold">precision and clarity.</span>
+                Bold clarity for every role—
+                <span className="block text-indigo-100 font-bold">move faster with color and energy.</span>
               </h1>
               <p className="text-indigo-100/80 text-lg leading-relaxed max-w-md font-light">
-                Streamline your workflow, track progress, and collaborate effectively with your team in one unified workspace.
+                A bright, modern workspace that keeps leaders, admins, and contributors aligned, motivated, and on pace.
               </p>
             </div>
 
@@ -74,8 +75,8 @@ const AuthLayout = ({ children }) => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-xl shadow-slate-200/70 backdrop-blur-sm">
-              <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-400 rounded-t-2xl" />
+            <div className="rounded-3xl border border-slate-200/80 bg-white/96 shadow-[0_28px_90px_rgba(17,25,40,0.1)] backdrop-blur-sm">
+              <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-primary-600 to-cyan-400 rounded-t-3xl" />
               <div className="p-6 sm:p-8 lg:p-10 space-y-8">{children}</div>
             </div>
           </div>
