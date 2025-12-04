@@ -145,6 +145,19 @@ const mergeUrl = (url, baseUrl) => {
 
 const initialBaseUrl = resolveBaseUrl() || fallbackBaseUrl;
 
+// ======================================================
+// 🔍 DEBUG LOGS – SEE WHAT BASE URL AXIOS IS USING
+// ======================================================
+console.group("%c🔍 AXIOS BASE URL DEBUG", "color: #4CAF50; font-weight: bold;");
+console.log("import.meta.env.VITE_API_BASE_URL:", import.meta.env?.VITE_API_BASE_URL);
+console.log("import.meta.env.VITE_USE_LOCAL_API:", import.meta.env?.VITE_USE_LOCAL_API);
+console.log("import.meta.env.VITE_BACKEND_PORT:", import.meta.env?.VITE_BACKEND_PORT);
+console.log("Derived Local Base URL:", deriveLocalBaseUrl());
+console.log("Should Use Local API:", shouldUseLocalApi());
+console.log("BASE_URL from apiPaths.js:", BASE_URL);
+console.log("Resolved Base URL (initialBaseUrl):", initialBaseUrl);
+console.groupEnd();
+
 const resolveTimeout = () => {
   let envTimeout;
 

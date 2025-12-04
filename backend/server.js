@@ -2,7 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+
+// 1️⃣ Connect DB BEFORE importing routes/models
 const connectDB = require("./config/db");
+connectDB(); // << IMPORTANT — MUST RUN BEFORE ROUTES
+
+// 2️⃣ Import express middlewares AFTER connecting DB
 const { startTaskReminderJob } = require("./jobs/taskReminderJob");
 const {
   addSecurityHeaders,
@@ -11,22 +16,21 @@ const {
 } = require("./middlewares/securityMiddleware");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
 
-const authRoutes = require("./routes/authRoutes")
-const userRoutes = require("./routes/userRoutes")
-const taskRoutes = require("./routes/taskRoutes")
-const reportRoutes = require("./routes/reportRoutes")
-const noticeRoutes = require("./routes/noticeRoutes")
-const matterRoutes = require("./routes/matterRoutes")
-const caseRoutes = require("./routes/caseRoutes")
-const documentRoutes = require("./routes/documentRoutes")
-const invoiceRoutes = require("./routes/invoiceRoutes")
-
+// 3️⃣ Now import routes (these import models internally)
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const noticeRoutes = require("./routes/noticeRoutes");
+const matterRoutes = require("./routes/matterRoutes");
+const caseRoutes = require("./routes/caseRoutes");
+const documentRoutes = require("./routes/documentRoutes");
+const invoiceRoutes = require("./routes/invoiceRoutes");
 
 const app = express();
-
 app.disable("x-powered-by");
 
-// Middleware to handle CORS
+// CORS
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "*",
@@ -35,16 +39,15 @@ app.use(
   })
 );
 
+// Security middlewares
 app.use(requestLogger);
 app.use(addSecurityHeaders);
 app.use(createRateLimiter({ windowMs: 60 * 1000, max: 120 }));
 
-//Connect Database
-connectDB();
-
-// Middleware
+// Body parsers
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -56,13 +59,14 @@ app.use("/api/cases", caseRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/invoices", invoiceRoutes);
 
-//Serve uploads folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads")))
+// Static uploads folder
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Error handlers
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-//Start Server
-const PORT = process.env.PORT || 5000;
+// Start server + task job
+const PORT = process.env.PORT || 8000;
 startTaskReminderJob();
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
