@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LuKeyRound, LuTrash2, LuUsers } from "react-icons/lu";
 import toast from "react-hot-toast";
 
@@ -40,6 +40,7 @@ const ManageEmployees = () => {
   const [viewMode, setViewMode] = useState("grid");
 
   const navigate = useNavigate();
+  const location = useLocation();
   
   const getAllUsers = async () => {
     try {
@@ -274,6 +275,20 @@ const ManageEmployees = () => {
 
     return () => {};
   }, []);
+
+  useEffect(() => {
+    if (!location.state?.openCreateUser) {
+      return;
+    }
+
+    const { openCreateUser: _openCreateUser, ...restState } = location.state || {};
+    setShowCreateForm(true);
+
+    navigate(location.pathname, {
+      replace: true,
+      state: restState,
+    });
+  }, [location.pathname, location.state, location.state?.openCreateUser, navigate]);
 
     useEffect(() => {
     if (!showCreateForm) {

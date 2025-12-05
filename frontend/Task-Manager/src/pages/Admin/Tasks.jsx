@@ -16,6 +16,7 @@ const Tasks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();  
+  const locationState = location.state;
   const initialFilterStatus = location.state?.filterStatus || "All";
 
   const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
@@ -76,6 +77,23 @@ const Tasks = () => {
       setFilterStatus(location.state.filterStatus);
     }
   }, [location.state?.filterStatus, filterStatus]);
+
+  useEffect(() => {
+    if (!locationState?.openTaskForm) {
+      return;
+    }
+
+    const { openTaskForm: _openTaskForm, taskId, ...restState } =
+      locationState || {};
+
+    setActiveTaskId(taskId || null);
+    setIsTaskFormOpen(true);
+
+    navigate(location.pathname, {
+      replace: true,
+      state: restState,
+    });
+  }, [location.pathname, locationState, navigate]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {

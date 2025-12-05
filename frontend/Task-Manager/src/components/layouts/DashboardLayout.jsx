@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "../../utils/motionShim";
 import { UserContext } from "../../context/userContext.jsx";
 import { useLayoutContext } from "../../context/layoutContext.jsx";
@@ -15,9 +16,11 @@ import Breadcrumb from "./Breadcrumb";
 import CommandPalette from "../CommandPalette";
 import FloatingActionButton from "../FloatingActionButton";
 import { LuPlus, LuUsers } from "react-icons/lu";
+import { hasPrivilegedAccess, resolvePrivilegedPath } from "../../utils/roleUtils.js";
 
 const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
   const { user, loading } = useContext(UserContext);
+  const navigate = useNavigate();
   const {
     setActiveMenu,
     closeMobileNav,
@@ -97,18 +100,29 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
   });
 
   // Quick actions for FAB
-  const quickActions = [
-    {
-      icon: LuPlus,
-      label: 'New Task',
-      onClick: () => console.log('New task'),
-    },
-    {
-      icon: LuUsers,
-      label: 'Add User',
-      onClick: () => console.log('Add user'),
-    },
-  ];
+  const quickActions = useMemo(() => {
+    if (!hasPrivilegedAccess(user?.role)) {
+      return [];
+    }
+
+    const tasksPath = resolvePrivilegedPath("/admin/tasks", user?.role);
+    const employeesPath = resolvePrivilegedPath("/admin/employees", user?.role);
+
+    return [
+      {
+        icon: LuPlus,
+        label: "New Task",
+        onClick: () =>
+          navigate(tasksPath, { state: { openTaskForm: true } }),
+      },
+      {
+        icon: LuUsers,
+        label: "Add User",
+        onClick: () =>
+          navigate(employeesPath, { state: { openCreateUser: true } }),
+      },
+    ];
+  }, [navigate, user?.role]);
 
   if (loading) {
     return (
@@ -203,7 +217,9 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
         <CommandPalette />
 
         {/* Floating Action Button */}
-        <FloatingActionButton actions={quickActions} />
+        {quickActions.length > 0 && (
+          <FloatingActionButton actions={quickActions} />
+        )}
       </div>
     </ErrorBoundary>
   );

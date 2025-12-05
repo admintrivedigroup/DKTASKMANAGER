@@ -25,6 +25,7 @@ const SuperAdminUserDetails = React.lazy(() => import("./pages/SuperAdmin/UserDe
 const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
+const TaskCalendar = React.lazy(() => import("./pages/Calendar/TaskCalendar.jsx"));
 
 const App = () => {
   return (
@@ -50,6 +51,7 @@ const App = () => {
                   path="/admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />
+                <Route path="/admin/calendar" element={<TaskCalendar />} />
                 <Route path="/admin/employees" element={<AdminManageEmployees />} />
                 <Route path="/admin/users/:userId" element={<AdminUserDetails />} />
                 <Route path="/admin/profile-settings" element={<ProfileSettings />} />
@@ -66,6 +68,10 @@ const App = () => {
                   path="/super-admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />                
+                <Route
+                  path="/super-admin/calendar"
+                  element={<TaskCalendar />}
+                />
                 <Route
                   path="/super-admin/employees"
                   element={<SuperAdminManageEmployees />}
@@ -85,6 +91,7 @@ const App = () => {
                 <Route path="/user/dashboard" element={<UserDashboard />} />
                 <Route path="/user/tasks" element={<MyTasks />} />
                 <Route path="/user/task-details/:id" element={<ViewTaskDetails />} />
+                <Route path="/user/calendar" element={<TaskCalendar />} />
                 <Route path="/user/profile-settings" element={<ProfileSettings />} />
               </Route>
 

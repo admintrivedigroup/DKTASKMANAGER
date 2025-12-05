@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { LuPlus, LuRotateCcw, LuSearch } from "react-icons/lu";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
@@ -11,7 +11,9 @@ import ViewToggle from "../../components/ViewToggle";
 import TaskListTable from "../../components/TaskListTable";
 import useTasks from "../../hooks/useTasks";
 const Tasks = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const locationState = location.state;
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [selectedDate, setSelectedDate] = useState("");  
@@ -80,6 +82,23 @@ const Tasks = () => {
       return matchesSearch && matchesDate;
     });
   }, [tasks, searchQuery, selectedDate]);
+
+  useEffect(() => {
+    if (!locationState?.openTaskForm) {
+      return;
+    }
+
+    const { openTaskForm: _openTaskForm, taskId, ...restState } =
+      locationState || {};
+
+    setActiveTaskId(taskId || null);
+    setIsTaskFormOpen(true);
+
+    navigate(location.pathname, {
+      replace: true,
+      state: restState,
+    });
+  }, [location.pathname, locationState, navigate]);
 
   return (
     <DashboardLayout activeMenu="Tasks">

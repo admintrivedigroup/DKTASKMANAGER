@@ -1,5 +1,6 @@
 import {
   LuClipboardCheck,
+  LuCalendarDays,
   LuFolderTree,
   LuLayoutDashboard,
   LuReceipt,
@@ -21,6 +22,12 @@ export const SIDE_MENU_DATA = [
   },
   {
     id: "03",
+    label: "Calendar",
+    icon: LuCalendarDays,
+    path: "/admin/calendar",
+  },
+  {
+    id: "04",
     label: "Employees",
     icon: LuUsers,
     path: "/admin/employees",
@@ -39,6 +46,12 @@ export const SIDE_MENU_USER_DATA = [
     label: "My Tasks",
     icon: LuClipboardCheck,
     path: "/user/tasks",
+  },
+  {
+    id: "03",
+    label: "Calendar",
+    icon: LuCalendarDays,
+    path: "/user/calendar",
   },
 ];
 
