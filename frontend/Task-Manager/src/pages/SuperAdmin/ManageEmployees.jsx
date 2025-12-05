@@ -410,7 +410,8 @@ const ManageEmployees = () => {
 
   return (
     <DashboardLayout activeMenu="Employees">
-      <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] sm:px-6 sm:py-8">
+      <div className="space-y-6">
+        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] sm:px-6 sm:py-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -432,10 +433,10 @@ const ManageEmployees = () => {
             </button>
           </div>
         </div>
-      </section>
+        </section>
 
-      {showCreateForm && (
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        {showCreateForm && (
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900">Add a new employee</h3>
           <p className="mt-1 text-sm text-slate-500">Provide the employee's details and choose their access level.</p>
 
@@ -596,19 +597,19 @@ const ManageEmployees = () => {
               </button>
             </div>
           </form>
-        </section>
-      )}
+          </section>
+        )}
 
-      <section className="flex items-center gap-3 text-sm font-medium text-slate-600">
+        <section className="flex items-center gap-3 text-sm font-medium text-slate-600">
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 text-white shadow-[0_12px_28px_rgba(126,58,242,0.35)]">
           <LuUsers className="text-base" />
         </span>
         {isLoading
           ? "Loading employees..."
           : `${filteredUsers.length} teammates powering the mission.`}
-      </section>
+        </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="w-full md:max-w-sm">
             <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="memberSearch">
@@ -646,20 +647,20 @@ const ManageEmployees = () => {
                   ))}
                 </select>
               </div>
-            </div>
+          </div>
 
           <div className="flex items-center justify-end">
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>            
         </div>
-      </section>
+        </section>
 
-      {isLoading ? (
-        <LoadingOverlay message="Loading employees..." className="py-24" />
-      ) : (
-        <section>
+        {isLoading ? (
+          <LoadingOverlay message="Loading employees..." className="py-24" />
+        ) : (
+          <section>
           {viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {userManagementData.map(({ user, allowManagement }) => (
                 <UserCard
                   key={user._id}
@@ -824,7 +825,7 @@ const ManageEmployees = () => {
           )}
           </section>
         )}
-      
+      </div>
       {showResetPasswordModal && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">

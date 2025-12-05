@@ -309,46 +309,125 @@
     @apply absolute inset-0 m-auto w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
   }
 
+  /* CTA Buttons used across dashboards */
+  .add-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-[0_18px_40px_rgba(29,155,240,0.28)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70;
+    background: linear-gradient(120deg, #1d9bf0 0%, #556bff 45%, #00c2ff 100%);
+    background-size: 200% 100%;
+  }
+
+  .add-btn:hover {
+    background-position: 100% 0;
+    box-shadow: 0 22px 52px rgba(29, 155, 240, 0.32);
+    transform: translateY(-1px);
+  }
+
+  .add-btn:active {
+    background-position: 85% 0;
+    box-shadow: 0 16px 34px rgba(29, 155, 240, 0.26);
+  }
+
+  .download-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white/90 px-5 py-2.5 text-sm font-semibold text-indigo-700 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(242, 247, 255, 0.9));
+  }
+
+  .download-btn:hover {
+    @apply -translate-y-0.5 border-primary/35 text-slate-900 shadow-[0_18px_42px_rgba(59,130,246,0.18)];
+  }
+
+  .dark .download-btn {
+    @apply border-slate-700/70 bg-slate-900/70 text-slate-100 shadow-slate-950/45;
+    background-image: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.82));
+  }
+
+  .card-btn {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 active:translate-y-0 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-indigo-400/60 dark:hover:text-indigo-200;
+    background-image: radial-gradient(circle at 20% 20%, rgba(29, 155, 240, 0.12), transparent 38%), linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 248, 255, 0.92));
+  }
+
+  .card-btn svg {
+    @apply transition-transform duration-200;
+  }
+
+  .card-btn:hover svg {
+    @apply translate-x-0.5;
+  }
+
   /* ============================================
      CARD COMPONENTS
      ============================================ */
+  .card,
+  .card-flat,
+  .card-raised,
+  .card-floating {
+    @apply relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-6 ring-1 ring-slate-200/70 backdrop-blur-[2px] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-900/85 dark:ring-slate-800/70;
+    background-image:
+      radial-gradient(circle at 20% 18%, rgba(29, 155, 240, 0.06), transparent 34%),
+      radial-gradient(circle at 82% 0%, rgba(85, 107, 255, 0.05), transparent 30%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(245, 249, 255, 0.94));
+  }
+
+  .dark .card,
+  .dark .card-flat,
+  .dark .card-raised,
+  .dark .card-floating {
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.16), transparent 36%),
+      radial-gradient(circle at 82% 0%, rgba(38, 64, 120, 0.18), transparent 32%),
+      linear-gradient(160deg, rgba(12, 17, 29, 0.95), rgba(10, 16, 26, 0.9));
+  }
+
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6 dark:bg-slate-900 dark:border-slate-800;
+    @apply shadow-[0_18px_48px_rgba(15,23,42,0.08)];
   }
 
   .card-flat {
-    @apply bg-white rounded-xl border border-slate-200 p-6 dark:bg-slate-900 dark:border-slate-800;
+    @apply shadow-sm;
   }
 
   .card-raised {
-    @apply bg-white rounded-xl border border-slate-200 shadow-md p-6 dark:bg-slate-900 dark:border-slate-800;
+    @apply shadow-[0_22px_58px_rgba(15,23,42,0.11)];
   }
 
   .card-floating {
-    @apply bg-white rounded-xl border border-slate-200 shadow-lg p-6 dark:bg-slate-900 dark:border-slate-800;
+    @apply shadow-[0_28px_72px_rgba(59,130,246,0.16)];
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer;
+    @apply cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_72px_rgba(59,130,246,0.16)];
   }
 
   .card-interactive {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm cursor-pointer;
+    @apply cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_58px_rgba(59,130,246,0.14)] active:translate-y-0 active:shadow-[0_14px_32px_rgba(15,23,42,0.12)];
   }
 
   /* Card Header */
   .card-header {
-    @apply border-b border-slate-200 pb-4 mb-4 dark:border-slate-800;
+    @apply mb-4 border-b border-slate-200/80 pb-4 dark:border-slate-800/80;
   }
 
   /* Card Footer */
   .card-footer {
-    @apply border-t border-slate-200 pt-4 mt-4 dark:border-slate-800;
+    @apply mt-4 border-t border-slate-200/80 pt-4 dark:border-slate-800/80;
   }
 
   /* Stat Card */
   .stat-card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-start gap-4 dark:bg-slate-900 dark:border-slate-800;
+    @apply relative flex items-start gap-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] transition-all duration-300 dark:border-slate-800/80 dark:bg-slate-900/85;
+    background-image:
+      radial-gradient(circle at 16% 12%, rgba(29, 155, 240, 0.08), transparent 38%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(245, 249, 255, 0.94));
+  }
+
+  .dark .stat-card {
+    background-image:
+      radial-gradient(circle at 16% 12%, rgba(59, 130, 246, 0.16), transparent 40%),
+      linear-gradient(150deg, rgba(13, 18, 30, 0.95), rgba(11, 16, 26, 0.9));
+  }
+
+  .stat-card:hover {
+    @apply -translate-y-0.5 shadow-[0_24px_60px_rgba(59,130,246,0.14)];
   }
 
   .stat-card-icon {
