@@ -10,23 +10,29 @@ const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-0 right-0 left-0 z-50 flex h-[calc(100%-1rem)] w-full max-h-full items-center justify-center overflow-x-hidden overflow-y-auto bg-black/20 bg-opacity-50">
-      <div className={`relative max-h-full w-full p-4 ${maxWidthClass}`}>
-      {/* Modal content */}
-        <div className="relative rounded-lg bg-white shadow-sm dark:bg-gray-700">
-        {/* Modal header */}
-          <div className="flex items-center justify-between rounded-t border-b border-grey-200 p-4 md:p-5 dark:border-gray-600">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              {title}
-            </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-3 py-6 backdrop-blur-sm sm:px-5">
+      <div className={`w-full ${maxWidthClass}`}>
+        <div className="relative flex max-h-[calc(100vh-3rem)] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_28px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/80 dark:bg-slate-900 dark:ring-slate-800">
+          <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-primary/20 via-indigo-100 to-sky-100 opacity-90 dark:from-primary/25 dark:via-slate-800 dark:to-slate-900" />
+
+          <div className="relative flex items-start justify-between gap-3 px-5 py-4 sm:px-8">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500/80 dark:text-slate-400">
+                {title ? "Task Desk" : ""}
+              </p>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                {title}
+              </h3>
+            </div>
 
             <button
               type="button"
-              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-transparent text-sm text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
+              aria-label="Close modal"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:text-white"
               onClick={onClose}
             >
               <svg
-                className="h-3 w-3"
+                className="h-3.5 w-3.5"
                 aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -43,8 +49,11 @@ const Modal = ({
             </button>
           </div>
 
-          {/* Modal Body */}
-          <div className="space-y-4 p-4 md:p-5">{children}</div>
+          <div className="relative h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-800" />
+
+          <div className="relative flex-1 overflow-y-auto px-5 pb-6 sm:px-8">
+            {children}
+          </div>
         </div>
       </div>
     </div>

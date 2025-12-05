@@ -12,19 +12,16 @@ const Login = React.lazy(() => import("./pages/Auth/Login"));
 const AdminTasks = React.lazy(() => import("./pages/Admin/Tasks"));
 const AdminManageEmployees = React.lazy(() => import("./pages/Admin/ManageEmployees"));
 const AdminUserDetails = React.lazy(() => import("./pages/Admin/UserDetails"));
-const AdminDocuments = React.lazy(() => import("./pages/Admin/Documents"));
 const ProfileSettings = React.lazy(() => import("./pages/Profile/ProfileSettings"));
 const SignUp = React.lazy(() => import("./pages/Auth/SignUp"));
 const Unauthorized = React.lazy(() => import("./pages/Errors/Unauthorized"));
 const UserDashboard = React.lazy(() => import("./pages/User/UserDashboard"));
 const MyTasks = React.lazy(() => import("./pages/User/MyTasks"));
 const ViewTaskDetails = React.lazy(() => import("./pages/User/ViewTaskDetails"));
-const UserDocuments = React.lazy(() => import("./pages/User/Documents"));
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdmin/Dashboard.jsx"));
 const SuperAdminTasks = React.lazy(() => import("./pages/SuperAdmin/Tasks.jsx"));
 const SuperAdminManageEmployees = React.lazy(() => import("./pages/SuperAdmin/ManageEmployees.jsx"));
 const SuperAdminUserDetails = React.lazy(() => import("./pages/SuperAdmin/UserDetails.jsx"));
-const SuperAdminDocuments = React.lazy(() => import("./pages/SuperAdmin/Documents.jsx"));
 const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
@@ -53,7 +50,6 @@ const App = () => {
                   path="/admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />
-                <Route path="/admin/documents/*" element={<AdminDocuments />} />
                 <Route path="/admin/employees" element={<AdminManageEmployees />} />
                 <Route path="/admin/users/:userId" element={<AdminUserDetails />} />
                 <Route path="/admin/profile-settings" element={<ProfileSettings />} />
@@ -70,10 +66,6 @@ const App = () => {
                   path="/super-admin/task-details/:id"
                   element={<ViewTaskDetails activeMenu="Tasks" />}
                 />                
-                <Route
-                  path="/super-admin/documents/*"
-                  element={<SuperAdminDocuments />}
-                />
                 <Route
                   path="/super-admin/employees"
                   element={<SuperAdminManageEmployees />}
@@ -93,7 +85,6 @@ const App = () => {
                 <Route path="/user/dashboard" element={<UserDashboard />} />
                 <Route path="/user/tasks" element={<MyTasks />} />
                 <Route path="/user/task-details/:id" element={<ViewTaskDetails />} />
-                <Route path="/user/documents/*" element={<UserDocuments />} />
                 <Route path="/user/profile-settings" element={<ProfileSettings />} />
               </Route>
 

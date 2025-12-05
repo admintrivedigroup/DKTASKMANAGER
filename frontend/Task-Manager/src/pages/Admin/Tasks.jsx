@@ -215,7 +215,7 @@ const Tasks = () => {
                       : item.assignedTo
                       ? [item.assignedTo]
                       : []}
-                    attachmentCount={(item.attachments?.length || 0) + (item.relatedDocuments?.length || 0)}
+                    attachmentCount={item.attachments?.length || 0}
                     completedTodoCount={item.completedTodoCount || 0}
                     todoChecklist={item.todoChecklist || []}
                     onClick={() => handleTaskCardClick(item._id)}

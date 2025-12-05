@@ -2,7 +2,6 @@ import React, { useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LuCalendarDays,
-  LuFileText,
   LuFolderTree,
   LuPhoneCall,
   LuReceipt,
@@ -36,15 +35,6 @@ const ClientHome = () => {
         accent: "bg-indigo-50 text-indigo-600",
         action: () => navigate("/client/projects"),
         cta: "View matters",
-      },
-      {
-        id: "documents",
-        title: "Matter Documents",
-        description: "Securely access filings, briefs, and supporting records shared with your team.",
-        icon: LuFileText,
-        accent: "bg-violet-50 text-violet-600",
-        disabled: true,
-        cta: "Coming soon",
       },
       {
         id: "invoices",
@@ -109,7 +99,7 @@ const ClientHome = () => {
             Good to see you, {firstName}.
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Everything you need to stay aligned on progress, documents, and next steps lives here. Jump straight into your matters or explore what&apos;s coming next for clients.
+            Everything you need to stay aligned on progress and next steps lives here. Jump straight into your matters or explore what&apos;s coming next for clients.
           </p>
         </div>
         

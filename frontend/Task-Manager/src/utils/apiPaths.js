@@ -37,7 +37,6 @@ export const API_PATHS = {
 
     UPDATE_TASK_STATUS: (taskId) => `/api/tasks/${taskId}/status`, // Update task status
     UPDATE_TODO_CHECKLIST: (taskId) => `/api/tasks/${taskId}/todo`, // Update todo checklist
-    UPLOAD_DOCUMENT: (taskId) => `/api/tasks/${taskId}/documents`,    
   },
   NOTICES: {
     PUBLISH: "/api/notices",
@@ -61,15 +60,6 @@ export const API_PATHS = {
     CREATE: "/api/cases",
     UPDATE: (caseId) => `/api/cases/${caseId}`,
     DELETE: (caseId) => `/api/cases/${caseId}`,
-    UPLOAD_DOCUMENT: (caseId) => `/api/cases/${caseId}/documents`,    
-  },
-
-  DOCUMENTS: {
-    GET_ALL: "/api/documents",
-    GET_BY_ID: (documentId) => `/api/documents/${documentId}`,
-    CREATE: "/api/documents",
-    UPDATE: (documentId) => `/api/documents/${documentId}`,
-    DELETE: (documentId) => `/api/documents/${documentId}`,
   },
   
   INVOICES: {

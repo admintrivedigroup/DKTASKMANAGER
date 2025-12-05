@@ -14,7 +14,7 @@ import SkipToContent from "../SkipToContent";
 import Breadcrumb from "./Breadcrumb";
 import CommandPalette from "../CommandPalette";
 import FloatingActionButton from "../FloatingActionButton";
-import { LuPlus, LuFileText, LuUsers } from "react-icons/lu";
+import { LuPlus, LuUsers } from "react-icons/lu";
 
 const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
   const { user, loading } = useContext(UserContext);
@@ -102,11 +102,6 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
       icon: LuPlus,
       label: 'New Task',
       onClick: () => console.log('New task'),
-    },
-    {
-      icon: LuFileText,
-      label: 'New Document',
-      onClick: () => console.log('New document'),
     },
     {
       icon: LuUsers,

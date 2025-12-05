@@ -559,7 +559,7 @@ const Dashboard = () => {
      {isLoading ? (
         <LoadingOverlay message="Loading workspace overview..." className="py-24" />
       ) : (
-        <>
+        <div className="page-shell">
           <Suspense
             fallback={
               <div className="card mb-6 animate-pulse bg-white/60 text-sm text-slate-500">
@@ -660,7 +660,7 @@ const Dashboard = () => {
               </div>
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-8">
             {infoCards.map((card) => (
               <InfoCard
                 key={card.label}
@@ -673,7 +673,7 @@ const Dashboard = () => {
             ))}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
+          <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
               <div className="flex items-center justify-between">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
@@ -822,7 +822,7 @@ const Dashboard = () => {
               />
             </Suspense>
           </section>
-        </>
+        </div>
       )}
     </DashboardLayout>
   );

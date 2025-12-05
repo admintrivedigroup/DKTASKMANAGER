@@ -81,7 +81,7 @@ const DeleteCaseModal = ({ isOpen, onClose, caseFile, onDeleted }) => {
                   from <span className="font-medium">{matterTitle}</span>
                 </>
               ) : null}
-              {" "}will remove its associated documents and tasks. This action cannot be undone.
+              {" "}will remove its associated tasks. This action cannot be undone.
             </p>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import {
   LuClipboardCheck,
-  LuFileStack,
   LuFolderTree,
   LuLayoutDashboard,
   LuReceipt,
@@ -26,12 +25,6 @@ export const SIDE_MENU_DATA = [
     icon: LuUsers,
     path: "/admin/employees",
   },
-  {
-    id: "04",
-    label: "Documents",
-    icon: LuFileStack,
-    path: "/admin/documents",
-  },
 ];
 
 export const SIDE_MENU_USER_DATA = [
@@ -46,12 +39,6 @@ export const SIDE_MENU_USER_DATA = [
     label: "My Tasks",
     icon: LuClipboardCheck,
     path: "/user/tasks",
-  },
-  {
-    id: "03",
-    label: "Documents",
-    icon: LuFileStack,
-    path: "/user/documents",
   },
 ];
 

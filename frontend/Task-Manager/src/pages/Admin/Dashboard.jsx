@@ -651,7 +651,7 @@ const Dashboard = () => {
             }
           />
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-8">
             {infoCards.map((card) => (
               <InfoCard
                 key={card.label}
@@ -664,7 +664,7 @@ const Dashboard = () => {
             ))}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-2">
+          <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>

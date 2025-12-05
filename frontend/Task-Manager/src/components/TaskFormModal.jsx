@@ -1,23 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { LuCalendarDays, LuExternalLink, LuFileText, LuTrash2, LuUpload } from "react-icons/lu";
+import { LuCalendarDays, LuTrash2 } from "react-icons/lu";
 import toast from "react-hot-toast";
 
 import Modal from "./Modal";
 import SelectDropdown from "./inputs/SelectDropdown";
 import SelectUsers from "./inputs/SelectUsers";
 import TodoListInput from "./inputs/TodoListInput";
-import TaskDocumentModal from "./TaskDocumentModal";
 import DeleteAlert from "./DeleteAlert";
 import LoadingOverlay from "./LoadingOverlay";
 
 import { PRIORITY_DATA } from "../utils/data";
 import axiosInstance from "../utils/axiosInstance";
-import { API_PATHS, BASE_URL } from "../utils/apiPaths";
+import { API_PATHS } from "../utils/apiPaths";
 import { formatDateInputValue } from "../utils/dateUtils";
-import {
-  DOCUMENT_UPLOAD_DISABLED_MESSAGE,
-  DOCUMENT_UPLOAD_ENABLED,
-} from "../utils/featureFlags";
 
 const createDefaultTaskData = () => ({
   title: "",
@@ -26,29 +21,7 @@ const createDefaultTaskData = () => ({
   dueDate: "",
   assignedTo: [],
   todoChecklist: [],
-  attachments: [],
-  relatedDocuments: [],
 });
-
-const resolveDocumentUrl = (fileUrl) => {
-  if (!fileUrl) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(fileUrl)) {
-    return fileUrl;
-  }
-
-  const baseUrl =
-    (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_BASE_URL) ||
-    BASE_URL ||
-    "";
-
-  const normalizedBase = baseUrl.replace(/\/?$/, "");
-  const normalizedPath = fileUrl.startsWith("/") ? fileUrl.slice(1) : fileUrl;
-
-  return `${normalizedBase}/${normalizedPath}`;
-};
 
 const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
   const [taskData, setTaskData] = useState(createDefaultTaskData());
@@ -58,16 +31,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
   const [isFetchingTask, setIsFetchingTask] = useState(false);
   const [assignedUserDetails, setAssignedUserDetails] = useState([]);
-  const [taskDocuments, setTaskDocuments] = useState([]);
-  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
-  const isDocumentUploadEnabled = DOCUMENT_UPLOAD_ENABLED;
-  useEffect(() => {
-    if (!isDocumentUploadEnabled) {
-      setIsDocumentModalOpen(false);
-    }
-  }, [isDocumentUploadEnabled]);
 
   const isEditing = useMemo(() => Boolean(taskId), [taskId]);
+  const assigneeCount = taskData.assignedTo?.length || 0;
 
   const resetState = useCallback(() => {
     setTaskData(createDefaultTaskData());
@@ -77,8 +43,6 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     setOpenDeleteAlert(false);
     setIsFetchingTask(false);
     setAssignedUserDetails([]);
-    setTaskDocuments([]);
-    setIsDocumentModalOpen(false);
   }, []);
 
   const handleValueChange = (key, value) => {
@@ -122,24 +86,16 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
       return;
     }
 
-  if (key === "todoChecklist") {
-    setTaskData((prevState) => ({
-      ...prevState,
-      todoChecklist: Array.isArray(value) ? value : [],
-    }));
-    return;
-  }
+    if (key === "todoChecklist") {
+      setTaskData((prevState) => ({
+        ...prevState,
+        todoChecklist: Array.isArray(value) ? value : [],
+      }));
+      return;
+    }
 
-  if (key === "relatedDocuments") {
-    setTaskData((prevState) => ({
-      ...prevState,
-      relatedDocuments: Array.isArray(value) ? value : [],
-    }));
-    return;
-  }
-
-  setTaskData((prevState) => ({ ...prevState, [key]: value }));
-};
+    setTaskData((prevState) => ({ ...prevState, [key]: value }));
+  };
 
   const mapChecklistPayload = useCallback(
     (checklistItems) => {
@@ -149,7 +105,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
         ? currentTask.todoChecklist
         : [];
 
-     return checklistItems
+      return checklistItems
         .map((item) => {
           const text =
             typeof item === "string"
@@ -203,92 +159,10 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     setAssignedUserDetails(Array.isArray(details) ? details.filter(Boolean) : []);
   }, []);
 
-  const handleDocumentUploadSuccess = useCallback((document) => {
-    if (!document || (!document._id && !document.id)) {
-      return;
-    }
-
-    const documentId =
-      typeof document._id === "object" && document._id !== null
-        ? document._id.toString()
-        : typeof document._id === "string"
-        ? document._id
-        : typeof document.id === "string"
-        ? document.id
-        : "";
-
-    if (!documentId) {
-      return;
-    }
-
-    const normalizedDocument = {
-      _id: documentId,
-      title: document.title || "Document",
-      documentType: document.documentType || "",
-      version: document.version,
-      fileUrl: document.fileUrl || "",
-    };
-
-    setTaskData((prevState) => {
-      const currentDocuments = Array.isArray(prevState.relatedDocuments)
-        ? prevState.relatedDocuments.map((value) => value?.toString?.() || "")
-        : [];
-
-      if (currentDocuments.includes(documentId)) {
-        return prevState;
-      }
-
-      return {
-        ...prevState,
-        relatedDocuments: [...currentDocuments, documentId],
-      };
-    });
-
-    setTaskDocuments((prevDocuments) => {
-      const existingIndex = prevDocuments.findIndex(
-        (item) => item && item._id === documentId
-      );
-
-      if (existingIndex !== -1) {
-        const nextDocuments = [...prevDocuments];
-        nextDocuments[existingIndex] = normalizedDocument;
-        return nextDocuments;
-      }
-
-      return [...prevDocuments, normalizedDocument];
-    });
-  }, []);
-
-  const handleRemoveDocument = useCallback((documentId) => {
-    if (!documentId) {
-      return;
-    }
-
-    const normalizedId = documentId.toString();
-
-    setTaskData((prevState) => {
-      const currentDocuments = Array.isArray(prevState.relatedDocuments)
-        ? prevState.relatedDocuments
-            .map((value) => value?.toString?.() || "")
-            .filter(Boolean)
-        : [];
-
-      return {
-        ...prevState,
-        relatedDocuments: currentDocuments.filter((id) => id !== normalizedId),
-      };
-    });
-
-    setTaskDocuments((prevDocuments) =>
-      prevDocuments.filter((document) => document?._id !== normalizedId)
-    );
-  }, []);
-
   const clearData = useCallback(() => {
     setTaskData(createDefaultTaskData());
     setError("");
     setAssignedUserDetails([]);
-    setTaskDocuments([]);
   }, []);
 
   const handleCreateTask = async () => {
@@ -490,39 +364,6 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           })
           .filter(Boolean);
 
-        const relatedDocuments = Array.isArray(taskInfo?.relatedDocuments)
-          ? taskInfo.relatedDocuments
-          : [];
-
-        const normalizedDocuments = relatedDocuments
-          .map((document) => {
-            if (!document) {
-              return null;
-            }
-
-            const documentId =
-              typeof document._id === "object" && document._id !== null
-                ? document._id.toString()
-                : typeof document._id === "string"
-                ? document._id
-                : typeof document.id === "string"
-                ? document.id
-                : null;
-
-            if (!documentId) {
-              return null;
-            }
-
-            return {
-              _id: documentId,
-              title: document.title || "Document",
-              documentType: document.documentType || "",
-              version: document.version,
-              fileUrl: document.fileUrl || "",
-            };
-          })
-          .filter(Boolean);
-
         setAssignedUserDetails(assignedMembers.filter(Boolean));
 
         setTaskData({
@@ -537,14 +378,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
             .filter(Boolean)
             .map((value) => value.toString()),
           todoChecklist: normalizedChecklist,
-          attachments: Array.isArray(taskInfo?.attachments)
-            ? taskInfo.attachments
-            : [],
-          relatedDocuments: normalizedDocuments
-            .map((document) => document?._id)
-            .filter(Boolean),
         });
-        setTaskDocuments(normalizedDocuments);
       } catch (requestError) {
         console.error("Error fetching task:", requestError);
         const message =
@@ -582,231 +416,186 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           resetState();
         }}
         title={isEditing ? "Update Task" : "Create Task"}
-        maxWidthClass="max-w-5xl"
+        maxWidthClass="max-w-6xl"
       >
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-slate-500">
-                {isEditing
-                  ? "Make adjustments and keep the team aligned."
-                  : "Share the details your team needs to get started."}
-              </p>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 shadow-inner shadow-white/40 ring-1 ring-white/60 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800/80">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400">
+                  {isEditing ? "Refine & reship" : "Task Blueprint"}
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {isEditing
+                    ? "Make adjustments and keep the team aligned."
+                    : "Share the details your team needs to get started."}
+                </p>
+              </div>
+              {isEditing && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-500 transition hover:-translate-y-0.5 hover:border-rose-200 hover:bg-rose-100 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:border-rose-400 dark:hover:bg-rose-500/20"
+                  onClick={() => setOpenDeleteAlert(true)}
+                >
+                  <LuTrash2 className="text-base" /> Delete Task
+                </button>
+              )}
             </div>
-            {isEditing && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-500 transition hover:border-rose-200 hover:bg-rose-100 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:border-rose-400 dark:hover:bg-rose-500/20"
-                onClick={() => setOpenDeleteAlert(true)}
-              >
-                <LuTrash2 className="text-base" /> Delete Task
-              </button>
-            )}
           </div>
 
           {isFetchingTask ? (
             <LoadingOverlay message="Loading task details..." className="py-16" />
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300">
-                    Task Title
-                  </label>
-                  <input
-                    placeholder="Create App UI"
-                    className="form-input mt-0 h-12 bg-slate-50 focus:border-primary focus:ring-2 focus:ring-primary/10"
-                    value={taskData.title}
-                    onChange={({ target }) => handleValueChange("title", target.value)}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300">
-                    Priority
-                  </label>
-                  <div className="form-input mt-0 h-12 bg-slate-50 p-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-                    <SelectDropdown
-                      options={PRIORITY_DATA}
-                      value={taskData.priority}
-                      onChange={(value) => handleValueChange("priority", value)}
-                      placeholder="Select Priority"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Describe task"
-                    className="form-input mt-0 min-h-[140px] bg-slate-50 focus:border-primary focus:ring-2 focus:ring-primary/10"
-                    rows={4}
-                    value={taskData.description}
-                    onChange={({ target }) => handleValueChange("description", target.value)}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300">
-                    Due Date
-                  </label>
-
-                  <div className="relative">
-                    <input
-                      className="form-input mt-0 h-12 bg-slate-50 pr-11 focus:border-primary focus:ring-2 focus:ring-primary/10"
-                      value={taskData.dueDate}
-                      onChange={({ target }) => handleValueChange("dueDate", target.value)}
-                      type="date"
-                      disabled={loading}
-                    />
-                    <LuCalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-300">
-                    Assign To
-                  </label>
-
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 transition-colors duration-300 dark:border-slate-700/70 dark:bg-slate-900/60">
-                    <SelectUsers
-                      selectedUsers={taskData.assignedTo}
-                      setSelectedUsers={(value) => handleValueChange("assignedTo", value)}
-                      onSelectedUsersDetails={handleAssignedUserDetailsUpdate}                      
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 transition-colors duration-300 dark:border-slate-700/70 dark:bg-slate-900/60">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-700 transition-colors duration-300 dark:text-slate-100">
-                      Todo Checklist
-                    </p>
-                    <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400 transition-colors duration-300 dark:text-slate-500">
-                      Tasks
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-500 transition-colors duration-300 dark:text-slate-400">
-                    Break the work into smaller action items for better progress tracking.
-                  </p>
-                  <TodoListInput
-                    todoList={taskData.todoChecklist}
-                    setTodoList={(value) => handleValueChange("todoChecklist", value)}
-                    assignedUsers={assignedUserDetails}
-                    disabled={loading || !taskData.assignedTo.length}                    
-                  />
-                </div>
-
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 transition-colors duration-300 dark:border-slate-700/70 dark:bg-slate-900/60">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700 transition-colors duration-300 dark:text-slate-100">
-                        Task Documents
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500 transition-colors duration-300 dark:text-slate-400">
-                        Upload evidence, briefs and working files. Uploaded documents are accessible to assignees and the client.
-                      </p>
-                      {!isDocumentUploadEnabled && (
-                        <p className="mt-3 text-xs font-medium text-rose-500">
-                          {DOCUMENT_UPLOAD_DISABLED_MESSAGE}
+            <div className="space-y-5">
+              <div className="grid gap-5 lg:grid-cols-[1.1fr_0.95fr]">
+                <div className="space-y-5">
+                  <div className="rounded-2xl border border-slate-100 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800/80">
+                    <div className="flex items-center justify-between gap-3 pb-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">
+                          Task Basics
                         </p>
-                      )}                      
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Name the work and give it context.
+                        </p>
+                      </div>
                     </div>
-                    {isDocumentUploadEnabled ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                        onClick={() => setIsDocumentModalOpen(true)}
-                        disabled={!isEditing || loading}
-                      >
-                        <LuUpload className="text-sm" /> Upload
-                      </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-200/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:bg-slate-800/60 dark:text-slate-300">
-                        Upload Disabled
-                      </span>
-                    )}
+
+                    <div className="mt-3 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Task Title
+                        </label>
+                        <input
+                          placeholder="Create App UI"
+                          className="form-input mt-0 h-12 w-full rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                          value={taskData.title}
+                          onChange={({ target }) => handleValueChange("title", target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Description
+                        </label>
+                        <textarea
+                          placeholder="Describe task"
+                          className="form-input mt-0 min-h-[150px] w-full rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                          rows={4}
+                          value={taskData.description}
+                          onChange={({ target }) => handleValueChange("description", target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {taskDocuments.length > 0 ? (
-                    <div className="mt-4 space-y-3">
-                      {taskDocuments.map((document) => {
-                        const documentId = document?._id || "";
-                        const documentUrl = resolveDocumentUrl(document?.fileUrl);
-
-                        return (
-                          <div
-                            key={documentId}
-                            className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.08)] transition dark:border-slate-700/70 dark:bg-slate-900/60"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                <LuFileText />
-                              </span>
-                              <div className="flex-1">
-                                <p className="text-sm font-semibold text-slate-700 transition dark:text-slate-100">
-                                  {document?.title || "Document"}
-                                </p>
-                                <p className="text-xs text-slate-500 transition dark:text-slate-400">
-                                  {(document?.documentType || "File").trim() || "File"}
-                                  {" "}· v{document?.version || 1}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                              {documentUrl && (
-                                <a
-                                  href={documentUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 rounded-full border border-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary transition hover:border-primary hover:bg-primary/10"
-                                >
-                                  <LuExternalLink className="text-sm" /> View
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveDocument(documentId)}
-                                disabled={loading}
-                                className="inline-flex items-center gap-1 rounded-full border border-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-rose-500 transition hover:border-rose-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <LuTrash2 className="text-sm" /> Remove
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  <div className="rounded-2xl border border-slate-100 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800/80">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700 transition-colors duration-300 dark:text-slate-100">
+                          Todo Checklist
+                        </p>
+                        <p className="text-xs text-slate-500 transition-colors duration-300 dark:text-slate-400">
+                          Break the work into smaller action items for better progress tracking.
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 transition-colors duration-300 dark:text-slate-500">
+                        Tasks
+                      </span>
                     </div>
-                  ) : (
-                    <p className="mt-4 text-xs text-slate-500 transition-colors duration-300 dark:text-slate-400">
-                      No documents uploaded yet.
-                    </p>
-                  )}
-
-                  {!isEditing && (
-                    <p className="mt-4 text-xs text-slate-400">
-                      Save this task before uploading documents.
-                    </p>
-                  )}
+                    <TodoListInput
+                      todoList={taskData.todoChecklist}
+                      setTodoList={(value) => handleValueChange("todoChecklist", value)}
+                      assignedUsers={assignedUserDetails}
+                      disabled={loading || !taskData.assignedTo.length}
+                    />
+                  </div>
                 </div>
+
+                <aside className="space-y-5">
+                  <div className="rounded-2xl border border-slate-100 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800/80">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-300">
+                          Schedule & Owners
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Balance priority, due date and who is driving.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-primary dark:bg-primary/20 dark:text-primary-50">
+                        {assigneeCount} {assigneeCount === 1 ? "member" : "members"}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Priority
+                        </label>
+                        <div className="form-input mt-0 h-12 rounded-xl border border-slate-200 bg-white/80 p-0 shadow-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60">
+                          <SelectDropdown
+                            options={PRIORITY_DATA}
+                            value={taskData.priority}
+                            onChange={(value) => handleValueChange("priority", value)}
+                            placeholder="Select Priority"
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Due Date
+                        </label>
+                        <div className="relative">
+                          <input
+                            className="form-input mt-0 h-12 rounded-xl border border-slate-200 bg-white/80 pr-11 text-slate-800 shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                            value={taskData.dueDate}
+                            onChange={({ target }) => handleValueChange("dueDate", target.value)}
+                            type="date"
+                            disabled={loading}
+                          />
+                          <LuCalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Assign To
+                        </label>
+
+                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 transition-colors duration-300 shadow-inner shadow-white/50 dark:border-slate-700/70 dark:bg-slate-900/60">
+                          <SelectUsers
+                            selectedUsers={taskData.assignedTo}
+                            setSelectedUsers={(value) => handleValueChange("assignedTo", value)}
+                            onSelectedUsersDetails={handleAssignedUserDetailsUpdate}
+                          />
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            Assign at least one member to enable the checklist.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
               </div>
 
               {error && (
-                <p className="text-sm font-medium text-rose-500">{error}</p>
+                <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-500/30">
+                  {error}
+                </div>
               )}
 
-              <div className="flex justify-end border-t border-slate-100 pt-4">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/70">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Double-check details, then publish the task for the team.
+                </p>
                 <button
                   type="button"
-                  className="add-btn"
+                  className="add-btn self-start sm:self-auto"
                   onClick={handleSubmit}
                   disabled={loading}
                 >
@@ -821,13 +610,6 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           )}
         </div>
       </Modal>
-
-      <TaskDocumentModal
-        isOpen={isDocumentModalOpen}
-        onClose={() => setIsDocumentModalOpen(false)}
-        taskId={taskId}
-        onSuccess={handleDocumentUploadSuccess}
-      />
 
       <Modal
         isOpen={openDeleteAlert}
