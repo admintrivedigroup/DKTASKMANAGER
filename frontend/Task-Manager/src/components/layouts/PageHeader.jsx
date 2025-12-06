@@ -34,7 +34,7 @@ const PageHeader = ({
             {eyebrow && (
               <p
                 className={`text-[11px] font-semibold uppercase tracking-[0.36em] ${
-                  isPrimary ? "text-white/80" : "text-slate-500"
+                  isPrimary ? "text-white/80" : "text-slate-500 dark:text-slate-400"
                 }`}
               >
                 {eyebrow}
@@ -45,7 +45,7 @@ const PageHeader = ({
               {typeof title === "string" ? (
                 <h1
                   className={`text-3xl font-semibold leading-tight sm:text-4xl ${
-                    isPrimary ? "text-white" : "text-slate-900"
+                    isPrimary ? "text-white" : "text-slate-900 dark:text-slate-50"
                   }`}
                 >
                   {title}
@@ -56,7 +56,7 @@ const PageHeader = ({
               {description && (
                 <p
                   className={`text-sm leading-relaxed ${
-                    isPrimary ? "text-white/80" : "text-slate-600"
+                    isPrimary ? "text-white/80" : "text-slate-600 dark:text-slate-300"
                   }`}
                 >
                   {description}

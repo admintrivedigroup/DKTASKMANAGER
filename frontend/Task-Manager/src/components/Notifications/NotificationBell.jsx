@@ -15,10 +15,10 @@ import PublishNoticeModal from "./PublishNoticeModal.jsx";
 import { formatRelativeTimeFromNow } from "../../utils/dateUtils";
 
 const STATUS_STYLES = {
-  info: "bg-blue-50 text-blue-600",
-  warning: "bg-amber-50 text-amber-600",
-  success: "bg-emerald-50 text-emerald-600",
-  danger: "bg-rose-50 text-rose-600",
+  info: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-100",
+  warning: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-200",
+  success: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200",
+  danger: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-200",
 };
 
 const parseNotificationDate = (notification) => {
@@ -198,8 +198,8 @@ const NotificationBell = () => {
 
         {open && (
           <div className="dropdown-panel absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/95 dark:shadow-[0_18px_45px_rgba(2,6,23,0.45)]">
-            <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3">
-              <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3 dark:border-slate-800/70">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</h3>
               <div className="flex items-center gap-2">
                 {isPrivilegedUser && (
                   <button
@@ -208,7 +208,7 @@ const NotificationBell = () => {
                       setNoticeModalOpen(true);
                       setOpen(false);
                     }}
-                    className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:bg-primary/20"
+                    className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary transition hover:bg-primary/20 dark:border-indigo-300/40 dark:bg-indigo-500/15 dark:text-indigo-100 dark:hover:bg-indigo-500/25"
                   >
                     Notice
                   </button>
@@ -216,7 +216,7 @@ const NotificationBell = () => {
                 <button
                   type="button"
                   onClick={handleOpenNotificationCenter}
-                  className="text-xs font-medium text-primary transition hover:text-primary/80"
+                  className="text-xs font-medium text-primary transition hover:text-primary/80 dark:text-indigo-200 dark:hover:text-indigo-100"
                 >
                   See all
                 </button>
@@ -225,7 +225,7 @@ const NotificationBell = () => {
 
             <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-slate-500">
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-slate-500 dark:text-slate-300">
                 <LuLoader className="h-4 w-4 animate-spin" />
                 Loading...
               </div>
@@ -280,7 +280,7 @@ const NotificationBell = () => {
                 return (
                   <div
                     key={notification.id}
-                    className="flex gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0"
+                    className="flex gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 dark:border-slate-800/70"
                   >
                     <div
                       className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${statusClass}`}
@@ -289,22 +289,22 @@ const NotificationBell = () => {
                     </div>
                     <div className="flex flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {notification.title}
                         </p>
                         {actionLabel ? (
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:bg-slate-800/80 dark:text-slate-200">
                             {actionLabel}
                           </span>
                         ) : null}
                       </div>
                       {notification.message ? (
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
                           {notification.message}
                         </p>
                       ) : null}
                       {notification.actor?.name ? (
-                        <p className="mt-1 text-[11px] text-slate-400">
+                        <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                           {notification.actor.name}
                           {actorRoleLabel ? ` • ${actorRoleLabel}` : ""}
                           {notification.actor.email
@@ -323,38 +323,38 @@ const NotificationBell = () => {
                             return (
                               <li
                                 key={`${notification.id}-${detail.field}-${detail.after}`}
-                                className="text-[11px] text-slate-500"
+                                className="text-[11px] text-slate-500 dark:text-slate-300"
                               >
-                                <span className="font-medium text-slate-600">
+                                <span className="font-medium text-slate-600 dark:text-slate-200">
                                   {detail.label || detail.field}
                                 </span>
                                 <span className="ml-2">
                                   {hasBefore ? (
-                                    <span className="text-slate-400 line-through">
+                                    <span className="text-slate-400 line-through dark:text-slate-500">
                                       {detail.before}
                                     </span>
                                   ) : null}
                                   {hasBefore && hasAfter ? (
-                                    <span className="mx-1 text-slate-400">→</span>
+                                    <span className="mx-1 text-slate-400 dark:text-slate-500">→</span>
                                   ) : null}
                                   {hasAfter ? (
-                                    <span className="text-slate-600">{detail.after}</span>
+                                    <span className="text-slate-600 dark:text-slate-200">{detail.after}</span>
                                   ) : !hasBefore ? (
-                                    <span className="text-slate-400">—</span>
+                                    <span className="text-slate-400 dark:text-slate-500">—</span>
                                   ) : null}
                                 </span>
                               </li>
                             );
                           })}
                           {remainingDetails > 0 && (
-                            <li className="text-[11px] text-slate-400">
+                            <li className="text-[11px] text-slate-400 dark:text-slate-500">
                               +{remainingDetails} more change
                               {remainingDetails > 1 ? "s" : ""}
                             </li>
                           )}
                         </ul>
                       )}
-                      <span className="mt-3 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                      <span className="mt-3 text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                         {formatRelativeTimeFromNow(notification.date)}
                       </span>
                     </div>
@@ -362,7 +362,7 @@ const NotificationBell = () => {
                 );
               })
             ) : (
-              <div className="px-4 py-6 text-center text-sm text-slate-500">
+              <div className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-300">
                 You're all caught up!
               </div>
             )}

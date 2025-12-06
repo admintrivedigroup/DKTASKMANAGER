@@ -31,10 +31,10 @@ const FloatingActionButton = ({ actions = [] }) => {
                   action.onClick();
                   setIsExpanded(false);
                 }}
-                className="flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap group"
+                className="flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap"
                 title={action.label}
               >
-                <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-sm font-medium">
                   {action.label}
                 </span>
                 {action.icon && <action.icon className="w-5 h-5" />}

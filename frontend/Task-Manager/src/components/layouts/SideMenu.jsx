@@ -113,10 +113,10 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h5 className="text-sm font-bold text-slate-900 truncate">{user?.name || "User"}</h5>
-              <p className="text-xs text-slate-500 truncate mb-1">{user?.email || ""}</p>
+              <h5 className="text-sm font-bold text-slate-900 truncate dark:text-slate-50">{user?.name || "User"}</h5>
+              <p className="text-xs text-slate-500 truncate mb-1 dark:text-slate-400">{user?.email || ""}</p>
               {isPrivilegedUser && roleBadgeLabel && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-100">
                   {roleBadgeLabel}
                 </span>
               )}
@@ -151,8 +151,8 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
               key={`menu_${index}`}
               className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 group relative overflow-hidden ${
                 isActive
-                  ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm"
+                  ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-100 dark:ring-indigo-400/30"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               } ${collapsed ? 'justify-center' : ''}`}
               onClick={() => handleClick(item?.path)}
               title={collapsed ? item.label : ''}
@@ -162,7 +162,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
               )}
               
               {Icon && (
-                <span className={`text-lg transition-colors duration-200 ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`}>
+                <span className={`text-lg transition-colors duration-200 ${isActive ? "text-indigo-600 dark:text-indigo-200" : "text-slate-400 group-hover:text-slate-500 dark:text-slate-500 dark:group-hover:text-slate-300"}`}>
                   <Icon />
                 </span>
               )}
@@ -173,7 +173,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
       </nav>
       
       <div className="p-4 border-t border-slate-100/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/70">
-        <p className="text-[10px] text-center text-slate-400 tracking-[0.14em]">
+        <p className="text-[10px] text-center text-slate-400 tracking-[0.14em] dark:text-slate-500">
           v1.0.0 • Vijay Trivedi Group
         </p>
       </div>

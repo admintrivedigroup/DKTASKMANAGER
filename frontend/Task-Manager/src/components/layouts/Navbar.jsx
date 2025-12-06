@@ -47,7 +47,7 @@ const Navbar = () => {
             />
             <div className="hidden flex-col justify-center leading-tight md:flex">
               <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-indigo-600/80 dark:text-indigo-200/80">
-                Task Desk
+                Task Manager
               </p>
               <h1 className="text-sm font-bold text-slate-900 dark:text-white">
                 Vijay Trivedi Group

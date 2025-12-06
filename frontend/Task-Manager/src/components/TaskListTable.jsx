@@ -118,7 +118,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
   };
 
   const containerClassName = [
-    "mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
+    "mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40",
     className,
   ]
     .filter(Boolean)
@@ -127,9 +127,9 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
   return (
     <div className={containerClassName}>
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+          <thead className="bg-slate-50 dark:bg-slate-900">
+            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300">
               <th className="px-6 py-3">Name</th>
               <th className="px-6 py-3">Status</th>
               <th className="px-6 py-3">Priority</th>
@@ -138,7 +138,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
               <th className="hidden px-6 py-3 md:table-cell">Created On</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900/60">
             {safeTableData.map((task, index) => {
               const progressMeta = getProgressMeta(task);
 
@@ -146,19 +146,19 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 <tr
                   key={task._id}
                   className={getInteractiveRowClasses(
-                    "text-sm text-slate-600 transition hover:bg-slate-50"
+                    "text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/70"
                   )}
                   {...interactiveRowProps(task)}
                 >
-                <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">
                   <div className="space-y-2">
                     <span className="line-clamp-1">{task.title}</span>
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         <span>Progress</span>
                         <span>{progressMeta.rounded}%</span>
                       </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                         <div
                           className={`${progressMeta.colorClass} h-full transition-all duration-500`}
                           style={{ width: `${progressMeta.percentage}%` }}
@@ -186,13 +186,13 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                     {task.priority}
                   </span>
                 </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                   {formatDate(task.dueDate)}
                 </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                   {getAssigneeNames(task.assignedTo)}
                 </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell">
+                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                   {formatDate(task.createdAt)}
                 </td>
               </tr>
@@ -211,12 +211,12 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
               <article
                 key={task._id}
                 className={getInteractiveRowClasses(
-                  "rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                  "rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200"
                 )}
                 {...interactiveRowProps(task)}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {task.title}
                   </h3>
                   <span
@@ -228,16 +228,16 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   </span>
                 </div>
 
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   {task.priority}
                 </div>
                 
                 <div className="mt-4 space-y-1">
-                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <span>Progress</span>
                     <span>{progressMeta.rounded}%</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                     <div
                       className={`${progressMeta.colorClass} h-full transition-all duration-500`}
                       style={{ width: `${progressMeta.percentage}%` }}
@@ -246,36 +246,36 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   </div>
                 </div>
 
-                <dl className="mt-4 space-y-2 text-xs text-slate-500">
+                <dl className="mt-4 space-y-2 text-xs text-slate-500 dark:text-slate-300">
                   <div className="flex items-center gap-2">
-                    <LuCalendar className="text-slate-400" />
-                    <dt className="font-medium text-slate-500">
+                    <LuCalendar className="text-slate-400 dark:text-slate-400" />
+                    <dt className="font-medium text-slate-500 dark:text-slate-400">
                       Due
                     </dt>
-                    <dd className="text-slate-700">{formatDate(task.dueDate)}</dd>
+                    <dd className="text-slate-700 dark:text-slate-200">{formatDate(task.dueDate)}</dd>
                   </div>
                   <div className="flex items-center gap-2">
-                    <LuUser className="text-slate-400" />
-                    <dt className="font-medium text-slate-500">
+                    <LuUser className="text-slate-400 dark:text-slate-400" />
+                    <dt className="font-medium text-slate-500 dark:text-slate-400">
                       Assignees
                     </dt>
-                    <dd className="text-slate-700">
+                    <dd className="text-slate-700 dark:text-slate-200">
                       {getAssigneeNames(task.assignedTo)}
                     </dd>
                   </div>
                   <div className="flex items-center gap-2">
-                    <LuClock3 className="text-slate-400" />
-                    <dt className="font-medium text-slate-500">
+                    <LuClock3 className="text-slate-400 dark:text-slate-400" />
+                    <dt className="font-medium text-slate-500 dark:text-slate-400">
                       Created
                     </dt>
-                    <dd className="text-slate-700">{formatDate(task.createdAt)}</dd>
+                    <dd className="text-slate-700 dark:text-slate-200">{formatDate(task.createdAt)}</dd>
                   </div>
                 </dl>
               </article>
             );
           })
         ) : (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
             No tasks available yet.
           </p>
         )}

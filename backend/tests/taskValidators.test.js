@@ -17,6 +17,11 @@ describe("taskValidators", () => {
       description: "  Coordinate launch tasks  ",
       priority: "High",
       dueDate: "2025-01-12T00:00:00.000Z",
+      startDate: "2025-01-10T08:00:00.000Z",
+      reminderMinutesBefore: "90",
+      recurrence: "Weekly",
+      recurrenceEndDate: "2025-02-10T00:00:00.000Z",
+      estimatedHours: "12.5",
       assignedTo: [
         { _id: "abc123" },
         "def456",
@@ -44,6 +49,11 @@ describe("taskValidators", () => {
       description: "Coordinate launch tasks",
       priority: "High",
       dueDate: "2025-01-12T00:00:00.000Z",
+      startDate: "2025-01-10T08:00:00.000Z",
+      reminderMinutesBefore: 90,
+      recurrence: "Weekly",
+      recurrenceEndDate: "2025-02-10T00:00:00.000Z",
+      estimatedHours: 12.5,
       assignedTo: ["abc123", "def456"],
       todoChecklist: [
         "Draft announcement",
@@ -96,6 +106,11 @@ describe("taskValidators", () => {
       matter: "new-matter",
       relatedDocuments: ["doc-a"],
       status: "In Progress",
+      startDate: "2025-01-09T09:00:00.000Z",
+      reminderMinutesBefore: 45,
+      recurrence: "Monthly",
+      recurrenceEndDate: "2025-06-01T00:00:00.000Z",
+      estimatedHours: 40,
     };
 
     const result = validateUpdateTaskPayload(payload);
@@ -111,7 +126,64 @@ describe("taskValidators", () => {
       matter: "new-matter",
       relatedDocuments: ["doc-a"],
       status: "In Progress",
+      startDate: "2025-01-09T09:00:00.000Z",
+      reminderMinutesBefore: 45,
+      recurrence: "Monthly",
+      recurrenceEndDate: "2025-06-01T00:00:00.000Z",
+      estimatedHours: 40,
     });
+  });
+
+  test("validateCreateTaskPayload rejects startDate after dueDate", () => {
+    assert.throws(
+      () =>
+        validateCreateTaskPayload({
+          title: "Bad schedule",
+          description: "Start after due",
+          priority: "Low",
+          dueDate: "2025-01-01T00:00:00.000Z",
+          startDate: "2025-01-02T00:00:00.000Z",
+          assignedTo: ["user-1"],
+          todoChecklist: ["Prep"],
+        }),
+      (error) =>
+        error instanceof HttpError &&
+        /startDate cannot be after dueDate/.test(error.message)
+    );
+  });
+
+  test("validateCreateTaskPayload requires end date when recurrence is set", () => {
+    assert.throws(
+      () =>
+        validateCreateTaskPayload({
+          title: "Repeating",
+          description: "Missing end date",
+          priority: "Medium",
+          dueDate: "2025-03-01T00:00:00.000Z",
+          recurrence: "Daily",
+          assignedTo: ["user-1"],
+          todoChecklist: ["Prep"],
+        }),
+      (error) =>
+        error instanceof HttpError &&
+        /recurrenceEndDate is required when recurrence is enabled/.test(
+          error.message
+        )
+    );
+  });
+
+  test("validateUpdateTaskPayload enforces recurrence end date when recurrence changes", () => {
+    assert.throws(
+      () =>
+        validateUpdateTaskPayload({
+          recurrence: "Weekly",
+        }),
+      (error) =>
+        error instanceof HttpError &&
+        /recurrenceEndDate is required when recurrence is enabled/.test(
+          error.message
+        )
+    );
   });
 
   test("validateStatusPayload enforces allowed statuses", () => {

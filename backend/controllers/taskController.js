@@ -352,7 +352,12 @@ const TASK_ACTIVITY_FIELDS = [
   { path: "description", label: "Description" },
   { path: "priority", label: "Priority" },
   { path: "status", label: "Status" },
+  { path: "startDate", label: "Start Date" },
   { path: "dueDate", label: "Due Date" },
+  { path: "reminderMinutesBefore", label: "Reminder Lead Time" },
+  { path: "recurrence", label: "Recurrence" },
+  { path: "recurrenceEndDate", label: "Recurrence End Date" },
+  { path: "estimatedHours", label: "Estimated Hours" },
 ];
 
 const TASK_STATUS_FIELDS = [{ path: "status", label: "Status" }];
@@ -392,13 +397,18 @@ const createTask = async (req, res, next) => {
             title,
             description,
             priority,
+            startDate,
             dueDate,
             assignedTo,
             attachments,
             todoChecklist,
             matter: matterId,
             caseFile: caseFileId,
-            relatedDocuments,            
+            relatedDocuments,
+            reminderMinutesBefore,
+            recurrence,
+            recurrenceEndDate,
+            estimatedHours,
           } = req.body;
 
           const { matterId: resolvedMatterId, caseFileId: resolvedCaseId } =
@@ -415,16 +425,45 @@ const createTask = async (req, res, next) => {
             validAssigneeIds: assignedTo,
           });
 
+          const startDateValue =
+            startDate === null || startDate === undefined
+              ? null
+              : new Date(startDate);
+
+          const dueDateValue = dueDate ? new Date(dueDate) : null;
+
+          const recurrenceEndDateValue =
+            recurrenceEndDate === null || recurrenceEndDate === undefined
+              ? null
+              : new Date(recurrenceEndDate);
+
           const taskPayload = {
             title,
             description,
             priority,
-            dueDate,
+            dueDate: dueDateValue,
             assignedTo,
             createdBy: req.user._id,
             todoChecklist: sanitizedTodoChecklist,
             attachments: attachments ?? [],
+            recurrence: recurrence || "None",
           };
+
+          if (startDate !== undefined) {
+            taskPayload.startDate = startDateValue;
+          }
+
+          if (reminderMinutesBefore !== undefined) {
+            taskPayload.reminderMinutesBefore = reminderMinutesBefore;
+          }
+
+          if (recurrenceEndDate !== undefined) {
+            taskPayload.recurrenceEndDate = recurrenceEndDateValue;
+          }
+
+          if (estimatedHours !== undefined) {
+            taskPayload.estimatedHours = estimatedHours;
+          }
 
           if (resolvedMatterId !== undefined) {
             taskPayload.matter = resolvedMatterId;
@@ -498,7 +537,11 @@ const existingAssigneeIds = Array.isArray(task.assignedTo)
 const originalTask = task.toObject();
 
 const originalDueDate = task.dueDate ? task.dueDate.getTime() : null;
+const originalStartDate = task.startDate ? task.startDate.getTime() : null;
 let dueDateChanged = false;
+let startDateChanged = false;
+let reminderChanged = false;
+let recurrenceChanged = false;
 let newlyAssignedIds = [];
 let resolvedMatterId = task.matter ? task.matter.toString() : null;
 let resolvedCaseId = task.caseFile ? task.caseFile.toString() : null;
@@ -517,6 +560,18 @@ if (Object.prototype.hasOwnProperty.call(req.body, "dueDate")) {
   if (!Number.isNaN(incomingDueDate.getTime())) {
     dueDateChanged = originalDueDate !== incomingDueDate.getTime();
     task.dueDate = incomingDueDate;
+  }
+}
+if (Object.prototype.hasOwnProperty.call(req.body, "startDate")) {
+  if (req.body.startDate === null) {
+    startDateChanged = originalStartDate !== null;
+    task.startDate = null;
+  } else {
+    const incomingStartDate = new Date(req.body.startDate);
+    if (!Number.isNaN(incomingStartDate.getTime())) {
+      startDateChanged = originalStartDate !== incomingStartDate.getTime();
+      task.startDate = incomingStartDate;
+    }
   }
 }
 if (Object.prototype.hasOwnProperty.call(req.body, "attachments")) {
@@ -589,7 +644,59 @@ if (hasTodoChecklistUpdate) {
   task.todoChecklist = sanitizedTodoChecklist;
 }
 
-if (dueDateChanged) {
+if (Object.prototype.hasOwnProperty.call(req.body, "reminderMinutesBefore")) {
+  reminderChanged = true;
+  task.reminderMinutesBefore =
+    req.body.reminderMinutesBefore === null
+      ? null
+      : req.body.reminderMinutesBefore;
+}
+
+if (Object.prototype.hasOwnProperty.call(req.body, "recurrence")) {
+  recurrenceChanged = true;
+  task.recurrence = req.body.recurrence || "None";
+}
+
+if (Object.prototype.hasOwnProperty.call(req.body, "recurrenceEndDate")) {
+  recurrenceChanged = true;
+  if (req.body.recurrenceEndDate === null) {
+    task.recurrenceEndDate = null;
+  } else {
+    const incomingRecurrenceEndDate = new Date(req.body.recurrenceEndDate);
+    if (!Number.isNaN(incomingRecurrenceEndDate.getTime())) {
+      task.recurrenceEndDate = incomingRecurrenceEndDate;
+    }
+  }
+}
+
+if (Object.prototype.hasOwnProperty.call(req.body, "estimatedHours")) {
+  task.estimatedHours =
+    req.body.estimatedHours === null || req.body.estimatedHours === undefined
+      ? null
+      : req.body.estimatedHours;
+}
+
+const updatedStartDate = task.startDate ? task.startDate.getTime() : null;
+const updatedDueDate = task.dueDate ? task.dueDate.getTime() : null;
+
+if (updatedStartDate !== null && updatedDueDate !== null && updatedStartDate > updatedDueDate) {
+  throw createHttpError("Start date cannot be after due date", 400);
+}
+
+if (
+  task.recurrence &&
+  task.recurrence !== "None" &&
+  task.recurrenceEndDate &&
+  updatedDueDate !== null &&
+  task.recurrenceEndDate.getTime() < updatedDueDate
+) {
+  throw createHttpError(
+    "Recurrence end date must be after the due date for repeating tasks",
+    400
+  );
+}
+
+if (dueDateChanged || startDateChanged || reminderChanged || recurrenceChanged) {
   task.reminderSentAt = null;
 }
 

@@ -2,6 +2,7 @@ const { createHttpError } = require("../utils/httpError");
 
 const TASK_PRIORITIES = new Set(["High", "Medium", "Low"]);
 const TASK_STATUSES = new Set(["Pending", "In Progress", "Completed"]);
+const TASK_RECURRENCE = new Set(["None", "Daily", "Weekly", "Monthly"]);
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
@@ -153,20 +154,116 @@ const normalizeChecklist = (
   });
 };
 
-const normalizeDueDate = (value, { required = false } = {}) => {
-  if (value === undefined || value === null || value === "") {
+const normalizeDateField = (
+  value,
+  fieldName,
+  { required = false } = {}
+) => {
+  if (value === undefined) {
     if (required) {
-      throw createHttpError("dueDate is required", 400);
+      throw createHttpError(`${fieldName} is required`, 400);
     }
     return undefined;
   }
 
+  if (value === null || value === "") {
+    if (required) {
+      throw createHttpError(`${fieldName} is required`, 400);
+    }
+
+    return null;
+  }
+
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    throw createHttpError("dueDate must be a valid date string", 400);
+    throw createHttpError(`${fieldName} must be a valid date string`, 400);
   }
 
   return value;
+};
+
+const normalizeDueDate = (value, { required = false } = {}) =>
+  normalizeDateField(value, "dueDate", { required });
+
+const normalizeStartDate = (value) => normalizeDateField(value, "startDate");
+
+const normalizeRecurrenceEndDate = (value) =>
+  normalizeDateField(value, "recurrenceEndDate");
+
+const normalizeNonNegativeNumber = (
+  value,
+  fieldName,
+  { max, allowNull = true } = {}
+) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || value === "") {
+    return allowNull ? null : undefined;
+  }
+
+  const numberValue = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    throw createHttpError(`${fieldName} must be a non-negative number`, 400);
+  }
+
+  if (max !== undefined && numberValue > max) {
+    throw createHttpError(
+      `${fieldName} cannot be greater than ${max}`,
+      400
+    );
+  }
+
+  return numberValue;
+};
+
+const normalizeReminderLead = (value) => {
+  const normalized = normalizeNonNegativeNumber(value, "reminderMinutesBefore", {
+    max: 10080, // up to 7 days before
+  });
+
+  if (normalized === undefined) {
+    return undefined;
+  }
+
+  if (normalized === null) {
+    return null;
+  }
+
+  return Math.round(normalized);
+};
+
+const normalizeEstimatedHours = (value) =>
+  normalizeNonNegativeNumber(value, "estimatedHours", { max: 1000 });
+
+const normalizeRecurrence = (value, { required = false } = {}) => {
+  if (value === undefined) {
+    if (required) {
+      throw createHttpError("recurrence is required", 400);
+    }
+    return undefined;
+  }
+
+  if (value === null || value === "") {
+    return "None";
+  }
+
+  if (typeof value !== "string") {
+    throw createHttpError("recurrence must be a string", 400);
+  }
+
+  const normalized = value.trim();
+
+  if (!TASK_RECURRENCE.has(normalized)) {
+    throw createHttpError(
+      "recurrence must be one of None, Daily, Weekly or Monthly",
+      400
+    );
+  }
+
+  return normalized;
 };
 
 const validatePriority = (value, { required = false } = {}) => {
@@ -277,6 +374,11 @@ const validateCreateTaskPayload = (payload) => {
     sanitized.todoChecklist = checklist;
   }
 
+  const startDate = normalizeStartDate(payload.startDate);
+  if (startDate !== undefined) {
+    sanitized.startDate = startDate;
+  }
+
   const attachments = normalizeAttachments(payload.attachments);
   if (attachments !== undefined) {
     sanitized.attachments = attachments;
@@ -295,6 +397,65 @@ const validateCreateTaskPayload = (payload) => {
   const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);
   if (relatedDocuments && relatedDocuments.length) {
     sanitized.relatedDocuments = relatedDocuments;
+  }
+
+  const reminderMinutesBefore = normalizeReminderLead(payload.reminderMinutesBefore);
+  if (reminderMinutesBefore !== undefined) {
+    sanitized.reminderMinutesBefore = reminderMinutesBefore;
+  }
+
+  const recurrence = normalizeRecurrence(payload.recurrence);
+  if (recurrence !== undefined) {
+    sanitized.recurrence = recurrence;
+  } else {
+    sanitized.recurrence = "None";
+  }
+
+  const recurrenceEndDate = normalizeRecurrenceEndDate(payload.recurrenceEndDate);
+  if (recurrenceEndDate !== undefined) {
+    sanitized.recurrenceEndDate = recurrenceEndDate;
+  }
+
+  const estimatedHours = normalizeEstimatedHours(payload.estimatedHours);
+  if (estimatedHours !== undefined) {
+    sanitized.estimatedHours = estimatedHours;
+  }
+
+  if (sanitized.startDate && sanitized.dueDate) {
+    const start = new Date(sanitized.startDate);
+    const due = new Date(sanitized.dueDate);
+
+    if (start.getTime() > due.getTime()) {
+      throw createHttpError("startDate cannot be after dueDate", 400);
+    }
+  }
+
+  if (
+    sanitized.recurrence &&
+    sanitized.recurrence !== "None" &&
+    sanitized.recurrenceEndDate
+  ) {
+    const recurrenceEnd = new Date(sanitized.recurrenceEndDate);
+    const due = new Date(sanitized.dueDate);
+
+    if (recurrenceEnd.getTime() < due.getTime()) {
+      throw createHttpError(
+        "recurrenceEndDate must be after the dueDate for repeating tasks",
+        400
+      );
+    }
+  }
+
+  if (
+    sanitized.recurrence &&
+    sanitized.recurrence !== "None" &&
+    (sanitized.recurrenceEndDate === undefined ||
+      sanitized.recurrenceEndDate === null)
+  ) {
+    throw createHttpError(
+      "recurrenceEndDate is required when recurrence is enabled",
+      400
+    );
   }
 
   return sanitized;
@@ -327,6 +488,10 @@ const validateUpdateTaskPayload = (payload) => {
     }
   }
 
+  if (hasOwn(payload, "startDate")) {
+    sanitized.startDate = normalizeStartDate(payload.startDate);
+  }
+
   if (hasOwn(payload, "assignedTo")) {
     sanitized.assignedTo = normalizeAssigneeIds(payload.assignedTo);
   }
@@ -354,6 +519,67 @@ const validateUpdateTaskPayload = (payload) => {
 
   if (hasOwn(payload, "status")) {
     sanitized.status = validateStatus(payload.status, { required: true });
+  }
+
+  if (hasOwn(payload, "reminderMinutesBefore")) {
+    sanitized.reminderMinutesBefore = normalizeReminderLead(
+      payload.reminderMinutesBefore
+    );
+  }
+
+  if (hasOwn(payload, "recurrence")) {
+    sanitized.recurrence = normalizeRecurrence(payload.recurrence, {
+      required: true,
+    });
+  }
+
+  if (hasOwn(payload, "recurrenceEndDate")) {
+    sanitized.recurrenceEndDate = normalizeRecurrenceEndDate(
+      payload.recurrenceEndDate
+    );
+  }
+
+  if (hasOwn(payload, "estimatedHours")) {
+    sanitized.estimatedHours = normalizeEstimatedHours(payload.estimatedHours);
+  }
+
+  if (sanitized.startDate && sanitized.dueDate) {
+    const start = new Date(sanitized.startDate);
+    const due = new Date(sanitized.dueDate);
+
+    if (start.getTime() > due.getTime()) {
+      throw createHttpError("startDate cannot be after dueDate", 400);
+    }
+  }
+
+  if (
+    sanitized.recurrence &&
+    sanitized.recurrence !== "None" &&
+    sanitized.recurrenceEndDate &&
+    sanitized.dueDate
+  ) {
+    const recurrenceEnd = new Date(sanitized.recurrenceEndDate);
+    const due = new Date(sanitized.dueDate);
+
+    if (recurrenceEnd.getTime() < due.getTime()) {
+      throw createHttpError(
+        "recurrenceEndDate must be after the dueDate for repeating tasks",
+        400
+      );
+    }
+  }
+
+  if (
+    hasOwn(payload, "recurrence") &&
+    sanitized.recurrence &&
+    sanitized.recurrence !== "None" &&
+    (sanitized.recurrenceEndDate === undefined ||
+      sanitized.recurrenceEndDate === null)
+  ) {
+    throw createHttpError(
+      "recurrenceEndDate is required when recurrence is enabled",
+      400
+    );
   }
 
   if (!Object.keys(sanitized).length) {
@@ -423,6 +649,7 @@ const validateTaskQuery = (query) => {
 module.exports = {
   TASK_PRIORITIES,
   TASK_STATUSES,
+  TASK_RECURRENCE,
   validateCreateTaskPayload,
   validateUpdateTaskPayload,
   validateStatusPayload,

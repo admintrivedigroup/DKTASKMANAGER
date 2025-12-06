@@ -161,7 +161,9 @@ const UserDetails = () => {
 
   const handleOpenTaskDetails = (taskId) => {
     if (!taskId) return;
-    navigate(`${privilegedBasePath}/create-task`, { state: { taskId } });
+    navigate(`${privilegedBasePath}/tasks`, {
+      state: { highlightTaskId: taskId, filterStatus: "All" },
+    });
   };
 
   const formatCount = useCallback((value) => {

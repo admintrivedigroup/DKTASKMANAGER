@@ -21,6 +21,8 @@ const TaskCard = ({
   completedTodoCount,
   todoChecklist,
   onClick,
+  cardId,
+  isHighlighted = false,
 }) => {
   const assigneeAvatars = Array.isArray(assignedTo)
   ? assignedTo.map((user) => {
@@ -95,9 +97,20 @@ const roundedCompletion = Math.round(completionPercentage);
         return "bg-gradient-to-r from-rose-500 to-red-500 text-white";
     }
   };
+
+  const cardClasses = [
+    "relative cursor-pointer overflow-hidden rounded-[30px] border border-white/60 bg-white/80 p-6 shadow-[0_22px_50px_rgba(15,23,42,0.12)] transition hover:-translate-y-1 hover:shadow-[0_32px_70px_rgba(59,130,246,0.2)] dark:border-slate-800/60 dark:bg-slate-900/70 dark:shadow-[0_26px_60px_rgba(2,6,23,0.6)]",
+    isHighlighted
+      ? "task-card-highlight ring-2 ring-indigo-300 ring-offset-2 ring-offset-white dark:ring-indigo-500/70 dark:ring-offset-slate-900"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      className="relative cursor-pointer overflow-hidden rounded-[30px] border border-white/60 bg-white/80 p-6 shadow-[0_22px_50px_rgba(15,23,42,0.12)] transition hover:-translate-y-1 hover:shadow-[0_32px_70px_rgba(59,130,246,0.2)] dark:border-slate-800/60 dark:bg-slate-900/70 dark:shadow-[0_26px_60px_rgba(2,6,23,0.6)]"
+      className={cardClasses}
+      data-task-card-id={cardId || undefined}
       onClick={onClick}
     >
       <span className={`absolute inset-0 -z-10 bg-gradient-to-br ${getStatusAccent()} opacity-[0.12]`} />

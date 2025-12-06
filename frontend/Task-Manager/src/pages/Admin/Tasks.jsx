@@ -15,16 +15,22 @@ import useTasks from "../../hooks/useTasks";
 const Tasks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
-  const navigate = useNavigate();  
+  const navigate = useNavigate();
   const locationState = location.state;
-  const initialFilterStatus = location.state?.filterStatus || "All";
+  const initialFilterStatus = locationState?.filterStatus || "All";
 
   const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [selectedDate, setSelectedDate] = useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskScope, setTaskScope] = useState("All Tasks");
-  const [viewMode, setViewMode] = useState("grid");  
+  const [viewMode, setViewMode] = useState("grid");
+  const [highlightTaskId, setHighlightTaskId] = useState(
+    locationState?.highlightTaskId || null
+  );
+  const [isHighlighting, setIsHighlighting] = useState(
+    Boolean(locationState?.highlightTaskId)
+  );
 
   const { tasks, tabs, isLoading, refetch } = useTasks({
     statusFilter: filterStatus,
@@ -70,6 +76,25 @@ const Tasks = () => {
   };
 
   useEffect(() => {
+    if (!locationState?.highlightTaskId) {
+      return;
+    }
+
+    const { highlightTaskId: incomingHighlightId, ...restState } =
+      locationState;
+
+    setHighlightTaskId(incomingHighlightId);
+    setIsHighlighting(Boolean(incomingHighlightId));
+    setViewMode("grid");
+    setFilterStatus("All");
+
+    navigate(location.pathname, {
+      replace: true,
+      state: restState,
+    });
+  }, [location.pathname, locationState, navigate]);
+
+  useEffect(() => {
     if (
       location.state?.filterStatus &&
       location.state.filterStatus !== filterStatus
@@ -112,6 +137,39 @@ const Tasks = () => {
       return matchesSearch && matchesDate;
     });
   }, [tasks, searchQuery, selectedDate]);
+
+  useEffect(() => {
+    if (!highlightTaskId || !isHighlighting) {
+      return;
+    }
+
+    if (viewMode !== "grid") {
+      setViewMode("grid");
+    }
+
+    const hasMatchingTask = filteredTasks.some(
+      (task) => task._id === highlightTaskId
+    );
+
+    if (!hasMatchingTask) {
+      return;
+    }
+
+    const targetCard = document.querySelector(
+      `[data-task-card-id="${highlightTaskId}"]`
+    );
+
+    if (targetCard?.scrollIntoView) {
+      targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsHighlighting(false);
+      setHighlightTaskId(null);
+    }, 2600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [filteredTasks, highlightTaskId, isHighlighting, viewMode]);
 
   const filteredTaskCount = filteredTasks.length;
   const totalTasksCount = tasks.length;
@@ -221,6 +279,7 @@ const Tasks = () => {
                 {filteredTasks?.map((item) => (
                   <TaskCard
                     key={item._id}
+                    cardId={item._id}
                     title={item.title}
                     description={item.description}
                     priority={item.priority}
@@ -236,6 +295,9 @@ const Tasks = () => {
                     attachmentCount={item.attachments?.length || 0}
                     completedTodoCount={item.completedTodoCount || 0}
                     todoChecklist={item.todoChecklist || []}
+                    isHighlighted={
+                      isHighlighting && highlightTaskId === item._id
+                    }
                     onClick={() => handleTaskCardClick(item._id)}
                   />
                 ))}
