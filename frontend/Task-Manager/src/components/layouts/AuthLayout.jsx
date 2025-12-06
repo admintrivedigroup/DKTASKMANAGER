@@ -18,13 +18,11 @@ const AuthLayout = ({ children }) => {
 
           <div className="relative z-10 flex h-full w-full flex-col justify-between p-12 xl:p-14">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md shadow-lg shadow-indigo-900/40 flex items-center justify-center">
-                <img
-                  src={logo}
-                  alt="Logo"
-                  className="h-7 w-7 object-contain brightness-0 invert"
-                />
-              </div>
+              <img
+                src={logo}
+                alt="Logo"
+                className="h-[84px] w-[84px] object-contain drop-shadow-[0_8px_22px_rgba(0,0,0,0.32)]"
+              />
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.28em] text-indigo-100/80 font-semibold">
                   Vijay Trivedi Group
@@ -66,9 +64,7 @@ const AuthLayout = ({ children }) => {
         <div className="flex-1 flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16 xl:px-20">
           <div className="w-full max-w-xl space-y-8">
             <div className="lg:hidden flex flex-col items-center gap-3 text-center">
-              <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-sm shadow-slate-200">
-                <img src={logo} alt="Logo" className="h-10 w-10 object-contain" />
-              </div>
+              <img src={logo} alt="Logo" className="h-24 w-24 object-contain drop-shadow-sm" />
               <div className="space-y-1">
                 <h2 className="text-xl font-semibold text-slate-900">Vijay Trivedi Group</h2>
                 <p className="text-sm text-slate-500">Task &amp; Matter Management Suite</p>

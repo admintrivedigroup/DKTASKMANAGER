@@ -34,19 +34,17 @@ const Navbar = () => {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/92 backdrop-blur-xl shadow-[0_14px_44px_rgba(17,25,40,0.08)] transition-all duration-200 dark:border-slate-800/70 dark:bg-slate-900/80">
       <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-20 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-primary-600 to-cyan-400 text-white shadow-[0_16px_42px_rgba(29,155,240,0.36)] ring-1 ring-white/60 dark:ring-slate-800">
-              <img
-                src={logo}
-                srcSet={`${logo} 1x, ${logo} 2x`}
-                sizes="44px"
-                alt="Task Manager logo"
-                loading="eager"
-                decoding="async"
-                className="h-6 w-6 object-contain drop-shadow-sm"
-              />
-            </div>
+            <img
+              src={logo}
+              srcSet={`${logo} 1x, ${logo} 2x`}
+              sizes="72px"
+              alt="Task Manager logo"
+              loading="eager"
+              decoding="async"
+              className="h-[72px] w-[72px] object-contain drop-shadow-sm"
+            />
             <div className="hidden flex-col justify-center leading-tight md:flex">
               <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-indigo-600/80 dark:text-indigo-200/80">
                 Task Desk
