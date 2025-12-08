@@ -8,6 +8,15 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import { formatDateLabel } from "../../utils/dateUtils";
 import { LuArrowLeft, LuExternalLink, LuLoader } from "react-icons/lu";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { FaUser } from "react-icons/fa6";
 
 import DashboardLayout from "../../components/layouts/DashboardLayout";
@@ -17,11 +26,131 @@ import { UserContext } from "../../context/userContext.jsx";
 import { getPrivilegedBasePath, normalizeRole } from "../../utils/roleUtils";
 import TaskFormModal from "../../components/TaskFormModal";
 import { formatCurrency } from "../../utils/invoiceUtils";
+import CustomPieChart from "../../components/Charts/CustomPieChart.jsx";
 
 const statusBadgeStyles = {
   Pending: "bg-amber-100 text-amber-600 border-amber-200",
   "In Progress": "bg-sky-100 text-sky-600 border-sky-200",
   Completed: "bg-emerald-100 text-emerald-600 border-emerald-200",
+};
+
+const parseDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const computeKpiFromTasks = (tasks = []) => {
+  const completedTasks = tasks.filter((task) => task?.status === "Completed");
+  const inProgressTasks = tasks.filter((task) => task?.status === "In Progress");
+  const pendingTasks = tasks.filter((task) => task?.status === "Pending");
+  const overdueTasks = tasks.filter((task) => {
+    if (task?.status === "Overdue") return true;
+    const due = parseDate(task?.dueDate);
+    if (!due) return false;
+    return due.getTime() < Date.now() && task?.status !== "Completed";
+  });
+
+  const totalTasks = tasks.length;
+  const completionRate = totalTasks
+    ? Math.round((completedTasks.length / totalTasks) * 100)
+    : 0;
+
+  const onTimeCompleted = completedTasks.filter((task) => {
+    const due = parseDate(task?.dueDate);
+    const completedAt =
+      parseDate(task?.completedAt) ||
+      parseDate(task?.updatedAt) ||
+      parseDate(task?.createdAt);
+    if (!due || !completedAt) return true;
+    return completedAt.getTime() <= due.getTime();
+  });
+
+  const onTimeRate = completedTasks.length
+    ? Math.round((onTimeCompleted.length / completedTasks.length) * 100)
+    : 0;
+
+  const avgCompletionTime = (() => {
+    if (completedTasks.length === 0) return 0;
+    const durations = completedTasks
+      .map((task) => {
+        const start = parseDate(task?.createdAt);
+        const end =
+          parseDate(task?.completedAt) ||
+          parseDate(task?.updatedAt) ||
+          parseDate(task?.dueDate);
+        if (!start || !end) return null;
+        return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+      })
+      .filter((val) => val !== null && Number.isFinite(val));
+
+    if (durations.length === 0) return 0;
+    const avg = durations.reduce((sum, val) => sum + val, 0) / durations.length;
+    return Number(avg.toFixed(1));
+  })();
+
+  const monthlyCompleted = completedTasks.reduce((acc, task) => {
+    const date =
+      parseDate(task?.completedAt) ||
+      parseDate(task?.updatedAt) ||
+      parseDate(task?.dueDate) ||
+      parseDate(task?.createdAt);
+    if (!date) return acc;
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
+    const label = date.toLocaleString("en-US", { month: "short" });
+    acc[key] = acc[key]
+      ? { ...acc[key], completed: acc[key].completed + 1 }
+      : { label, completed: 1 };
+    return acc;
+  }, {});
+
+  const monthlyCompletedArray = Object.values(monthlyCompleted).slice(-6);
+
+  const statusBreakdown = [
+    { status: "Completed", count: completedTasks.length },
+    { status: "Pending", count: pendingTasks.length },
+    { status: "In Progress", count: inProgressTasks.length },
+    { status: "Overdue", count: overdueTasks.length },
+  ].filter((item) => item.count > 0);
+
+  const tasksTable = tasks.map((task) => {
+    const totalChecklist = Array.isArray(task?.todoChecklist)
+      ? task.todoChecklist.length
+      : 0;
+    const completedChecklist = task?.completedTodoCount || 0;
+    const baseProgress =
+      totalChecklist > 0
+        ? Math.round((completedChecklist / totalChecklist) * 100)
+        : task?.status === "Completed"
+        ? 100
+        : task?.status === "In Progress"
+        ? 50
+        : 0;
+
+    const dueDate =
+      parseDate(task?.dueDate) ||
+      parseDate(task?.expectedCompletionDate) ||
+      parseDate(task?.createdAt);
+
+    return {
+      id: task._id || task.id,
+      title: task.title || "Task",
+      status: task.status || "N/A",
+      dueDate,
+      progress: Math.min(Math.max(baseProgress, 0), 100),
+      owner: task.assignedToName || "",
+    };
+  });
+
+  return {
+    completionRate,
+    onTimeRate,
+    avgCompletionTime,
+    overdueCount: overdueTasks.length,
+    monthlyCompleted: monthlyCompletedArray,
+    statusBreakdown,
+    tasks: tasksTable,
+  };
 };
 
 const formatDate = (date) => (date ? formatDateLabel(date, "—") : "—");
@@ -53,6 +182,9 @@ const UserDetails = () => {
   const [error, setError] = useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const PAGE_SIZE = 9;
 
  const normalizedUserGender = useMemo(() => {
     if (typeof userData?.gender !== "string") {
@@ -251,6 +383,38 @@ const UserDetails = () => {
     taskSummary.total,
   ]);
 
+  const kpiData = useMemo(() => computeKpiFromTasks(tasks), [tasks]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(tasks.length / PAGE_SIZE)),
+    [tasks.length]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tasks]);
+
+  useEffect(() => {
+    setCurrentPage((previous) => Math.min(previous, totalPages));
+  }, [totalPages]);
+
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return tasks.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [currentPage, tasks]);
+
+  const pageStart = tasks.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const pageEnd = tasks.length
+    ? Math.min(currentPage * PAGE_SIZE, tasks.length)
+    : 0;
+
+  const handlePageChange = (page) => {
+    setCurrentPage((previous) => {
+      const nextPage = Math.min(Math.max(page, 1), totalPages);
+      return nextPage === previous ? previous : nextPage;
+    });
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -355,6 +519,111 @@ const UserDetails = () => {
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
+              <h3 className="text-lg font-semibold text-slate-900">KPI Performance</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Completion, delivery, and task health for this account.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Completion Rate", value: `${kpiData.completionRate}%` },
+              { label: "On-Time Rate", value: `${kpiData.onTimeRate}%` },
+              { label: "Avg Completion", value: `${kpiData.avgCompletionTime} days` },
+              { label: "Overdue", value: kpiData.overdueCount },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-3xl border border-slate-200 bg-slate-50/60 px-4 py-4 shadow-sm"
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  {item.label}
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-slate-900">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-900">Monthly Completed Tasks</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  Last months
+                </span>
+              </div>
+              <div className="mt-3 h-64">
+                {kpiData.monthlyCompleted.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    No completion data yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={kpiData.monthlyCompleted}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 12, fill: "#475569" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#475569" }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 12,
+                          border: "1px solid #E2E8F0",
+                          boxShadow: "0 10px 30px rgba(15,23,42,0.1)",
+                        }}
+                        labelStyle={{ color: "#0F172A", fontWeight: 600 }}
+                        formatter={(value) => [`${value} tasks`, "Completed"]}
+                      />
+                      <Bar
+                        dataKey="completed"
+                        fill="#6366F1"
+                        radius={[12, 12, 6, 6]}
+                        maxBarSize={42}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-900">Task Status</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  Snapshot
+                </span>
+              </div>
+              <div className="mt-3 h-56">
+                {kpiData.statusBreakdown.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    No task status data yet.
+                  </div>
+                ) : (
+                  <CustomPieChart
+                    data={kpiData.statusBreakdown}
+                    colors={["#6366F1", "#0EA5E9", "#F59E0B", "#EF4444"]}
+                    height={220}
+                    outerRadius="80%"
+                    innerRadius="59%"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
               <h3 className="text-lg font-semibold text-slate-900">Assigned Tasks</h3>
               <p className="mt-1 text-sm text-slate-500">
                 Every task shared with {userData?.name?.split(" ")[0] || "this account"}.
@@ -374,6 +643,7 @@ const UserDetails = () => {
               <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-600">
                 <thead>
                   <tr className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                    <th scope="col" className="px-4 py-3">S.No.</th>
                     <th scope="col" className="px-4 py-3">Task</th>
                     <th scope="col" className="px-4 py-3">Status</th>
                     <th scope="col" className="px-4 py-3">Priority</th>
@@ -383,8 +653,11 @@ const UserDetails = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {tasks.map((task) => (
+                  {paginatedTasks.map((task, index) => (
                     <tr key={task._id} className="transition hover:bg-slate-50/60">
+                      <td className="px-4 py-4 text-sm font-semibold text-slate-900">
+                        {(currentPage - 1) * PAGE_SIZE + index + 1}
+                      </td>
                       <td className="max-w-[220px] px-4 py-4">
                         <p className="text-sm font-semibold text-slate-900 line-clamp-2">{task.title}</p>
                         <p className="mt-1 text-xs text-slate-500 line-clamp-2">{task.description}</p>
@@ -420,6 +693,53 @@ const UserDetails = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {tasks.length > 0 && totalPages > 1 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Showing {pageStart} – {pageEnd} of {tasks.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                >
+                  Prev
+                </button>
+                <div className="inline-flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, pageIndex) => {
+                    const pageNumber = pageIndex + 1;
+                    const isActive = pageNumber === currentPage;
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+                          isActive
+                            ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/40"
+                            : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </section>

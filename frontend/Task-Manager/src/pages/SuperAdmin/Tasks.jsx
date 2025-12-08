@@ -29,6 +29,9 @@ const Tasks = () => {
   const [isHighlighting, setIsHighlighting] = useState(
     Boolean(locationState?.highlightTaskId)
   );
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const PAGE_SIZE = 9;
 
   const { tasks, tabs, isLoading, refetch } = useTasks({
     statusFilter: filterStatus,
@@ -119,6 +122,24 @@ const Tasks = () => {
     });
   }, [tasks, searchQuery, selectedDate]);
 
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE)),
+    [filteredTasks.length]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery, selectedDate, taskScope, tasks]);
+
+  useEffect(() => {
+    setCurrentPage((previous) => Math.min(previous, totalPages));
+  }, [totalPages]);
+
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return filteredTasks.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [currentPage, filteredTasks]);
+
   useEffect(() => {
     if (!highlightTaskId || !isHighlighting) {
       return;
@@ -128,11 +149,18 @@ const Tasks = () => {
       setViewMode("grid");
     }
 
-    const hasMatchingTask = filteredTasks.some(
+    const targetIndex = filteredTasks.findIndex(
       (task) => task._id === highlightTaskId
     );
 
-    if (!hasMatchingTask) {
+    if (targetIndex === -1) {
+      return;
+    }
+
+    const desiredPage = Math.floor(targetIndex / PAGE_SIZE) + 1;
+
+    if (currentPage !== desiredPage) {
+      setCurrentPage(desiredPage);
       return;
     }
 
@@ -150,7 +178,14 @@ const Tasks = () => {
     }, 2600);
 
     return () => window.clearTimeout(timeoutId);
-  }, [filteredTasks, highlightTaskId, isHighlighting, viewMode]);
+  }, [
+    PAGE_SIZE,
+    currentPage,
+    filteredTasks,
+    highlightTaskId,
+    isHighlighting,
+    viewMode,
+  ]);
 
   useEffect(() => {
     if (!locationState?.openTaskForm) {
@@ -168,6 +203,72 @@ const Tasks = () => {
       state: restState,
     });
   }, [location.pathname, locationState, navigate]);
+
+  const filteredTaskCount = filteredTasks.length;
+  const pageStart = filteredTaskCount ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const pageEnd = filteredTaskCount
+    ? Math.min(currentPage * PAGE_SIZE, filteredTaskCount)
+    : 0;
+
+  const handlePageChange = (page) => {
+    setCurrentPage((previous) => {
+      const nextPage = Math.min(Math.max(page, 1), totalPages);
+      return nextPage === previous ? previous : nextPage;
+    });
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) {
+      return null;
+    }
+
+    return (
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200">
+        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          Showing {pageStart} – {pageEnd} of {filteredTaskCount}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-100 dark:disabled:border-slate-800 dark:disabled:bg-slate-900"
+          >
+            Prev
+          </button>
+          <div className="inline-flex items-center gap-1">
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const pageNumber = index + 1;
+              const isActive = pageNumber === currentPage;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/40"
+                      : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-100"
+                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-100 dark:disabled:border-slate-800 dark:disabled:bg-slate-900"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout activeMenu="Tasks">
@@ -271,7 +372,7 @@ const Tasks = () => {
 
           {viewMode === "grid" ? (
             <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredTasks?.map((item) => (
+              {paginatedTasks?.map((item) => (
                 <TaskCard
                   key={item._id}
                   cardId={item._id}
@@ -309,7 +410,7 @@ const Tasks = () => {
             <section className="mt-6">
               {filteredTasks.length ? (
                 <TaskListTable
-                  tableData={filteredTasks}
+                  tableData={paginatedTasks}
                   onTaskClick={(task) => handleTaskCardClick(task?._id)}
                   className="mt-0"
                 />
@@ -320,6 +421,8 @@ const Tasks = () => {
               )}
             </section>
           )}
+
+          {filteredTasks.length > 0 && renderPagination()}
         </>
       )}
 

@@ -5,55 +5,70 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
 } from "recharts";
 import CustomTooltip from "./CustomTooltip";
 import CustomLegend from "./CustomLegend";
+import { useLayoutContext } from "../../context/layoutContext.jsx";
 
-const CustomPieChart = React.memo(({ data = [], colors = [] }) => {
-  const sanitizedData = useMemo(
-    () =>
-      data.map((item) => ({
-        ...item,
-        count: Number(item?.count) || 0
-      })),
-    [data]
-  );
+const CustomPieChart = React.memo(
+  ({
+    data = [],
+    colors = [],
+    height = 325,
+    outerRadius = "70%",
+    innerRadius = "55%",
+  }) => {
+    const { isDarkMode } = useLayoutContext();
 
-  const pieCells = useMemo(
-    () =>
-      sanitizedData.map((entry, index) => (
-        <Cell
-          key={`cell-${entry.status ?? index}`}
-          fill={colors[index % colors.length]}
-        />
-      )),
-    [colors, sanitizedData]
-  );
+    const sanitizedData = useMemo(
+      () =>
+        data.map((item) => ({
+          ...item,
+          count: Number(item?.count) || 0,
+        })),
+      [data],
+    );
 
-  return (
-    <ResponsiveContainer width="100%" height={325}>
-      <PieChart>
-        <Pie
-          data={sanitizedData}
-          dataKey="count"
-          nameKey="status"
-          cx="50%"
-          cy="50%"
-          outerRadius={130}
-          innerRadius={100}
-          labelLine={false}
-          isAnimationActive={sanitizedData.length > 0}
-          animationDuration={600}
-          animationBegin={0}
-        >
-          {pieCells}
-        </Pie>
-        <Tooltip content={<CustomTooltip />} />
-        <Legend content={<CustomLegend />} />
-      </PieChart>
-    </ResponsiveContainer>
-  );
-});
+    const pieCells = useMemo(
+      () =>
+        sanitizedData.map((entry, index) => (
+          <Cell
+            key={`cell-${entry.status ?? index}`}
+            fill={colors[index % colors.length]}
+          />
+        )),
+      [colors, sanitizedData],
+    );
+
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart margin={{ top: 8, right: 8, bottom: 16, left: 8 }}>
+          <Pie
+            data={sanitizedData}
+            dataKey="count"
+            nameKey="status"
+            cx="50%"
+            cy="50%"
+            outerRadius={outerRadius}
+            innerRadius={innerRadius}
+            labelLine={false}
+            isAnimationActive={sanitizedData.length > 0}
+            animationDuration={600}
+            animationBegin={0}
+          >
+            {pieCells}
+          </Pie>
+          <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
+          <Legend
+            content={(props) => (
+              <CustomLegend {...props} isDarkMode={isDarkMode} />
+            )}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  },
+);
 
 export default CustomPieChart;

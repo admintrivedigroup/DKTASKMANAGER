@@ -452,13 +452,13 @@ const ManageEmployees = () => {
         </section>
 
         {showCreateForm && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900">Add a new employee</h3>
-          <p className="mt-1 text-sm text-slate-500">Provide the employee's details and choose their access level.</p>
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/40">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Add a new employee</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Provide the employee's details and choose their access level.</p>
 
           <form className="mt-6 grid gap-5 md:grid-cols-2" onSubmit={handleCreateUser}>
             <div className="md:col-span-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="name">
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="name">
                 Full Name
               </label>
               <input
@@ -467,14 +467,14 @@ const ManageEmployees = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Jane Cooper"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 type="text"
                 autoComplete="name"
               />
             </div>
 
             <div className="md:col-span-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="email">
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="email">
                 Email Address
               </label>
               <input
@@ -483,14 +483,14 @@ const ManageEmployees = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="member@company.com"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 type="email"
                 autoComplete="email"
               />
             </div>
 
             <div className="md:col-span-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="password">
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="password">
               Password
               </label>
               <input
@@ -499,7 +499,7 @@ const ManageEmployees = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Create a secure password"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 type="password"
                 autoComplete="new-password"
               />
@@ -507,7 +507,7 @@ const ManageEmployees = () => {
 
             <div className="md:col-span-1">
               <label
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500"
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
                 htmlFor="gender"
               >
                 Gender
@@ -518,7 +518,7 @@ const ManageEmployees = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="custom-select__field"
+                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 >
                   <option value="" disabled>
                     Select gender
@@ -533,7 +533,7 @@ const ManageEmployees = () => {
 
             <div className="md:col-span-1">
               <label
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500"
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
                 htmlFor="officeLocation"
               >
                 Office Location
@@ -544,7 +544,7 @@ const ManageEmployees = () => {
                   name="officeLocation"
                   value={formData.officeLocation}
                   onChange={handleInputChange}
-                  className="custom-select__field"
+                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 >
                   <option value="" disabled>
                     Select office location
@@ -559,7 +559,7 @@ const ManageEmployees = () => {
             </div>
 
             <div className="md:col-span-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="confirmPassword">
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="confirmPassword">
                 Confirm Password
               </label>
               <input
@@ -568,7 +568,7 @@ const ManageEmployees = () => {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 placeholder="Re-enter the password"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 type="password"
                 autoComplete="new-password"
               />
@@ -576,7 +576,7 @@ const ManageEmployees = () => {
 
             <div className="md:col-span-1">
               <label
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500"
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
                 htmlFor="role"
               >
                 Access Level
@@ -587,7 +587,7 @@ const ManageEmployees = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
-                  className="custom-select__field"
+                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                 >
                   {availableRoleOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -597,7 +597,7 @@ const ManageEmployees = () => {
                 </select>
               </div>
               {normalizedCurrentUserRole !== "super_admin" && (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-300">
                   Only a Super Admin can grant Super Admin-level access.
                 </p>
               )}
@@ -616,7 +616,7 @@ const ManageEmployees = () => {
           </section>
         )}
 
-        <section className="flex items-center gap-3 text-sm font-medium text-slate-600">
+        <section className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-300">
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 text-white shadow-[0_12px_28px_rgba(126,58,242,0.35)]">
           <LuUsers className="text-base" />
         </span>
@@ -625,10 +625,10 @@ const ManageEmployees = () => {
           : `${filteredUsers.length} teammates powering the mission.`}
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/40">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="w-full md:max-w-sm">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="memberSearch">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="memberSearch">
               Search Employees
             </label>
             <input
@@ -637,13 +637,13 @@ const ManageEmployees = () => {
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search by name"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
               disabled={isLoading}
             />
           </div>
 
           <div className="w-full md:max-w-xs">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="officeFilter">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="officeFilter">
               Filter by Office
             </label>
               <div className="custom-select mt-2">
@@ -652,7 +652,7 @@ const ManageEmployees = () => {
                   name="officeFilter"
                   value={selectedOffice}
                   onChange={(event) => setSelectedOffice(event.target.value)}
-                  className="custom-select__field"
+                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                   disabled={isLoading}
                 >
                   <option value="All">All locations</option>
@@ -693,23 +693,23 @@ const ManageEmployees = () => {
               ))}
               {filteredUsers.length === 0 && (
                 <div className="md:col-span-2 xl:col-span-3">
-                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
                     No accounts match your current search and filter settings.
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/40">
               {filteredUsers.length === 0 ? (
-                <div className="p-8 text-center text-sm text-slate-500">
+                <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-300">
                   No accounts match your current search and filter settings.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                      <tr className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                    <thead className="bg-slate-50 dark:bg-slate-900/70">
+                      <tr className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
                         <th scope="col" className="px-4 py-3 text-left">
                           S.No.
                         </th>                        
@@ -733,7 +733,7 @@ const ManageEmployees = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 text-sm text-slate-600">
+                    <tbody className="divide-y divide-slate-200 text-sm text-slate-600 dark:divide-slate-800 dark:text-slate-300">
                       {userManagementData.map(({ user, allowManagement }, index) => {
                         const pendingTasks = user?.pendingTasks ?? 0;
                         const inProgressTasks = user?.inProgressTasks ?? 0;
@@ -749,7 +749,7 @@ const ManageEmployees = () => {
                         return (
                           <tr
                             key={user._id}
-                            className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+                            className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-slate-800/80"
                             onClick={() => navigate(userDetailsPath)}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
@@ -760,7 +760,7 @@ const ManageEmployees = () => {
                             role="button"
                             tabIndex={0}
                           >
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {index + 1}
                             </td>
                             <td className="px-4 py-4 align-top">
@@ -772,30 +772,30 @@ const ManageEmployees = () => {
                                     className="h-10 w-10 rounded-2xl object-cover"
                                   />
                                 ) : (
-                                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-sm font-semibold text-indigo-600">
+                                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-sm font-semibold text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-100">
                                     {userInitial}
                                   </span>
                                 )}
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-900">
+                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                                     {user?.name}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-slate-500 dark:text-slate-300">
                                     {user?.email}
                                   </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-4 align-top text-sm text-slate-600">
-                              {user?.officeLocation || "—"}
+                            <td className="px-4 py-4 align-top text-sm text-slate-600 dark:text-slate-300">
+                              {user?.officeLocation || "N/A"}
                             </td>
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {pendingTasks}
                             </td>
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {inProgressTasks}
                             </td>
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {completedTasks}
                             </td>
                             <td className="px-4 py-4 align-top">
@@ -810,7 +810,7 @@ const ManageEmployees = () => {
                                       }}
                                       title="Change Password"
                                       aria-label="Change Password"
-                                      className="rounded-full border border-indigo-200 bg-indigo-50/70 p-2 text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700"
+                                      className="rounded-full border border-indigo-200 bg-indigo-50/70 p-2 text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-100 dark:hover:border-indigo-400 dark:hover:bg-indigo-500/25 dark:hover:text-indigo-50"
                                     >
                                       <LuKeyRound className="h-4 w-4" />
                                     </button>
@@ -822,7 +822,7 @@ const ManageEmployees = () => {
                                       }}
                                       title="Delete User"
                                       aria-label="Delete User"
-                                      className="rounded-full border border-rose-200 bg-rose-50/70 p-2 text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600"
+                                      className="rounded-full border border-rose-200 bg-rose-50/70 p-2 text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 dark:hover:border-rose-400 dark:hover:bg-rose-500/25 dark:hover:text-rose-50"
                                     >
                                       <LuTrash2 className="h-4 w-4" />
                                     </button>
@@ -844,17 +844,17 @@ const ManageEmployees = () => {
       </div>
       {showResetPasswordModal && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl dark:border dark:border-slate-800 dark:bg-slate-900 dark:shadow-slate-950/60">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               Reset password for {selectedUser.name}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
               Create a temporary password. The user will be prompted to set their own password at next login.
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleResetPasswordSubmit}>
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="newPassword">
+                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="newPassword">
                 Password
                 </label>
                 <input
@@ -863,13 +863,13 @@ const ManageEmployees = () => {
                   type="password"
                   value={resetPasswordData.newPassword}
                   onChange={handleResetPasswordChange}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                   autoComplete="new-password"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="confirmPassword">
+                <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="confirmPassword">
                   Confirm Password
                 </label>
                 <input
@@ -878,7 +878,7 @@ const ManageEmployees = () => {
                   type="password"
                   value={resetPasswordData.confirmPassword}
                   onChange={handleResetPasswordChange}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                   autoComplete="new-password"
                 />
               </div>
@@ -886,7 +886,7 @@ const ManageEmployees = () => {
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+                  className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"
                   onClick={() => {
                     setShowResetPasswordModal(false);
                     setSelectedUser(null);

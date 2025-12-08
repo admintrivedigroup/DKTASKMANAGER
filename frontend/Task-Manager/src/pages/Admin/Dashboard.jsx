@@ -580,7 +580,7 @@ const Dashboard = () => {
         <div className="page-shell">
           <Suspense
             fallback={
-              <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500">
+              <div className="card mb-6 animate-pulse bg-slate-50 text-sm text-slate-500 dark:bg-slate-900/60 dark:text-slate-300">
                 Loading announcements...
               </div>
             }
@@ -666,16 +666,16 @@ const Dashboard = () => {
 
           <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Distribution</h5>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                   Overview
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -687,16 +687,16 @@ const Dashboard = () => {
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Priority Levels</h5>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                   Priority Mix
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -709,45 +709,47 @@ const Dashboard = () => {
           </section>
 
           <section className="card">
-            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
               <div>
-                <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
-                <p className="text-sm text-slate-500">
+                <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Tasks</h5>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
                   Monitor the latest updates across the workspace at a glance.
                 </p>
               </div>
 
-              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700" onClick={onSeeMore}>
+              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-200 dark:hover:text-indigo-100" onClick={onSeeMore}>
                 View All Tasks <LuArrowRight className="ml-1 inline text-base" />
               </button>
             </div>
 
             <Suspense
               fallback={
-                <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                   Loading recent tasks...
                 </div>
               }
             >
-              <TaskListTable tableData={dashboardData?.recentTasks || []} />
+              <TaskListTable
+                tableData={(dashboardData?.recentTasks || []).slice(0, 5)}
+              />
             </Suspense>
           </section>
           
           <section className="card">
-            <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800">
               <div>
-                <h5 className="text-lg font-semibold text-slate-900">
+                <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Employee Leaderboard
                 </h5>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-300">
                   Celebrate on-time delivery and shine a light on the most reliable teammates.
                 </p>
                 {visibleTopPerformer ? (
-                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-100">
                     Top Performer · {visibleTopPerformer.name} · Score {topPerformerScore}
                   </p>
                 ) : (
-                  <p className="mt-2 text-xs font-medium text-slate-400">
+                  <p className="mt-2 text-xs font-medium text-slate-400 dark:text-slate-500">
                     Leaderboard updates once work is completed.
                   </p>
                 )}
@@ -756,7 +758,7 @@ const Dashboard = () => {
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-end sm:gap-4">
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-xs font-medium text-slate-700"
+                    className="text-xs font-medium text-slate-700 dark:text-slate-200"
                     htmlFor="leaderboard-role-filter"
                   >
                     Team Role
@@ -765,7 +767,7 @@ const Dashboard = () => {
                     id="leaderboard-role-filter"
                     value={leaderboardFilter}
                     onChange={(event) => setLeaderboardFilter(event.target.value)}
-                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px]"
+                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                   >
                     {leaderboardRoleFilters.map((filter) => (
                       <option key={filter} value={filter}>
@@ -777,7 +779,7 @@ const Dashboard = () => {
 
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-xs font-medium text-slate-700"
+                    className="text-xs font-medium text-slate-700 dark:text-slate-200"
                     htmlFor="leaderboard-office-filter"
                   >
                     Office
@@ -788,7 +790,7 @@ const Dashboard = () => {
                     onChange={(event) =>
                       setLeaderboardOfficeFilter(event.target.value)
                     }
-                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px]"
+                    className="mt-1 block w-full rounded-md border-slate-300 py-1.5 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[180px] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
                   >
                     {leaderboardOfficeFilters.map((filter) => (
                       <option key={filter} value={filter}>
@@ -802,7 +804,7 @@ const Dashboard = () => {
 
             <Suspense
               fallback={
-                <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                   Loading leaderboard...
                 </div>
               }

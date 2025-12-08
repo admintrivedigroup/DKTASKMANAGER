@@ -734,7 +734,9 @@ const Dashboard = () => {
                 </div>
               }
             >
-              <TaskListTable tableData={dashboardData?.recentTasks || []} />
+              <TaskListTable
+                tableData={(dashboardData?.recentTasks || []).slice(0, 5)}
+              />
             </Suspense>
           </section>
           

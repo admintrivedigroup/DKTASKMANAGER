@@ -12,9 +12,31 @@ export const calculateTaskCompletion = ({
   progress,
   completedTodoCount,
   todoChecklist,
+  status,
 }) => {
-  if (typeof progress === "number" && !Number.isNaN(progress)) {
-    return clampPercentage(progress);
+  const normalizedStatus =
+    typeof status === "string" ? status.trim().toLowerCase() : "";
+
+  const parseProgressValue = (value) => {
+    if (typeof value === "number" && !Number.isNaN(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const cleaned = value.replace(/%/g, "").trim();
+      const numericValue = Number(cleaned);
+      if (!Number.isNaN(numericValue)) {
+        return numericValue;
+      }
+    }
+
+    return null;
+  };
+
+  const explicitProgress = parseProgressValue(progress);
+  if (explicitProgress !== null) {
+    const clampedProgress = clampPercentage(explicitProgress);
+    return normalizedStatus === "completed" ? 100 : clampedProgress;
   }
 
   const completed =
@@ -29,12 +51,25 @@ export const calculateTaskCompletion = ({
     : 0;
 
   if (totalTodos <= 0) {
+    if (normalizedStatus === "completed") {
+      return 100;
+    }
+
+    if (normalizedStatus === "in progress") {
+      return 50;
+    }
+
     return 0;
   }
 
   const derivedProgress = (completed / totalTodos) * 100;
+  const clampedProgress = clampPercentage(derivedProgress);
 
-  return clampPercentage(derivedProgress);
+  if (normalizedStatus === "completed") {
+    return 100;
+  }
+
+  return clampedProgress;
 };
 
 const isDueWithinNextDay = (dueDate, isCompleted) => {

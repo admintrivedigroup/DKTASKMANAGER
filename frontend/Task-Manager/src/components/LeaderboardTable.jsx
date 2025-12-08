@@ -72,6 +72,7 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="sticky top-0 z-10 bg-slate-50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <th className="px-6 py-3">S.No.</th>
                 <th className="px-6 py-3">Rank</th>
                 <th className="px-6 py-3">Team Member</th>
                 <th className="px-6 py-3">Score</th>
@@ -110,6 +111,9 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
                         : undefined
                     }
                   >
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-900">
+                      {index + 1}
+                    </td>
                     <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                       #{entry.rank}
                     </td>
@@ -192,9 +196,14 @@ const LeaderboardTable = ({ entries, onEntryClick }) => {
             }
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                Rank #{entry.rank}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  S.No. {index + 1}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                  Rank #{entry.rank}
+                </span>
+              </div>
               <span className="text-sm font-semibold text-slate-900">
                 {Number(entry.score || 0).toLocaleString()} pts
               </span>

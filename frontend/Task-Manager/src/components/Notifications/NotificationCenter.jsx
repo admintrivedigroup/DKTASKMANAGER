@@ -300,6 +300,9 @@ const NotificationCenter = () => {
                 <thead className="bg-slate-50/80">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                      S.No.
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                       Update
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
@@ -317,7 +320,8 @@ const NotificationCenter = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedNotifications.map((notification) => {
+                  {paginatedNotifications.map((notification, index) => {
+                    const serialNumber = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                     const indicator = getNotificationIndicator(notification);
                     const actionLabel = getActionLabel(notification);
                     const actorRoleLabel = notification.actor?.role
@@ -328,6 +332,9 @@ const NotificationCenter = () => {
 
                     return (
                       <tr key={notification.id || notification._id} className="align-top">
+                        <td className="px-6 py-5 text-sm font-semibold text-slate-900">
+                          {serialNumber}
+                        </td>
                         <td className="px-6 py-5">
                           <div className="flex items-start gap-3">
                             <span className="mt-1 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">

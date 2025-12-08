@@ -55,6 +55,7 @@ const completionPercentage = calculateTaskCompletion({
   progress,
   completedTodoCount,
   todoChecklist,
+  status,
 });
 
 const { colorClass: progressBarColor } = getProgressBarColor({

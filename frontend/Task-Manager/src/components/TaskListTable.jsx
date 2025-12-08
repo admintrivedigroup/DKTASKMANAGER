@@ -16,7 +16,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
   const getStatusBadgeColor = (status) => {
     switch (status) {
       case "Completed":
-        return "bg-green-100 text-gradient-to-r from-emerald-500 to-lime-400 text-white";
+        return "bg-gradient-to-r from-emerald-500 to-lime-500 text-white shadow-sm";
       case "Pending":
         return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
       case "In Progress":
@@ -99,9 +99,14 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
 
   const getProgressMeta = (task) => {
     const percentage = calculateTaskCompletion({
-      progress: task?.progress,
+      progress:
+        task?.progress ??
+        task?.progressValue ??
+        task?.progressPercentage ??
+        task?.completion,
       completedTodoCount: task?.completedTodoCount,
       todoChecklist: task?.todoChecklist,
+      status: task?.status,
     });
 
     const { colorClass } = getProgressBarColor({
@@ -130,6 +135,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
           <thead className="bg-slate-50 dark:bg-slate-900">
             <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300">
+              <th className="px-6 py-3">S.No.</th>
               <th className="px-6 py-3">Name</th>
               <th className="px-6 py-3">Status</th>
               <th className="px-6 py-3">Priority</th>
@@ -150,52 +156,55 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   )}
                   {...interactiveRowProps(task)}
                 >
-                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">
-                  <div className="space-y-2">
-                    <span className="line-clamp-1">{task.title}</span>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        <span>Progress</span>
-                        <span>{progressMeta.rounded}%</span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div
-                          className={`${progressMeta.colorClass} h-full transition-all duration-500`}
-                          style={{ width: `${progressMeta.percentage}%` }}
-                          aria-hidden="true"
-                        />
+                  <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">
+                    <div className="space-y-2">
+                      <span className="line-clamp-1">{task.title}</span>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          <span>Progress</span>
+                          <span>{progressMeta.rounded}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                          <div
+                            className={`${progressMeta.colorClass} h-full transition-all duration-500`}
+                            style={{ width: `${progressMeta.percentage}%` }}
+                            aria-hidden="true"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
-                      task.status
-                    )}`}
-                  >
-                    {task.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getPriorityBadgeColor(
-                      task.priority
-                    )}`}
-                  >
-                    {task.priority}
-                  </span>
-                </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
-                  {formatDate(task.dueDate)}
-                </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
-                  {getAssigneeNames(task.assignedTo)}
-                </td>
-                <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
-                  {formatDate(task.createdAt)}
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
+                        task.status
+                      )}`}
+                    >
+                      {task.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getPriorityBadgeColor(
+                        task.priority
+                      )}`}
+                    >
+                      {task.priority}
+                    </span>
+                  </td>
+                  <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
+                    {formatDate(task.dueDate)}
+                  </td>
+                  <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
+                    {getAssigneeNames(task.assignedTo)}
+                  </td>
+                  <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
+                    {formatDate(task.createdAt)}
+                  </td>
+                </tr>
               );
             })}
           </tbody>
@@ -204,7 +213,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
 
       <div className="space-y-3 p-4 md:hidden">
         {safeTableData.length ? (
-          safeTableData.map((task) => {
+          safeTableData.map((task, index) => {
             const progressMeta = getProgressMeta(task);
 
             return (
@@ -216,9 +225,14 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                 {...interactiveRowProps(task)}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {task.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      S.No. {index + 1}
+                    </span>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {task.title}
+                    </h3>
+                  </div>
                   <span
                     className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
                       task.status
