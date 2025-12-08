@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LuTriangleAlert,
@@ -90,6 +90,7 @@ const normalizeDate = (value) => {
 const TaskCalendar = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const tasksSectionRef = useRef(null);
 
   const todayKey = formatDateInputValue(new Date());
   const [monthCursor, setMonthCursor] = useState(() => new Date());
@@ -192,6 +193,13 @@ const TaskCalendar = () => {
 
     return days;
   }, [monthCursor, tasksByDate, todayKey]);
+
+  const handleDateSelect = useCallback((dateKey) => {
+    setSelectedDate(dateKey);
+    if (tasksSectionRef.current) {
+      tasksSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   const selectedTasks = useMemo(() => {
     const dayTasks = tasksByDate[selectedDate] || [];
@@ -423,7 +431,7 @@ const TaskCalendar = () => {
                     <button
                       key={day.dateKey}
                       type="button"
-                      onClick={() => setSelectedDate(day.dateKey)}
+                      onClick={() => handleDateSelect(day.dateKey)}
                       className={`relative flex h-28 flex-col rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
                         isSelected
                           ? "border-indigo-400 shadow-[0_14px_30px_rgba(59,130,246,0.2)]"
@@ -470,7 +478,7 @@ const TaskCalendar = () => {
             </div>
           </section>
 
-          <section className="page-surface">
+          <section className="page-surface" ref={tasksSectionRef}>
             <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">
