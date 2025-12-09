@@ -17,6 +17,45 @@ export const calculateTaskCompletion = ({
   const normalizedStatus =
     typeof status === "string" ? status.trim().toLowerCase() : "";
 
+  const deriveCompletedFromChecklist = (checklist) => {
+    if (!Array.isArray(checklist)) {
+      return null;
+    }
+
+    return checklist.reduce((count, item) => {
+      if (!item) return count;
+
+      const flag =
+        item.completed ??
+        item.isCompleted ??
+        item.done ??
+        item.isDone ??
+        (typeof item.status === "string"
+          ? item.status.trim().toLowerCase() === "completed"
+          : null);
+
+      return flag ? count + 1 : count;
+    }, 0);
+  };
+
+  const completedFromChecklist = deriveCompletedFromChecklist(todoChecklist);
+
+  const completed =
+    typeof completedTodoCount === "number" && !Number.isNaN(completedTodoCount)
+      ? completedTodoCount
+      : typeof completedFromChecklist === "number"
+      ? completedFromChecklist
+      : 0;
+
+  const totalTodos = Array.isArray(todoChecklist)
+    ? todoChecklist.length
+    : typeof todoChecklist === "number" && !Number.isNaN(todoChecklist)
+    ? todoChecklist
+    : 0;
+
+  const hasChecklist = totalTodos > 0;
+  const hasIncompleteChecklist = hasChecklist && completed < totalTodos;
+
   const parseProgressValue = (value) => {
     if (typeof value === "number" && !Number.isNaN(value)) {
       return value;
@@ -34,42 +73,35 @@ export const calculateTaskCompletion = ({
   };
 
   const explicitProgress = parseProgressValue(progress);
+
+  if (hasChecklist) {
+    const derivedProgress = clampPercentage((completed / totalTodos) * 100);
+
+    if (hasIncompleteChecklist) {
+      return derivedProgress;
+    }
+
+    if (explicitProgress !== null) {
+      const clampedProgress = clampPercentage(explicitProgress);
+      return Math.max(clampedProgress, derivedProgress);
+    }
+
+    return 100;
+  }
+
   if (explicitProgress !== null) {
-    const clampedProgress = clampPercentage(explicitProgress);
-    return normalizedStatus === "completed" ? 100 : clampedProgress;
+    return clampPercentage(explicitProgress);
   }
-
-  const completed =
-    typeof completedTodoCount === "number" && !Number.isNaN(completedTodoCount)
-      ? completedTodoCount
-      : 0;
-
-  const totalTodos = Array.isArray(todoChecklist)
-    ? todoChecklist.length
-    : typeof todoChecklist === "number" && !Number.isNaN(todoChecklist)
-    ? todoChecklist
-    : 0;
-
-  if (totalTodos <= 0) {
-    if (normalizedStatus === "completed") {
-      return 100;
-    }
-
-    if (normalizedStatus === "in progress") {
-      return 50;
-    }
-
-    return 0;
-  }
-
-  const derivedProgress = (completed / totalTodos) * 100;
-  const clampedProgress = clampPercentage(derivedProgress);
 
   if (normalizedStatus === "completed") {
     return 100;
   }
 
-  return clampedProgress;
+  if (normalizedStatus === "in progress") {
+    return 50;
+  }
+
+  return 0;
 };
 
 const isDueWithinNextDay = (dueDate, isCompleted) => {
@@ -92,8 +124,11 @@ const isDueWithinNextDay = (dueDate, isCompleted) => {
 
 export const getProgressBarColor = ({ percentage, status, dueDate }) => {
   const normalizedPercentage = clampPercentage(percentage);
+  const normalizedStatus =
+    typeof status === "string" ? status.trim().toLowerCase() : "";
   const isCompleted =
-    status?.toLowerCase() === "completed" || normalizedPercentage >= 100;
+    normalizedPercentage >= 100 ||
+    (normalizedStatus === "completed" && normalizedPercentage >= 99.5);
 
   if (isCompleted) {
     return {
