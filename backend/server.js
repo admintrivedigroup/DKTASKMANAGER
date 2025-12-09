@@ -67,6 +67,6 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server + task job
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 10000;
 startTaskReminderJob();
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
