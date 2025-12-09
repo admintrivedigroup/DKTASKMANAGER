@@ -54,7 +54,7 @@ const AuthLayout = ({ children }) => {
                 </div>
               </div>
               <p className="text-xs text-indigo-100/60 font-medium tracking-wide">
-                © 2025 Vijay Trivedi Group. All rights reserved.
+                &copy; 2025 Vijay Trivedi Group. All rights reserved.
               </p>
             </div>
           </div>
