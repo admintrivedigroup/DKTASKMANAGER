@@ -5,9 +5,9 @@ const path = require("path");
 
 // 1️⃣ Connect DB BEFORE importing routes/models
 const connectDB = require("./config/db");
-connectDB(); // << IMPORTANT — MUST RUN BEFORE ROUTES
+connectDB(); // MUST RUN BEFORE ROUTES
 
-// 2️⃣ Import express middlewares AFTER connecting DB
+// Import middlewares
 const { startTaskReminderJob } = require("./jobs/taskReminderJob");
 const {
   addSecurityHeaders,
@@ -16,7 +16,7 @@ const {
 } = require("./middlewares/securityMiddleware");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
 
-// 3️⃣ Now import routes (these import models internally)
+// Import routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes = require("./routes/taskRoutes");
@@ -29,6 +29,22 @@ const invoiceRoutes = require("./routes/invoiceRoutes");
 
 const app = express();
 app.disable("x-powered-by");
+
+
+// ⭐⭐⭐ HEALTH CHECK ROUTES — MUST BE BEFORE ANY SECURITY MIDDLEWARE ⭐⭐⭐
+
+// Respond to GET /
+app.get("/", (req, res) => {
+  res.status(200).send("Backend is running!");
+});
+
+// Respond to HEAD / (UptimeRobot uses HEAD)
+app.head("/", (req, res) => {
+  res.status(200).end();
+});
+
+
+// ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING — AFTER HEALTH CHECK ⭐⭐⭐
 
 // CORS
 app.use(
@@ -48,12 +64,9 @@ app.use(createRateLimiter({ windowMs: 60 * 1000, max: 120 }));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// ⭐ ADD THIS HEALTH CHECK ROUTE (REQUIRED FOR UPTIMEROBOT + STOP 404)
-app.get("/", (req, res) => {
-  res.status(200).send("Backend is running!");
-});
 
-// Routes
+// ⭐⭐⭐ ROUTES ⭐⭐⭐
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -64,14 +77,21 @@ app.use("/api/cases", caseRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/invoices", invoiceRoutes);
 
+
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Error handlers
+
+// Error handlers (LAST)
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server + task job
+
+// ⭐⭐⭐ START SERVER ⭐⭐⭐
+
 const PORT = process.env.PORT || 10000;
 startTaskReminderJob();
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
