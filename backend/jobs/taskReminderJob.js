@@ -1,6 +1,6 @@
 const cron = require("node-cron");
-const Task = require("../models/taskModel");
-const User = require("../models/userModel");
+const Task = require("../models/Task");
+const User = require("../models/User");
 const { sendTaskReminder } = require("../utils/mailService");
 
 exports.startTaskReminderJob = () => {
