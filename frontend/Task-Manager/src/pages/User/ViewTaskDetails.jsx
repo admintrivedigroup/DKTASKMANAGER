@@ -6,7 +6,7 @@ import DashboardLayout from "../../components/layouts/DashboardLayout";
 import AvatarGroup from "../../components/AvatarGroup";
 import { LuSquareArrowOutUpRight } from "react-icons/lu";
 import LoadingOverlay from "../../components/LoadingOverlay";
-import { formatDateLabel } from "../../utils/dateUtils";
+import { formatDateTimeLabel } from "../../utils/dateUtils";
 import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
 import { hasPrivilegedAccess } from "../../utils/roleUtils";
@@ -82,6 +82,12 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
     }
 
     const currentItem = todoChecklist[itemIndex];
+
+    if (!hasTaskStarted) {
+      toast.error("Checklist items can be completed once the task start time is reached.");
+      return;
+    }
+
     const assignedValue =
       currentItem?.assignedTo?._id || currentItem?.assignedTo || "";
     const assignedId = assignedValue ? assignedValue.toString() : "";
@@ -164,6 +170,18 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
 
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
+  const hasTaskStarted = useMemo(() => {
+    if (!task?.startDate) {
+      return true;
+    }
+
+    const parsed = new Date(task.startDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return true;
+    }
+
+    return parsed.getTime() <= Date.now();
+  }, [task?.startDate]);
 
   return (
     <DashboardLayout activeMenu={activeMenu}>
@@ -192,13 +210,17 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
             <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
               <div className="form-card">
                 <div className="grid grid-cols-1 gap-6">
-                  <InfoBox label="Description" value={task?.description} />
+                    <InfoBox label="Description" value={task?.description} />
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                     <InfoBox label="Priority" value={task?.priority} />
                     <InfoBox
+                      label="Start Date"
+                      value={formatDateTimeLabel(task?.startDate, "N/A")}
+                    />
+                    <InfoBox
                       label="Due Date"
-                      value={formatDateLabel(task?.dueDate, "N/A")}
+                      value={formatDateTimeLabel(task?.dueDate, "N/A")}
                     />
                                         <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Assigned To</p>
@@ -236,9 +258,17 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
                           });
 
                         const assigneeName = assigneeDetails?.name || "";
-                        const canToggle =
+                        const canToggleUser =
                           isPrivilegedUser ||
                           (assignedId && assignedId === normalizedUserId);
+                        const canToggle = hasTaskStarted && canToggleUser;
+                        const disabledMessage = !hasTaskStarted
+                          ? "Checklist unlocks once the task start time is reached."
+                          : !canToggleUser
+                          ? assigneeName
+                            ? `Only ${assigneeName} can mark this item complete.`
+                            : "Only the assigned member can mark this item complete."
+                          : "";
 
                         return (
                           <TodoCheckList
@@ -252,6 +282,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
                             }}
                             disabled={!canToggle || !todoId}
                             assigneeName={assigneeName}
+                            disabledMessage={disabledMessage}
                           />
                         );
                       })}
@@ -312,7 +343,14 @@ const InfoBox = ({ label, value }) => {
   );
 };
 
-const TodoCheckList = ({ text, isChecked, onChange, disabled, assigneeName }) => {
+const TodoCheckList = ({
+  text,
+  isChecked,
+  onChange,
+  disabled,
+  assigneeName,
+  disabledMessage,
+}) => {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.08)]">
       <input
@@ -329,9 +367,10 @@ const TodoCheckList = ({ text, isChecked, onChange, disabled, assigneeName }) =>
         )}
         {disabled && (
           <p className="text-[11px] text-slate-400">
-            {assigneeName
-              ? `Only ${assigneeName} can mark this item complete.`
-              : "Only the assigned member can mark this item complete."}
+            {disabledMessage ||
+              (assigneeName
+                ? `Only ${assigneeName} can mark this item complete.`
+                : "Only the assigned member can mark this item complete.")}
           </p>
         )}
       </div>

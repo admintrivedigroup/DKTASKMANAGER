@@ -1,6 +1,6 @@
 import React from "react";
 import { LuCalendar, LuClock3, LuUser } from "react-icons/lu";
-import { formatDateLabel } from "../utils/dateUtils";
+import { formatDateTimeLabel } from "../utils/dateUtils";
 import {
   calculateTaskCompletion,
   getProgressBarColor,
@@ -63,7 +63,8 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
     return names.length ? names.join(", ") : "Unassigned";
   };
 
-  const formatDate = (value) => formatDateLabel(value);
+  const formatDate = (value, fallback = "N/A") =>
+    formatDateTimeLabel(value, fallback);
 
  const handleTaskActivation = (task) => {
     if (typeof onTaskClick === "function" && task) {
@@ -141,7 +142,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
               <th className="px-6 py-3">Priority</th>
               <th className="hidden px-6 py-3 md:table-cell">Due Date</th>
               <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
-              <th className="hidden px-6 py-3 md:table-cell">Created On</th>
+              <th className="hidden px-6 py-3 md:table-cell">Start Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900/60">
@@ -202,7 +203,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                     {getAssigneeNames(task.assignedTo)}
                   </td>
                   <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
-                    {formatDate(task.createdAt)}
+                    {formatDate(task.startDate || task.createdAt)}
                   </td>
                 </tr>
               );
@@ -280,9 +281,11 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   <div className="flex items-center gap-2">
                     <LuClock3 className="text-slate-400 dark:text-slate-400" />
                     <dt className="font-medium text-slate-500 dark:text-slate-400">
-                      Created
+                      Starts
                     </dt>
-                    <dd className="text-slate-700 dark:text-slate-200">{formatDate(task.createdAt)}</dd>
+                    <dd className="text-slate-700 dark:text-slate-200">
+                      {formatDate(task.startDate || task.createdAt)}
+                    </dd>
                   </div>
                 </dl>
               </article>

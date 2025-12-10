@@ -72,6 +72,23 @@ export const formatDateLabel = (value, fallback = "N/A") => {
   return `${day}${suffix} ${month} ${year}`;
 };
 
+export const formatDateTimeLabel = (value, fallback = "N/A") => {
+  const date = parseToDate(value);
+
+  if (!date) {
+    return fallback;
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
 export const formatDateInputValue = (value) => {
   const date = parseToDate(value);
 

@@ -12,12 +12,13 @@ import LoadingOverlay from "./LoadingOverlay";
 import { PRIORITY_DATA } from "../utils/data";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
-import { formatDateInputValue } from "../utils/dateUtils";
+import { formatDateTimeLocal } from "../utils/dateUtils";
 
 const createDefaultTaskData = () => ({
   title: "",
   description: "",
   priority: "Low",
+  startDate: formatDateTimeLocal(new Date()),
   dueDate: "",
   assignedTo: [],
   todoChecklist: [],
@@ -169,15 +170,25 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     setLoading(true);
 
     try {
+      const startDateValue = taskData.startDate ? new Date(taskData.startDate) : null;
+      if (!startDateValue || Number.isNaN(startDateValue.getTime())) {
+        throw new Error("Invalid start date value");
+      }
+
       const dueDateValue = taskData.dueDate ? new Date(taskData.dueDate) : null;
       if (!dueDateValue || Number.isNaN(dueDateValue.getTime())) {
         throw new Error("Invalid due date value");
+      }
+
+      if (startDateValue.getTime() > dueDateValue.getTime()) {
+        throw new Error("Start date cannot be after due date");
       }
 
       const todoChecklist = mapChecklistPayload(taskData.todoChecklist);
 
       const payload = {
         ...taskData,
+        startDate: startDateValue.toISOString(),
         dueDate: dueDateValue.toISOString(),
         todoChecklist,
       };
@@ -204,15 +215,25 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     setLoading(true);
 
     try {
+      const startDateValue = taskData.startDate ? new Date(taskData.startDate) : null;
+      if (!startDateValue || Number.isNaN(startDateValue.getTime())) {
+        throw new Error("Invalid start date value");
+      }
+
       const dueDateValue = taskData.dueDate ? new Date(taskData.dueDate) : null;
       if (!dueDateValue || Number.isNaN(dueDateValue.getTime())) {
         throw new Error("Invalid due date value");
+      }
+
+      if (startDateValue.getTime() > dueDateValue.getTime()) {
+        throw new Error("Start date cannot be after due date");
       }
 
       const todoChecklist = mapChecklistPayload(taskData.todoChecklist);
 
       const payload = {
         ...taskData,
+        startDate: startDateValue.toISOString(),
         dueDate: dueDateValue.toISOString(),
         todoChecklist,
       };
@@ -270,9 +291,24 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
       return;
     }
 
+    if (!taskData.startDate) {
+      setError("Start date is required.");
+      return;
+    }
+
     if (!taskData.dueDate) {
       setError("Due date is required.");
       return;
+    }
+
+    if (taskData.startDate && taskData.dueDate) {
+      const startDateValue = new Date(taskData.startDate);
+      const dueDateValue = new Date(taskData.dueDate);
+
+      if (startDateValue.getTime() > dueDateValue.getTime()) {
+        setError("Start date cannot be after due date.");
+        return;
+      }
     }
 
     if (!taskData.assignedTo?.length) {
@@ -370,9 +406,10 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           title: taskInfo.title || "",
           description: taskInfo.description || "",
           priority: taskInfo.priority || "Low",
-          dueDate: taskInfo.dueDate
-            ? formatDateInputValue(taskInfo.dueDate)
-            : "",
+          startDate: taskInfo.startDate
+            ? formatDateTimeLocal(taskInfo.startDate)
+            : formatDateTimeLocal(taskInfo.createdAt || new Date()),
+          dueDate: taskInfo.dueDate ? formatDateTimeLocal(taskInfo.dueDate) : "",
           assignedTo: assignedMembers
             .map((item) => item?._id || item)
             .filter(Boolean)
@@ -548,14 +585,34 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
 
                       <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
-                          Due Date
+                          Start Date & Time
+                        </label>
+                        <div className="relative">
+                          <input
+                            className="form-input mt-0 h-12 rounded-xl border border-slate-200 bg-white/80 pr-11 text-slate-800 shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                            value={taskData.startDate}
+                            onChange={({ target }) =>
+                              handleValueChange("startDate", target.value)
+                            }
+                            type="datetime-local"
+                            max={taskData.dueDate || undefined}
+                            disabled={loading}
+                          />
+                          <LuCalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                          Due Date & Time
                         </label>
                         <div className="relative">
                           <input
                             className="form-input mt-0 h-12 rounded-xl border border-slate-200 bg-white/80 pr-11 text-slate-800 shadow-sm transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
                             value={taskData.dueDate}
                             onChange={({ target }) => handleValueChange("dueDate", target.value)}
-                            type="date"
+                            type="datetime-local"
+                            min={taskData.startDate || undefined}
                             disabled={loading}
                           />
                           <LuCalendarDays className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />

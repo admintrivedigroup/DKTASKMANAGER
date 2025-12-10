@@ -2,7 +2,7 @@ import React from "react";
 import Progress from "../Progress";
 import AvatarGroup from "../AvatarGroup";
 import { LuPaperclip } from "react-icons/lu";
-import { formatDateLabel } from "../../utils/dateUtils";
+import { formatDateTimeLabel } from "../../utils/dateUtils";
 import {
   calculateTaskCompletion,
   getProgressBarColor,
@@ -14,6 +14,7 @@ const TaskCard = ({
   priority,
   status,
   progress,
+  startDate,
   createdAt,
   dueDate,
   assignedTo = [],
@@ -144,11 +145,15 @@ const roundedCompletion = Math.round(completionPercentage);
       <div className="mt-5 grid grid-cols-2 gap-3 text-sm text-slate-600 transition-colors duration-300 dark:text-slate-300">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 transition-colors duration-300 dark:text-slate-400">Start Date</p>
-          <p className="mt-1 text-sm font-medium text-slate-900 transition-colors duration-300 dark:text-slate-100">{formatDateLabel(createdAt)}</p>
+          <p className="mt-1 text-sm font-medium text-slate-900 transition-colors duration-300 dark:text-slate-100">
+            {formatDateTimeLabel(startDate || createdAt, "N/A")}
+          </p>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 transition-colors duration-300 dark:text-slate-400">Due Date</p>
-          <p className="mt-1 text-sm font-medium text-slate-900 transition-colors duration-300 dark:text-slate-100">{formatDateLabel(dueDate)}</p>
+          <p className="mt-1 text-sm font-medium text-slate-900 transition-colors duration-300 dark:text-slate-100">
+            {formatDateTimeLabel(dueDate, "N/A")}
+          </p>
         </div>
       </div>
 

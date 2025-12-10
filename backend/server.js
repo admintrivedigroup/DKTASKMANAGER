@@ -31,6 +31,35 @@ const app = express();
 app.disable("x-powered-by");
 
 
+// ⭐⭐⭐ UPTIMEROBOT IP ALLOWLIST ⭐⭐⭐
+const uptimeRobotIPs = [
+  "63.143.42.242",
+  "69.162.124.226",
+  "69.162.124.227",
+  "69.162.124.228",
+  "69.162.124.229",
+  "69.162.124.230",
+  "69.162.124.231",
+  "69.162.124.232",
+  "69.162.124.233",
+  "69.162.124.234",
+  "216.245.221.82",
+  "216.245.221.83",
+  "216.245.221.84",
+  "216.245.221.85",
+];
+
+app.use((req, res, next) => {
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+  if (uptimeRobotIPs.some((allowedIP) => ip?.includes(allowedIP))) {
+    return next(); // allow UptimeRobot bypass
+  }
+
+  next();
+});
+
+
 // ⭐⭐⭐ HEALTH CHECK ROUTES — MUST BE BEFORE ANY SECURITY MIDDLEWARE ⭐⭐⭐
 
 // Respond to GET /
@@ -66,7 +95,6 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 
 // ⭐⭐⭐ ROUTES ⭐⭐⭐
-
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -76,7 +104,6 @@ app.use("/api/matters", matterRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/invoices", invoiceRoutes);
-
 
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -88,7 +115,6 @@ app.use(errorHandler);
 
 
 // ⭐⭐⭐ START SERVER ⭐⭐⭐
-
 const PORT = process.env.PORT || 10000;
 startTaskReminderJob();
 

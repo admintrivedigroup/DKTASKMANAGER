@@ -381,6 +381,7 @@ const Tasks = () => {
                   priority={item.priority}
                   status={item.status}
                   progress={item.progress}
+                  startDate={item.startDate}
                   createdAt={item.createdAt}
                   dueDate={item.dueDate}
                     assignedTo={Array.isArray(item.assignedTo)
