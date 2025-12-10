@@ -26,6 +26,7 @@ const matterRoutes = require("./routes/matterRoutes");
 const caseRoutes = require("./routes/caseRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
+const emailRoutes = require("./routes/emailRoutes");
 
 const app = express();
 app.disable("x-powered-by");
@@ -104,6 +105,7 @@ app.use("/api/matters", matterRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/invoices", invoiceRoutes);
+app.use("/api/email", emailRoutes);
 
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
