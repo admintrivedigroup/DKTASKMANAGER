@@ -7,6 +7,7 @@ const {
   EMAIL_PASS,
   EMAIL_FROM,
   EMAIL_FROM_NAME,
+  CLIENT_URL,
 } = process.env;
 
 const transporter = nodemailer.createTransport({
@@ -31,6 +32,12 @@ const getFromAddress = () => {
 const formatDate = (value) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString();
+};
+
+const buildTaskLink = (taskId) => {
+  if (!CLIENT_URL || !taskId) return null;
+  const base = CLIENT_URL.endsWith("/") ? CLIENT_URL.slice(0, -1) : CLIENT_URL;
+  return `${base}/tasks/${taskId}`;
 };
 
 const sendEmail = async ({ to, subject, html, text }) => {
@@ -65,12 +72,24 @@ const sendTaskAssignmentEmail = async ({ task, assignees = [], assignedBy }) => 
   }
 
   const subject = `New Task Assigned: ${task?.title || "Task"}`;
+  const taskLink = buildTaskLink(task?._id);
   const html = `
-    <h2>${task?.title || "Task Assigned"}</h2>
-    ${task?.description ? `<p>${task.description}</p>` : ""}
-    <p><b>Priority:</b> ${task?.priority || "Not set"}</p>
-    ${task?.dueDate ? `<p><b>Due:</b> ${formatDate(task.dueDate)}</p>` : ""}
-    ${assignedBy?.name || assignedBy?.email ? `<p><b>Assigned By:</b> ${assignedBy?.name || assignedBy?.email}</p>` : ""}
+    <div style="font-family: Arial, sans-serif;">
+      <h2>New Task Assigned</h2>
+      <p>${assignedBy?.name || assignedBy?.email || "A team member"} assigned you a new task.</p>
+      <h3 style="margin-bottom: 4px;">${task?.title || "Task"}</h3>
+      ${task?.description ? `<p style="margin-top: 0;">${task.description}</p>` : ""}
+      <ul>
+        <li><b>Priority:</b> ${task?.priority || "Not set"}</li>
+        <li><b>Status:</b> ${task?.status || "Pending"}</li>
+        ${task?.dueDate ? `<li><b>Due:</b> ${formatDate(task.dueDate)}</li>` : ""}
+      </ul>
+      ${
+        taskLink
+          ? `<p style="margin-top: 12px;"><a href="${taskLink}" target="_blank" rel="noopener">View task</a></p>`
+          : ""
+      }
+    </div>
   `;
 
   await sendEmail({
@@ -80,14 +99,28 @@ const sendTaskAssignmentEmail = async ({ task, assignees = [], assignedBy }) => 
   });
 };
 
-const sendTaskReminder = async (to, task) => {
-  const subject = `Reminder: ${task?.title || "Task"} is due soon`;
+const sendTaskReminder = async (to, task, hoursBefore) => {
+  const taskLink = buildTaskLink(task?._id);
+  const hoursText =
+    typeof hoursBefore === "number" && hoursBefore > 0
+      ? `${hoursBefore} hour${hoursBefore === 1 ? "" : "s"}`
+      : null;
+
+  const subject = hoursText
+    ? `Reminder: ${task?.title || "Task"} due in ${hoursText}`
+    : `Reminder: ${task?.title || "Task"} is due soon`;
+
   const html = `
+    <div style="font-family: Arial, sans-serif;">
       <h2>Task Reminder</h2>
-      <p>Your task <b>${task?.title || "Task"}</b> is due at:</p>
-      <h3>${formatDate(task?.dueDate)}</h3>
-      <p>Please complete it on time.</p>
-    `;
+      <p>${hoursText ? `This task is due in ${hoursText}.` : "This task is due soon."}</p>
+      <p><b>Task:</b> ${task?.title || "Task"}</p>
+      ${task?.description ? `<p><b>Details:</b> ${task.description}</p>` : ""}
+      ${task?.priority ? `<p><b>Priority:</b> ${task.priority}</p>` : ""}
+      ${task?.dueDate ? `<p><b>Due:</b> ${formatDate(task.dueDate)}</p>` : ""}
+      ${taskLink ? `<p><a href="${taskLink}" target="_blank" rel="noopener">View task</a></p>` : ""}
+    </div>
+  `;
 
   await sendEmail({ to, subject, html });
 };
