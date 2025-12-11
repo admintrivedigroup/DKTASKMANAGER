@@ -7,6 +7,14 @@ import { UserContext } from "../../context/userContext.jsx";
 import Input from "../../components/inputs/input";
 import { getStoredTokenPreference, getToken } from "../../utils/tokenStorage";
 import { getDefaultRouteForRole } from "../../utils/roleUtils";
+import {
+  LuArrowRight,
+  LuEye,
+  LuEyeOff,
+  LuLock,
+  LuMail,
+  LuShieldCheck,
+} from "react-icons/lu";
 
 const FOCUSABLE_SELECTORS =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -98,6 +106,61 @@ const createInitialAdminTokenResetForm = () => ({
   newPassword: "",
   confirmPassword: "",
 });
+
+const FloatingField = ({
+  id,
+  label,
+  type = "text",
+  value,
+  onChange,
+  icon: Icon,
+  autoComplete,
+  ...props
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const isPassword = type === "password";
+  const resolvedType = isPassword && isVisible ? "text" : type;
+
+  return (
+    <div className="group relative">
+      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition duration-200 group-focus-within:text-indigo-500">
+        {Icon ? <Icon className="h-5 w-5" /> : null}
+      </div>
+
+      <input
+        id={id}
+        name={id}
+        type={resolvedType}
+        value={value}
+        onChange={onChange}
+        placeholder=" "
+        autoComplete={autoComplete}
+        className="peer w-full rounded-2xl border border-slate-200/70 bg-white/90 px-12 pt-4 pb-2 text-sm font-semibold text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_12px_36px_rgba(15,23,42,0.08)] outline-none transition-all duration-200 hover:border-indigo-400/80 focus:border-transparent focus:bg-white focus:shadow-[inset_0_-2px_0_rgba(79,70,229,0.55),0_14px_36px_rgba(79,70,229,0.12),0_0_0_6px_rgba(79,70,229,0.08)] focus:ring-0 focus:animate-[focus-soft_0.6s_ease-out]"
+        {...props}
+      />
+
+      <label
+        htmlFor={id}
+        className="pointer-events-none absolute left-12 top-3 text-sm font-semibold text-slate-500 transition-all duration-200 ease-out peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-focus:text-indigo-600 peer-[&:not(:placeholder-shown)]:-top-2 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:font-semibold peer-[&:not(:placeholder-shown)]:text-indigo-700"
+      >
+        {label}
+      </label>
+
+      {isPassword && (
+        <button
+          type="button"
+          onClick={() => setIsVisible((prev) => !prev)}
+          className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-400 shadow-sm ring-1 ring-slate-200 transition duration-200 hover:scale-105 hover:text-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
+            isVisible ? "scale-105 text-indigo-600" : ""
+          }`}
+          aria-label={isVisible ? "Hide password" : "Show password"}
+        >
+          {isVisible ? <LuEye className="h-4 w-4" /> : <LuEyeOff className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -357,44 +420,60 @@ const Login = () => {
   return (
     <AuthLayout>
       <>
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-3xl font-semibold text-slate-900">Welcome back</h3>
-          <p className="text-sm text-slate-500">
-            It&apos;s great to see you again. Sign in to orchestrate your team&apos;s next success story.
-          </p>
+      <div className="relative space-y-6 overflow-hidden rounded-3xl">
+        <div className="pointer-events-none absolute -left-16 top-6 h-40 w-40 rounded-full bg-indigo-200/60 blur-3xl opacity-50 animate-[gentle-float_9s_ease-in-out_infinite]" />
+        <div className="pointer-events-none absolute -right-10 bottom-0 h-36 w-36 rounded-full bg-cyan-200/50 blur-3xl opacity-50 animate-[gentle-float_12s_ease-in-out_infinite]" />
+
+        <div className="space-y-3 relative z-10 motion-safe:animate-[rise-up_0.8s_ease-out]">
+          <div className="relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-indigo-500/70 via-primary-500/70 to-cyan-400/70 p-[1px] shadow-[0_10px_26px_rgba(79,70,229,0.24)] ring-1 ring-white/70 backdrop-blur">
+            <div className="flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-xs font-semibold text-indigo-800 shadow-inner ring-1 ring-white/80 backdrop-blur">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-md ring-1 ring-white/50 motion-safe:animate-[lock-bounce_2.2s_ease-in-out_infinite]">
+                <LuLock className="h-3.5 w-3.5" />
+              </span>
+              Secured workspace sign in
+            </div>
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-3xl font-bold tracking-tight text-slate-900 leading-tight">
+              Welcome back
+            </h3>
+            <div className="h-[6px] w-28 rounded-full bg-gradient-to-r from-indigo-500 via-primary-500 to-cyan-400 shadow-[0_8px_30px_rgba(79,70,229,0.35)]" />
+            <p className="max-w-xl text-sm leading-relaxed text-slate-500">
+              It&apos;s great to see you. Sign in to keep projects synchronized, approvals on track, and teams moving.
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleLogin} className="mt-6 space-y-6">
-        <Input
+        <form onSubmit={handleLogin} className="relative z-10 mt-6 space-y-5 motion-safe:animate-[rise-up_0.9s_ease-out]">
+          <FloatingField
             id="email"
+            label="Work email"
+            type="email"
             value={email}
             onChange={({ target }) => setEmail(target.value)}
-            label="Email Address"
-            placeholder="you@company.com"
-            type="email"
             autoComplete="email"
+            icon={LuMail}
           />
 
-<Input
+          <FloatingField
             id="password"
+            label="Password"
+            type="password"
             value={password}
             onChange={({ target }) => setPassword(target.value)}
-            label="Password"
-            placeholder="Enter your password"
-            type="password"
             autoComplete="current-password"
+            icon={LuLock}
           />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex items-center gap-3 text-sm text-slate-600">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-100/80 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={({ target }) => setRememberMe(target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-200"
               />
-              Remember me on this device
+              Remember this device
             </label>
             <button
               type="button"
@@ -407,7 +486,7 @@ const Login = () => {
 
           {error && (
             <div
-              className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-600 shadow-sm"
+              className="rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-600 shadow-sm backdrop-blur"
               role="alert"
             >
               {error}
@@ -416,10 +495,11 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full btn btn-primary py-2.5"
+            className="group relative inline-flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-primary-500 to-cyan-400 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(79,70,229,0.35)] transition duration-200 hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isLoggingIn}
             aria-busy={isLoggingIn}
           >
+            <span className="absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-20 bg-gradient-to-r from-white/20 via-transparent to-white/5" />
             {isLoggingIn ? (
               <>
                 <svg
@@ -442,18 +522,24 @@ const Login = () => {
                     d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                   />
                 </svg>
-                Signing in...
+                <span className="ml-2">Signing in...</span>
               </>
             ) : (
-              "Sign in"
+              <>
+                Sign in
+                <LuArrowRight className="ml-2 h-4 w-4 transition duration-150 group-hover:translate-x-1" />
+              </>
             )}
           </button>
         </form>
-        
-        <div className="text-center text-sm text-slate-600">
-            Need access? Please reach out to your workspace admin to get an account.
-          </div>
+
+        <div className="relative z-10 space-y-2 text-center text-xs text-slate-500 motion-safe:animate-[rise-up_1s_ease-out]">
+          <p>By continuing you agree to workspace security policies and data use standards.</p>
+          <p className="font-semibold text-slate-600">
+            Need access? Contact your admin for an invitation.
+          </p>
         </div>
+      </div>
         {showForgotPasswordModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
              <div
