@@ -5,13 +5,12 @@ const router = express.Router();
 
 router.post("/test", async (req, res) => {
   try {
-    const { to, subject, message } = req.body || {};
-
-    await sendTestEmail({ to, subject, message });
+    const { to } = req.body || {};
+    await sendTestEmail({ to });
 
     res.status(200).json({
       message: "Test email sent successfully.",
-      to: to || process.env.EMAIL_USER,
+      to: to || process.env.EMAIL_FROM,
     });
   } catch (error) {
     console.error("Failed to send test email:", error);
