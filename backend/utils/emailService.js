@@ -1,3 +1,4 @@
+const https = require("https");
 const nodemailer = require("nodemailer");
 
 const {
@@ -14,6 +15,8 @@ const {
   BREVO_USER,
   BREVO_PASS,
   FROM_EMAIL,
+  BREVO_API_KEY,
+  EMAIL_TIMEOUT_MS,
 } = process.env;
 
 const resolvedHost = EMAIL_HOST || BREVO_HOST;
@@ -21,26 +24,32 @@ const resolvedPort = EMAIL_PORT || BREVO_PORT;
 const resolvedUser = EMAIL_USER || BREVO_USER;
 const resolvedPass = EMAIL_PASS || BREVO_PASS;
 const resolvedFromEmail = EMAIL_FROM || FROM_EMAIL || resolvedUser;
-const MAIL_TIMEOUT_MS = Number(process.env.EMAIL_TIMEOUT_MS) || 10000;
+const resolvedFromName = EMAIL_FROM_NAME || "Task Manager";
+const MAIL_TIMEOUT_MS = Number(EMAIL_TIMEOUT_MS) || 10000;
+const useBrevoApi = Boolean(BREVO_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: resolvedHost,
-  port: Number(resolvedPort) || 587,
-  secure: Number(resolvedPort) === 465,
-  auth: {
-    user: resolvedUser,
-    pass: resolvedPass,
-  },
-  connectionTimeout: MAIL_TIMEOUT_MS,
-  greetingTimeout: MAIL_TIMEOUT_MS,
-  socketTimeout: MAIL_TIMEOUT_MS,
-});
+const transporter = useBrevoApi
+  ? null
+  : nodemailer.createTransport({
+      host: resolvedHost,
+      port: Number(resolvedPort) || 587,
+      secure: Number(resolvedPort) === 465,
+      auth: {
+        user: resolvedUser,
+        pass: resolvedPass,
+      },
+      connectionTimeout: MAIL_TIMEOUT_MS,
+      greetingTimeout: MAIL_TIMEOUT_MS,
+      socketTimeout: MAIL_TIMEOUT_MS,
+    });
 
-const requiredConfig = [resolvedHost, resolvedPort, resolvedUser, resolvedPass];
+const requiredConfig = useBrevoApi
+  ? [BREVO_API_KEY, resolvedFromEmail]
+  : [resolvedHost, resolvedPort, resolvedUser, resolvedPass];
 
 const getFromAddress = () => {
   const address = resolvedFromEmail;
-  const name = EMAIL_FROM_NAME || "Task Manager";
+  const name = resolvedFromName;
 
   return name ? `"${name}" <${address}>` : address;
 };
@@ -56,6 +65,60 @@ const buildTaskLink = (taskId) => {
   return `${base}/tasks/${taskId}`;
 };
 
+const sendViaBrevoApi = async ({ to, subject, html, text }) => {
+  const payload = {
+    sender: { email: resolvedFromEmail, name: resolvedFromName },
+    to: to.map((email) => ({ email })),
+    subject,
+    htmlContent: html || text || "",
+    textContent: text || (html ? html.replace(/<[^>]+>/g, "") : ""),
+  };
+
+  const data = JSON.stringify(payload);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.brevo.com",
+        path: "/v3/smtp/email",
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": BREVO_API_KEY,
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(data),
+        },
+        timeout: MAIL_TIMEOUT_MS,
+      },
+      (res) => {
+        let body = "";
+        res.on("data", (chunk) => {
+          body += chunk;
+        });
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            return resolve();
+          }
+
+          const error = new Error(
+            `Brevo API responded with ${res.statusCode}: ${body || res.statusMessage}`
+          );
+          error.statusCode = res.statusCode;
+          return reject(error);
+        });
+      }
+    );
+
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy(new Error("Brevo API request timeout"));
+    });
+
+    req.write(data);
+    req.end();
+  });
+};
+
 const sendEmail = async ({ to, subject, html, text }) => {
   if (requiredConfig.some((value) => !value)) {
     throw new Error(
@@ -69,13 +132,22 @@ const sendEmail = async ({ to, subject, html, text }) => {
     throw new Error("No recipient email address provided.");
   }
 
-  await transporter.sendMail({
-    from: getFromAddress(),
-    to: recipients,
-    subject,
-    text: text || (html ? html.replace(/<[^>]+>/g, "") : undefined),
-    html,
-  });
+  if (useBrevoApi) {
+    await sendViaBrevoApi({
+      to: recipients,
+      subject,
+      html,
+      text,
+    });
+  } else {
+    await transporter.sendMail({
+      from: getFromAddress(),
+      to: recipients,
+      subject,
+      text: text || (html ? html.replace(/<[^>]+>/g, "") : undefined),
+      html,
+    });
+  }
 };
 
 const sendTaskAssignmentEmail = async ({ task, assignees = [], assignedBy }) => {
