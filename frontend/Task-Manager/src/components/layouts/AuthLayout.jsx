@@ -36,7 +36,7 @@ const AuthLayout = ({ children }) => {
 
             <div className="space-y-6 max-w-xl">
               <h1 className="text-5xl font-bold leading-tight tracking-tight text-white">
-                <span className="block text-gradient">Lead every matter with confident clarity</span>
+                <span className="block text-gradient">Lead every task with confident clarity</span>
                 <span className="mt-2 block text-indigo-100 font-semibold">
                   Keep work visible, accountable, and calm for every role.
                 </span>
