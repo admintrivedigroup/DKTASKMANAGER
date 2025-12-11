@@ -45,7 +45,7 @@ const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
             <div style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 8px 24px rgba(17,24,39,0.12);padding:24px;box-sizing:border-box;">
               <div style="display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600;color:#111827;margin:0 0 8px 0;">
                 <span style="font-size:22px;line-height:1;">📌</span>
-                <span>New Task Assigned</span>
+                <span>          New Task Assigned</span>
               </div>
               <p style="margin:0 0 12px 0;font-size:14px;color:#4b5563;">${assignedByText} assigned you a task.</p>
               <div style="margin:0 0 14px 0;">
@@ -59,7 +59,7 @@ const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
               </div>
               ${
                 taskLink
-                  ? `<a href="${taskLink}" target="_blank" rel="noopener" style="display:inline-block;background-color:#1e90ff;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(30,144,255,0.35);">View Task</a>`
+                  ? `<a href="https://dktaskmanager.netlify.app" target="_blank" rel="noopener" style="display:inline-block;background-color:#1e90ff;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(30,144,255,0.35);">View Task</a>`
                   : ""
               }
               <p style="margin:18px 0 0 0;font-size:12px;color:#6b7280;">This is an automated notification from Task Manager.</p>
