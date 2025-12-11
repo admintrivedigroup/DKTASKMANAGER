@@ -8,22 +8,34 @@ const {
   EMAIL_FROM,
   EMAIL_FROM_NAME,
   CLIENT_URL,
+  // Brevo fallbacks
+  BREVO_HOST,
+  BREVO_PORT,
+  BREVO_USER,
+  BREVO_PASS,
+  FROM_EMAIL,
 } = process.env;
 
+const resolvedHost = EMAIL_HOST || BREVO_HOST;
+const resolvedPort = EMAIL_PORT || BREVO_PORT;
+const resolvedUser = EMAIL_USER || BREVO_USER;
+const resolvedPass = EMAIL_PASS || BREVO_PASS;
+const resolvedFromEmail = EMAIL_FROM || FROM_EMAIL || resolvedUser;
+
 const transporter = nodemailer.createTransport({
-  host: EMAIL_HOST,
-  port: Number(EMAIL_PORT) || 587,
-  secure: Number(EMAIL_PORT) === 465,
+  host: resolvedHost,
+  port: Number(resolvedPort) || 587,
+  secure: Number(resolvedPort) === 465,
   auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS,
+    user: resolvedUser,
+    pass: resolvedPass,
   },
 });
 
-const requiredConfig = [EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS];
+const requiredConfig = [resolvedHost, resolvedPort, resolvedUser, resolvedPass];
 
 const getFromAddress = () => {
-  const address = EMAIL_FROM || EMAIL_USER;
+  const address = resolvedFromEmail;
   const name = EMAIL_FROM_NAME || "Task Manager";
 
   return name ? `"${name}" <${address}>` : address;
