@@ -3,6 +3,14 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+// ⭐ SMTP DEBUG CHECK (safe output)
+console.log("=== SMTP CONFIG CHECK ===");
+console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
+console.log("EMAIL_PORT:", process.env.EMAIL_PORT);
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "LOADED" : "MISSING");
+console.log("=========================\n");
+
 // 1️⃣ Connect DB BEFORE importing routes/models
 const connectDB = require("./config/db");
 connectDB(); // MUST RUN BEFORE ROUTES
@@ -61,7 +69,7 @@ app.use((req, res, next) => {
 });
 
 
-// ⭐⭐⭐ HEALTH CHECK ROUTES — MUST BE BEFORE ANY SECURITY MIDDLEWARE ⭐⭐⭐
+// ⭐⭐⭐ HEALTH CHECK ROUTES ⭐⭐⭐
 
 // Respond to GET /
 app.get("/", (req, res) => {
@@ -74,7 +82,7 @@ app.head("/", (req, res) => {
 });
 
 
-// ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING — AFTER HEALTH CHECK ⭐⭐⭐
+// ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING ⭐⭐⭐
 
 // CORS
 app.use(
