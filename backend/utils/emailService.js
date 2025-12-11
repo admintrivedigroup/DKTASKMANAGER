@@ -28,6 +28,49 @@ const buildTaskLink = (taskId) => {
   return `${base}/tasks/${taskId}`;
 };
 
+const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
+  const title = task?.title || "Task";
+  const description = task?.description || "No description provided.";
+  const priority = task?.priority || "Not set";
+  const status = task?.status || "Pending";
+  const dueDate = task?.dueDate ? formatDate(task.dueDate) : "Not set";
+  const assignedByText =
+    assignedBy?.name || assignedBy?.email || "A team member";
+
+  return `
+    <div style="background-color:#f4f6fb;padding:24px 0;margin:0;font-family:Arial,Helvetica,sans-serif;color:#1f2933;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+        <tr>
+          <td align="center" style="padding:0 16px;">
+            <div style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 8px 24px rgba(17,24,39,0.12);padding:24px;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600;color:#111827;margin:0 0 8px 0;">
+                <span style="font-size:22px;line-height:1;">📌</span>
+                <span>New Task Assigned</span>
+              </div>
+              <p style="margin:0 0 12px 0;font-size:14px;color:#4b5563;">${assignedByText} assigned you a task.</p>
+              <div style="margin:0 0 14px 0;">
+                <div style="font-size:20px;font-weight:700;color:#1e90ff;margin:0 0 8px 0;line-height:1.3;">${title}</div>
+                <p style="margin:0;font-size:14px;line-height:1.6;color:#374151;">${description}</p>
+              </div>
+              <div style="background:#f3f4f6;border-radius:12px;padding:12px 14px;margin:0 0 18px 0;border:1px solid #e5e7eb;">
+                <p style="margin:0;font-size:13px;color:#111827;line-height:1.5;"><strong>Priority:</strong> ${priority}</p>
+                <p style="margin:6px 0 0 0;font-size:13px;color:#111827;line-height:1.5;"><strong>Status:</strong> ${status}</p>
+                <p style="margin:6px 0 0 0;font-size:13px;color:#111827;line-height:1.5;"><strong>Due date:</strong> ${dueDate}</p>
+              </div>
+              ${
+                taskLink
+                  ? `<a href="${taskLink}" target="_blank" rel="noopener" style="display:inline-block;background-color:#1e90ff;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(30,144,255,0.35);">View Task</a>`
+                  : ""
+              }
+              <p style="margin:18px 0 0 0;font-size:12px;color:#6b7280;">This is an automated notification from Task Manager.</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+};
+
 const sendEmail = async ({ to, subject, html }) => {
   if (requiredConfig.some((value) => !value)) {
     throw new Error("Email configuration is incomplete. Please set BREVO_API_KEY and EMAIL_FROM.");
@@ -58,24 +101,7 @@ const sendTaskAssignmentEmail = async ({ task, assignees = [], assignedBy }) => 
 
   const subject = `New Task Assigned: ${task?.title || "Task"}`;
   const taskLink = buildTaskLink(task?._id);
-  const html = `
-    <div style="font-family: Arial, sans-serif;">
-      <h2>New Task Assigned</h2>
-      <p>${assignedBy?.name || assignedBy?.email || "A team member"} assigned you a new task.</p>
-      <h3 style="margin-bottom: 4px;">${task?.title || "Task"}</h3>
-      ${task?.description ? `<p style="margin-top: 0;">${task.description}</p>` : ""}
-      <ul>
-        <li><b>Priority:</b> ${task?.priority || "Not set"}</li>
-        <li><b>Status:</b> ${task?.status || "Pending"}</li>
-        ${task?.dueDate ? `<li><b>Due:</b> ${formatDate(task.dueDate)}</li>` : ""}
-      </ul>
-      ${
-        taskLink
-          ? `<p style="margin-top: 12px;"><a href="${taskLink}" target="_blank" rel="noopener">View task</a></p>`
-          : ""
-      }
-    </div>
-  `;
+  const html = buildTaskAssignedEmail(task, assignedBy, taskLink);
 
   await sendEmail({
     to: recipientEmails,
