@@ -500,15 +500,21 @@ const createTask = async (req, res, next) => {
             }).select("name email");
 
             if (assignees.length) {
-              await sendTaskAssignmentEmail({
+              // Fire and forget to avoid blocking task creation on SMTP delays
+              sendTaskAssignmentEmail({
                 task,
                 assignees,
                 assignedBy: req.user,
-              });
+              }).catch((notificationError) =>
+                console.error(
+                  "Failed to send task assignment notification:",
+                  notificationError
+                )
+              );
             }
           } catch (notificationError) {
             console.error(
-              "Failed to send task assignment notification:",
+              "Failed to prepare task assignment notification:",
               notificationError
             );
           }
@@ -731,13 +737,19 @@ if (newlyAssignedIds.length) {
       _id: { $in: newlyAssignedIds },
     }).select("name email");
 
-    if (assignees.length) {
-      await sendTaskAssignmentEmail({
-        task: updatedTask,
-        assignees,
-        assignedBy: req.user,
-      });
-    }
+      if (assignees.length) {
+        // Do not block update response on email send
+        sendTaskAssignmentEmail({
+          task: updatedTask,
+          assignees,
+          assignedBy: req.user,
+        }).catch((notificationError) =>
+          console.error(
+            "Failed to send task assignment notification (update):",
+            notificationError
+          )
+        );
+      }
   } catch (notificationError) {
     console.error(
       "Failed to send task reassignment notification:",

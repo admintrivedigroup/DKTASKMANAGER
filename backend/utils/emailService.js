@@ -21,6 +21,7 @@ const resolvedPort = EMAIL_PORT || BREVO_PORT;
 const resolvedUser = EMAIL_USER || BREVO_USER;
 const resolvedPass = EMAIL_PASS || BREVO_PASS;
 const resolvedFromEmail = EMAIL_FROM || FROM_EMAIL || resolvedUser;
+const MAIL_TIMEOUT_MS = Number(process.env.EMAIL_TIMEOUT_MS) || 10000;
 
 const transporter = nodemailer.createTransport({
   host: resolvedHost,
@@ -30,6 +31,9 @@ const transporter = nodemailer.createTransport({
     user: resolvedUser,
     pass: resolvedPass,
   },
+  connectionTimeout: MAIL_TIMEOUT_MS,
+  greetingTimeout: MAIL_TIMEOUT_MS,
+  socketTimeout: MAIL_TIMEOUT_MS,
 });
 
 const requiredConfig = [resolvedHost, resolvedPort, resolvedUser, resolvedPass];
