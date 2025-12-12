@@ -442,6 +442,15 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     if (!isOpen) {
       return;
     }
+
+    // Smoothly scroll the viewport and modal content to the top when opened
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const modalBody = document.querySelector(".task-form-modal-body");
+      if (modalBody) {
+        modalBody.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
   }, [isOpen]);
 
   return (
@@ -453,21 +462,14 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           resetState();
         }}
         title={isEditing ? "Update Task" : "Create Task"}
-        maxWidthClass="max-w-6xl"
+        maxWidthClass="max-w-5xl"
+        overlayClass="bg-black/40 backdrop-blur-sm items-start pt-6 sm:pt-10"
+        dialogClass="max-h-[90vh]"
+        bodyClass="task-form-modal-body max-h-[calc(90vh-4.5rem)]"
       >
         <div className="space-y-5">
           <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 shadow-inner shadow-white/40 ring-1 ring-white/60 dark:border-slate-800 dark:bg-slate-900/70 dark:ring-slate-800/80">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400">
-                  {isEditing ? "Refine & reship" : "Task Blueprint"}
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  {isEditing
-                    ? "Make adjustments and keep the team aligned."
-                    : "Share the details your team needs to get started."}
-                </p>
-              </div>
               {isEditing && (
                 <button
                   type="button"

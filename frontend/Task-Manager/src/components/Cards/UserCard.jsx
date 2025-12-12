@@ -3,6 +3,7 @@ import { FaUser } from "react-icons/fa6";
 import {
   LuClock3,
   LuKeyRound,
+  LuPencil,
   LuLoader,
   LuMail,
   LuMapPin,
@@ -51,7 +52,7 @@ const STATUS_STYLES = {
   },
 };
 
-const UserCard = ({ userInfo, onDelete, onResetPassword }) => {
+const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
 
@@ -255,8 +256,19 @@ const UserCard = ({ userInfo, onDelete, onResetPassword }) => {
           </div>
 
           {(typeof onDelete === "function" ||
-            typeof onResetPassword === "function") && (
+            typeof onResetPassword === "function" ||
+            typeof onEdit === "function") && (
             <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              {typeof onEdit === "function" && (
+                <button
+                  type="button"
+                  onClick={(event) => handleActionClick(event, onEdit)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:w-auto"
+                >
+                  <LuPencil className="text-base" />
+                  Edit
+                </button>
+              )}
               {typeof onResetPassword === "function" && (
                 <button
                   type="button"

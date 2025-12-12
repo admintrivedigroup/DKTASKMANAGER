@@ -2,7 +2,9 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LuKeyRound,
+  LuLoader,
   LuMapPin,
+  LuPencil,
   LuPlus,
   LuSearch,
   LuTrash2,
@@ -41,6 +43,19 @@ const ManageEmployees = () => {
     confirmPassword: "",
   });
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    birthdate: "",
+    gender: "",
+    officeLocation: "",
+    role: "member",
+  });
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOffice, setSelectedOffice] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
@@ -430,6 +445,76 @@ const ManageEmployees = () => {
     return { user, allowManagement };
   });
 
+  const openEditModal = (user) => {
+    setEditUser(user);
+    setEditFormData({
+      name: user?.name || "",
+      email: user?.email || "",
+      password: "",
+      confirmPassword: "",
+      birthdate: typeof user?.birthdate === "string" ? user.birthdate.slice(0, 10) : "",
+      gender: user?.gender || "",
+      officeLocation: user?.officeLocation || "",
+      role: normalizeRole(user?.role) || "member",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditInputChange = ({ target: { name, value } }) => {
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (event) => {
+    event.preventDefault();
+    if (!editUser || isUpdatingUser) return;
+
+    const requestedRole = normalizeRole(editFormData.role) || "member";
+    const allowedRoles =
+      normalizedCurrentUserRole === "super_admin" ? ["member", "admin", "super_admin"] : ["member", "admin"];
+    if (!allowedRoles.includes(requestedRole)) {
+      toast.error("You cannot assign this role.");
+      return;
+    }
+
+    if (!editFormData.name.trim() || !editFormData.email.trim()) {
+      toast.error("Name and email are required.");
+      return;
+    }
+
+    if (editFormData.password && editFormData.password !== editFormData.confirmPassword) {
+      toast.error("Password and confirmation do not match.");
+      return;
+    }
+
+    const payload = {
+      name: editFormData.name.trim(),
+      email: editFormData.email.trim(),
+      birthdate: editFormData.birthdate || null,
+      gender: editFormData.gender,
+      officeLocation: typeof editFormData.officeLocation === "string" ? editFormData.officeLocation.trim() : "",
+      role: requestedRole,
+    };
+
+    if (editFormData.password) {
+      payload.password = editFormData.password;
+    }
+
+    try {
+      setIsUpdatingUser(true);
+      await axiosInstance.put(API_PATHS.USERS.UPDATE_USER(editUser._id), payload);
+      toast.success("Employee updated successfully.");
+      setShowEditModal(false);
+      setEditUser(null);
+      await getAllUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      const message = error?.response?.data?.message || "Failed to update user. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
   return (
     <DashboardLayout activeMenu="Employees">
       <div className="page-shell space-y-5 sm:space-y-6">
@@ -697,6 +782,9 @@ const ManageEmployees = () => {
                       ? () => openResetPasswordModal(user)
                       : undefined
                   }
+                  onEdit={
+                    allowManagement ? () => openEditModal(user) : undefined
+                  }
                 />
               ))}
               {filteredUsers.length === 0 && (
@@ -814,6 +902,18 @@ const ManageEmployees = () => {
                                       type="button"
                                       onClick={(event) => {
                                         event.stopPropagation();
+                                        openEditModal(user);
+                                      }}
+                                      title="Edit User"
+                                      aria-label="Edit User"
+                                      className="rounded-full border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                    >
+                                      <LuPencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
                                         openResetPasswordModal(user);
                                       }}
                                       title="Change Password"
@@ -908,6 +1008,186 @@ const ManageEmployees = () => {
                   disabled={isResettingPassword}
                 >
                   {isResettingPassword ? "Updating..." : "Reset Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-6">
+          <div className="w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
+                <h3 className="text-xl font-semibold text-slate-900">Edit employee</h3>
+                <p className="text-sm text-slate-600">Update the employee's details and save your changes.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isUpdatingUser) return;
+                  setShowEditModal(false);
+                  setEditUser(null);
+                }}
+                className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 sm:mt-0"
+              >
+                Close
+              </button>
+            </div>
+
+            <form className="mt-5 space-y-4" onSubmit={handleEditSubmit}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editName" className="text-sm font-medium text-slate-700">
+                    Full Name
+                  </label>
+                  <input
+                    id="editName"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Full name"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editEmail" className="text-sm font-medium text-slate-700">
+                    Email Address
+                  </label>
+                  <input
+                    id="editEmail"
+                    name="email"
+                    type="email"
+                    value={editFormData.email}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="name@company.com"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editPassword" className="text-sm font-medium text-slate-700">
+                    Password
+                  </label>
+                  <input
+                    id="editPassword"
+                    name="password"
+                    type="password"
+                    value={editFormData.password}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Create a secure password"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editConfirmPassword" className="text-sm font-medium text-slate-700">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="editConfirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={editFormData.confirmPassword}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Re-enter the password"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editBirthdate" className="text-sm font-medium text-slate-700">
+                    Date of Birth
+                  </label>
+                  <input
+                    id="editBirthdate"
+                    name="birthdate"
+                    type="date"
+                    value={editFormData.birthdate}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    max={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editGender" className="text-sm font-medium text-slate-700">
+                    Gender
+                  </label>
+                  <select
+                    id="editGender"
+                    name="gender"
+                    value={editFormData.gender}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Non-binary">Non-binary</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editOfficeLocation" className="text-sm font-medium text-slate-700">
+                    Office Location
+                  </label>
+                  <select
+                    id="editOfficeLocation"
+                    name="officeLocation"
+                    value={editFormData.officeLocation}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">Select office location</option>
+                    {officeLocationOptions.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editRole" className="text-sm font-medium text-slate-700">
+                    Access Level
+                  </label>
+                  <select
+                    id="editRole"
+                    name="role"
+                    value={editFormData.role}
+                    onChange={handleEditInputChange}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  >
+                    {availableRoleOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isUpdatingUser) return;
+                    setShowEditModal(false);
+                    setEditUser(null);
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingUser}
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-slate-900 via-indigo-700 to-primary px-5 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(30,64,175,0.28)] transition hover:shadow-[0_12px_26px_rgba(30,64,175,0.32)] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isUpdatingUser ? (
+                    <>
+                      <LuLoader className="mr-2 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </button>
               </div>
             </form>
