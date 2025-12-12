@@ -26,6 +26,7 @@ const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
 const TaskCalendar = React.lazy(() => import("./pages/Calendar/TaskCalendar.jsx"));
+const UploadExample = React.lazy(() => import("./pages/Examples/UploadExample.jsx"));
 
 const App = () => {
   return (
@@ -43,6 +44,7 @@ const App = () => {
               <Route path="/" element={<Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signUp" element={<SignUp />} />
+              <Route path="/upload-example" element={<UploadExample />} />
               {/* Admin Routes */}
               <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
