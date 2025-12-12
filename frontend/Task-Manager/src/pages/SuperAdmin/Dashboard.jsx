@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserAuth } from "../../hooks/useUserAuth.jsx";
 import { UserContext } from "../../context/userContext.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout.jsx";
+import PageHeader from "../../components/layouts/PageHeader.jsx";
 import axiosInstance from "../../utils/axiosInstance.js";
 import { API_PATHS } from "../../utils/apiPaths.js";
 import { addThousandsSeparator } from "../../utils/helper.js";
@@ -77,10 +78,10 @@ const LiveGreeting = React.memo(({ userName }) => {
 
   return (
     <>
-      <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+      <h2 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">
         {greetingMessage}, {userName}
       </h2>
-      <p className="mt-3 text-sm text-white/70">{formattedDate}</p>
+      <p className="mt-3 text-sm text-slate-600">{formattedDate}</p>
     </>
   );
 });
@@ -205,16 +206,16 @@ const Dashboard = () => {
     return !isRangeValid;
   }, [isRangeValid, pendingDateRange.endDate, pendingDateRange.startDate]);
 
-  const activeRangeLabel = useMemo(() => {
+  const activeRangeSummary = useMemo(() => {
     if (!activeDateRange.startDate || !activeDateRange.endDate) {
-      return "";
+      return "No range selected";
     }
 
-    const startLabel = formatDateLabel(activeDateRange.startDate, "");
-    const endLabel = formatDateLabel(activeDateRange.endDate, "");
+    const startLabel = formatDateLabel(activeDateRange.startDate);
+    const endLabel = formatDateLabel(activeDateRange.endDate);
 
-    if (!startLabel || !endLabel) {
-      return "";
+    if (startLabel === endLabel) {
+      return startLabel;
     }
 
     return `${startLabel} → ${endLabel}`;
@@ -374,6 +375,8 @@ const Dashboard = () => {
     return foundPreset?.label || "";
   }, [activeDateRange.endDate, activeDateRange.startDate]);
 
+  const totalNotices = Array.isArray(activeNotices) ? activeNotices.length : 0;
+
   const infoCards = useMemo(
     () => [
       {
@@ -381,7 +384,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.All || 0
         ),
-        color: "from-primary via-indigo-500 to-sky-400",
+        color: "text-indigo-700 bg-indigo-50",
         icon: LuClipboardList,
         filterStatus: "All"
       },
@@ -390,7 +393,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Pending || 0
         ),
-        color: "from-amber-400 via-orange-500 to-red-400",
+        color: "text-amber-700 bg-amber-50",
         icon: LuClock3,
         filterStatus: "Pending"
       },
@@ -399,7 +402,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.InProgress || 0
         ),
-        color: "from-sky-400 via-cyan-500 to-emerald-400",
+        color: "text-cyan-700 bg-cyan-50",
         icon: LuRefreshCcw,
         filterStatus: "In Progress"
       },
@@ -408,7 +411,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Completed || 0
         ),
-        color: "from-emerald-400 via-lime-400 to-green-500",
+        color: "text-emerald-700 bg-emerald-50",
         icon: LuBadgeCheck,
         filterStatus: "Completed"
       }
@@ -570,95 +573,78 @@ const Dashboard = () => {
             <NoticeBoard notices={activeNotices} />
           </Suspense>
 
-          <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-sky-500 px-4 py-8 text-white shadow-[0_20px_45px_rgba(59,130,246,0.25)] sm:px-6 sm:py-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent_65%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(255,255,255,0.18),_transparent_60%)]" />
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-4 text-sm lg:max-w-[420px] lg:flex-1">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">Welcome Back</p>
-                  <LiveGreeting userName={user?.name || "User"} />
-                </div>
-              </div>
-
-              <div className="w-full rounded-3xl border border-white/40 bg-white/10 px-5 py-3 text-sm backdrop-blur-sm sm:px-7 lg:w-[500px]">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
-                    Date Range
-                  </p>
-                  {activeRangeLabel ? (
-                    <p className="text-sm font-medium text-white/80">
-                      {activeRangeLabel}
-                    </p>
-                  ) : null}
+          <PageHeader
+            tone="primary"
+            eyebrow="Workspace Overview"
+            title={<LiveGreeting userName={user?.name || "User"} />}
+            description="Stay on top of execution, unblock teams quickly, and keep every deliverable moving with clear focus."
+            meta={[
+              `Range: ${activeRangeSummary}`,
+              `Preset: ${activePresetLabel || "Custom"}`,
+              `${totalNotices} active notice${totalNotices === 1 ? "" : "s"}`,
+            ]}
+            actions={
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/85">
+                  Date range
+                </p>
+                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25">
+                  {PRESET_RANGES.map(({ label, rangeFactory }) => {
+                    const isActive = label === activePresetLabel;
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => handlePresetRange(rangeFactory)}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                          isActive
+                            ? "bg-white text-indigo-700 shadow-sm"
+                            : "text-white/85 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <form
-                  className="mt-3 space-y-2"
                   onSubmit={handleDateFilterSubmit}
+                  className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
                 >
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-xs text-white/70">
-                      <span className="uppercase tracking-[0.18em]">From</span>
-                      <input
-                        type="date"
-                        value={pendingDateRange.startDate}
-                        onChange={({ target }) =>
-                          handleDateInputChange("startDate", target.value)
-                        }
-                        className="w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/70"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs text-white/70">
-                      <span className="uppercase tracking-[0.18em]">To</span>
-                      <input
-                        type="date"
-                        value={pendingDateRange.endDate}
-                        onChange={({ target }) =>
-                          handleDateInputChange("endDate", target.value)
-                        }
-                        className="w-full rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/70"
-                      />
-                    </label>
-                  </div>
-
-                  {showRangeError ? (
-                    <p className="text-xs font-medium text-rose-100">
-                      Start date must be on or before the end date.
-                    </p>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="submit"
-                      disabled={!isRangeValid}
-                      className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-white/90 disabled:cursor-not-allowed disabled:bg-white/50 disabled:text-white/70"
-                    >
-                      Apply
-                    </button>
-                    {PRESET_RANGES.map(({ label, rangeFactory }) => {
-                      const isActive = label === activePresetLabel;
-
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => handlePresetRange(rangeFactory)}
-                          className={`inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-                            isActive
-                              ? "border-white bg-white text-primary shadow"
-                              : "border-white/40 bg-white/10 text-white hover:bg-white/20"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <input
+                    type="date"
+                    value={pendingDateRange.startDate}
+                    onChange={({ target }) =>
+                      handleDateInputChange("startDate", target.value)
+                    }
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                  />
+                  <span className="text-white/80 sm:mx-1">→</span>
+                  <input
+                    type="date"
+                    value={pendingDateRange.endDate}
+                    onChange={({ target }) =>
+                      handleDateInputChange("endDate", target.value)
+                    }
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!isRangeValid}
+                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60"
+                  >
+                    Apply Range
+                  </button>
                 </form>
-                </div>
+
+                {showRangeError ? (
+                  <p className="text-xs font-medium text-rose-100">
+                    Start date must be on or before the end date.
+                  </p>
+                ) : null}
               </div>
-          </section>
+            }
+          />
 
           <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-8">
             {infoCards.map((card) => (
@@ -675,9 +661,9 @@ const Dashboard = () => {
 
           <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-3">
                 <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
                   Overview
                 </span>
               </div>
@@ -694,9 +680,9 @@ const Dashboard = () => {
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-3">
                 <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
                   Priority Mix
                 </span>
               </div>
@@ -714,7 +700,7 @@ const Dashboard = () => {
           </section>
 
           <section className="card">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
                 <p className="text-sm text-slate-500">
@@ -741,7 +727,7 @@ const Dashboard = () => {
           </section>
           
           <section className="card">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 pb-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900">
                   Employee Leaderboard

@@ -1,6 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LuKeyRound, LuTrash2, LuUsers } from "react-icons/lu";
+import {
+  LuKeyRound,
+  LuMapPin,
+  LuPlus,
+  LuSearch,
+  LuTrash2,
+  LuUsers,
+} from "react-icons/lu";
 import toast from "react-hot-toast";
 
 import UserCard from "../../components/Cards/UserCard.jsx";
@@ -235,7 +242,7 @@ const ManageEmployees = () => {
     event.preventDefault();
     if (!selectedUser || isResettingPassword) return;
 
-   const selectedUserRole = normalizeRole(selectedUser?.role);
+    const selectedUserRole = normalizeRole(selectedUser?.role);
     if (selectedUserRole === "super_admin" && normalizedCurrentUserRole !== "super_admin") {
       toast.error("Only Super Admins can reset passwords for Super Admin accounts.");
       return;
@@ -425,33 +432,48 @@ const ManageEmployees = () => {
 
   return (
     <DashboardLayout activeMenu="Employees">
-      <div className="space-y-6">
-        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] sm:px-6 sm:py-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">People & Partners</p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Employees</h2>
-            <p className="mt-3 text-sm text-white/70">
-              Manage your internal team and keep every employee connected in one transparent view.
-            </p>
-          </div>
+      <div className="page-shell space-y-5 sm:space-y-6">
+        <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 via-slate-50 to-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.12),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.12),transparent_40%)]" />
+          <div className="relative flex flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <h1 className="text-[28px] font-bold leading-tight text-slate-900 sm:text-[30px]">
+                    Employees
+                  </h1>
+                </div>
+                <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+                  <LuUsers className="text-base text-indigo-500" />
+                  {isLoading
+                    ? "Loading teammates..."
+                    : `${filteredUsers.length} teammates powering the mission`}
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              className="download-btn"
-              onClick={() => setShowCreateForm((prev) => !prev)}
-            >
-              {showCreateForm ? "Close" : "Add Employee"}
-            </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  onClick={() => setShowCreateForm((prev) => !prev)}
+                >
+                  {showCreateForm ? (
+                    <>
+                      <LuPlus className="rotate-45 text-base" /> Close
+                    </>
+                  ) : (
+                    <>
+                      <LuPlus className="text-base" /> Add Employee
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
         </section>
 
         {showCreateForm && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-900">Add a new employee</h3>
           <p className="mt-1 text-sm text-slate-500">Provide the employee's details and choose their access level.</p>
 
@@ -615,59 +637,46 @@ const ManageEmployees = () => {
           </section>
         )}
 
-        <section className="flex items-center gap-3 text-sm font-medium text-slate-600">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 text-white shadow-[0_12px_28px_rgba(126,58,242,0.35)]">
-          <LuUsers className="text-base" />
-        </span>
-        {isLoading
-          ? "Loading employees..."
-          : `${filteredUsers.length} teammates powering the mission.`}
-        </section>
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-xl">
+              <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                id="memberSearch"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search teammates by name"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-10 text-sm text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-white focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                disabled={isLoading}
+              />
+            </div>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="w-full md:max-w-sm">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="memberSearch">
-              Search Employees
-            </label>
-            <input
-              id="memberSearch"
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search by name"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-              disabled={isLoading}
-            />
-          </div>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex w-full flex-1 flex-wrap items-center gap-3 sm:w-auto">
+                <div className="relative min-w-[190px] flex-1 sm:flex-none sm:min-w-[200px]">
+                  <LuMapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    id="officeFilter"
+                    name="officeFilter"
+                    value={selectedOffice}
+                    onChange={(event) => setSelectedOffice(event.target.value)}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-10 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-white focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    disabled={isLoading}
+                  >
+                    <option value="All">All locations</option>
+                    {officeLocationOptions.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="w-full md:max-w-xs">
-            <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500" htmlFor="officeFilter">
-              Filter by Office
-            </label>
-              <div className="custom-select mt-2">
-                <select
-                  id="officeFilter"
-                  name="officeFilter"
-                  value={selectedOffice}
-                  onChange={(event) => setSelectedOffice(event.target.value)}
-                  className="custom-select__field"
-                  disabled={isLoading}
-                >
-                  <option value="All">All locations</option>
-                  {officeLocationOptions.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
+                <ViewToggle value={viewMode} onChange={setViewMode} className="shadow-sm" />
               </div>
+            </div>
           </div>
-
-          <div className="flex items-center justify-end">
-            <ViewToggle value={viewMode} onChange={setViewMode} />
-          </div>            
-        </div>
         </section>
 
         {isLoading ? (
@@ -675,7 +684,7 @@ const ManageEmployees = () => {
         ) : (
           <section>
           {viewMode === "grid" ? (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
               {userManagementData.map(({ user, allowManagement }) => (
                 <UserCard
                   key={user._id}
@@ -691,15 +700,15 @@ const ManageEmployees = () => {
                 />
               ))}
               {filteredUsers.length === 0 && (
-                <div className="md:col-span-2 xl:col-span-3">
-                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                <div className="sm:col-span-2 xl:col-span-3">
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
                     No accounts match your current search and filter settings.
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
               {filteredUsers.length === 0 ? (
                 <div className="p-8 text-center text-sm text-slate-500">
                   No accounts match your current search and filter settings.
@@ -786,7 +795,7 @@ const ManageEmployees = () => {
                               </div>
                             </td>
                             <td className="px-4 py-4 align-top text-sm text-slate-600">
-                              {user?.officeLocation || "—"}
+                              {user?.officeLocation || "N/A"}
                             </td>
                             <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
                               {pendingTasks}

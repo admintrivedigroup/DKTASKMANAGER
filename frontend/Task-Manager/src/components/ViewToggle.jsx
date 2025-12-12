@@ -15,24 +15,24 @@ const ViewToggle = ({ value = "grid", onChange, className = "" }) => {
   const getButtonClasses = (mode) => {
     const isActive = value === mode;
     const baseClasses =
-      "flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition";
+      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition justify-center";
 
     if (isActive) {
       return (
         baseClasses +
-        " bg-indigo-600 text-white shadow-[0_8px_18px_rgba(79,70,229,0.35)] dark:bg-indigo-500 dark:shadow-indigo-900/50"
+        " bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100 dark:bg-slate-800 dark:text-indigo-100 dark:ring-indigo-800/70"
       );
     }
 
     return (
       baseClasses +
-      " text-slate-500 hover:text-slate-700 focus-visible:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 dark:focus-visible:text-white"
+      " text-slate-600 hover:bg-slate-50 hover:text-indigo-700 focus-visible:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-200 dark:focus-visible:text-indigo-200"
     );
   };
 
   return (
     <div
-      className={`inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:shadow-slate-950/40 ${className}`}
+      className={`inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300 ${className}`}
       role="group"
       aria-label="Toggle view"
     >

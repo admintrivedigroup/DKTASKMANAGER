@@ -78,10 +78,10 @@ const LiveGreeting = React.memo(({ userName }) => {
 
   return (
     <>
-      <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+      <h2 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">
         {greetingMessage}, {userName}
       </h2>
-      <p className="mt-3 text-sm text-white/70">{formattedDate}</p>
+      <p className="mt-3 text-sm text-slate-600">{formattedDate}</p>
     </>
   );
 });
@@ -397,7 +397,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.All || 0
         ),
-        color: "text-indigo-600 bg-indigo-50",
+        color: "text-indigo-700 bg-indigo-50",
         icon: LuClipboardList,
         filterStatus: "All"
       },
@@ -406,7 +406,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Pending || 0
         ),
-        color: "text-amber-600 bg-amber-50",
+        color: "text-amber-700 bg-amber-50",
         icon: LuClock3,
         filterStatus: "Pending"
       },
@@ -415,7 +415,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.InProgress || 0
         ),
-        color: "text-sky-600 bg-sky-50",
+        color: "text-cyan-700 bg-cyan-50",
         icon: LuRefreshCcw,
         filterStatus: "In Progress"
       },
@@ -424,7 +424,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Completed || 0
         ),
-        color: "text-emerald-600 bg-emerald-50",
+        color: "text-emerald-700 bg-emerald-50",
         icon: LuBadgeCheck,
         filterStatus: "Completed"
       }
@@ -600,7 +600,7 @@ const Dashboard = () => {
             ]}
             actions={
               <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/85">
                   Date range
                 </p>
                 <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25">
@@ -610,7 +610,11 @@ const Dashboard = () => {
                       <button
                         key={label}
                         onClick={() => handlePresetRange(rangeFactory)}
-                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${isActive ? "bg-white text-indigo-700 shadow-sm shadow-indigo-900/20" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                          isActive
+                            ? "bg-white text-indigo-700 shadow-sm"
+                            : "text-white/85 hover:bg-white/10 hover:text-white"
+                        }`}
                       >
                         {label}
                       </button>
@@ -628,16 +632,16 @@ const Dashboard = () => {
                     onChange={({ target }) =>
                       handleDateInputChange("startDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
                   />
-                  <span className="text-white/70 sm:mx-1">—</span>
+                  <span className="text-white/80 sm:mx-1">→</span>
                   <input
                     type="date"
                     value={pendingDateRange.endDate}
                     onChange={({ target }) =>
                       handleDateInputChange("endDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
                   />
                   <button
                     type="submit"
@@ -666,9 +670,9 @@ const Dashboard = () => {
 
           <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3">
                 <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Distribution</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700">
                   Overview
                 </span>
               </div>
@@ -687,9 +691,9 @@ const Dashboard = () => {
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3">
                 <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700">
                   Priority Mix
                 </span>
               </div>
@@ -709,7 +713,7 @@ const Dashboard = () => {
           </section>
 
           <section className="card">
-            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+            <div className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Tasks</h5>
                 <p className="text-sm text-slate-500 dark:text-slate-300">
@@ -736,7 +740,7 @@ const Dashboard = () => {
           </section>
           
           <section className="card">
-            <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between dark:border-slate-800">
+            <div className="flex flex-col gap-4 pb-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Employee Leaderboard

@@ -8,7 +8,7 @@ const CustomTooltip = ({ active, payload, isDarkMode = false }) => {
 
     return (
       <div className={containerClasses}>
-        <p className="mb-1 text-xs font-semibold text-purple-800 dark:text-indigo-200">
+        <p className="mb-1 text-xs font-semibold text-slate-700 dark:text-indigo-200">
           {payload[0].name || payload[0].payload?.priority}
         </p>
         <p className="text-sm text-slate-600 dark:text-slate-200">

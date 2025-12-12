@@ -2,10 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SIDE_MENU_DATA, SIDE_MENU_USER_DATA } from "../../utils/data";
 import { UserContext } from "../../context/userContext.jsx";
-import { FaUser } from "react-icons/fa6";
-import { LuUserCog } from "react-icons/lu";
 import {
-  getRoleLabel,
   hasPrivilegedAccess,
   normalizeRole,
   resolvePrivilegedPath,  
@@ -38,28 +35,8 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
     navigate(trimmedRoute);
   };
   
-  const normalizedGender = useMemo(() => {
-    if (typeof user?.gender !== "string") {
-      return "";
-    }
-
-    return user.gender.trim().toLowerCase();
-  }, [user?.gender]);
-
   const normalizedRole = useMemo(() => normalizeRole(user?.role), [user?.role]);
   const isPrivilegedUser = hasPrivilegedAccess(normalizedRole);
-  const roleBadgeLabel = getRoleLabel(normalizedRole);
-  const profileSettingsPath = useMemo(() => {
-    if (!user) {
-      return "";
-    }
-
-    if (isPrivilegedUser) {
-      return resolvePrivilegedPath("/admin/profile-settings", normalizedRole);
-    }
-
-    return "/user/profile-settings";
-  }, [isPrivilegedUser, normalizedRole, user]);
 
   useEffect(() => {
     if (!user) {
@@ -85,47 +62,8 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
   }, [isPrivilegedUser, normalizedRole, user]);
 
   return (
-    <aside className="w-full h-full rounded-[22px] border border-slate-200/80 bg-white/92 shadow-[0_22px_70px_rgba(17,25,40,0.08)] backdrop-blur-sm overflow-hidden flex flex-col dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
-      {/* Sidebar header - hide text when collapsed */}
-      <div className={`border-b border-slate-100/80 bg-gradient-to-r from-indigo-50/80 via-white to-primary-50/60 transition-all duration-300 dark:border-slate-800 dark:from-slate-900/70 dark:via-slate-900 dark:to-slate-900/70 ${collapsed ? 'p-3' : 'p-6'}`}>
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0 group">
-            {user?.profileImageUrl ? (
-              <img
-                src={user?.profileImageUrl || ""}
-                alt="Profile"
-                className="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover ring-2 ring-slate-100"
-              />
-            ) : (
-              <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 ring-2 ring-indigo-50">
-                <FaUser className="text-xl" />
-              </div>
-            )}
-            {profileSettingsPath && (
-              <button
-                onClick={() => handleClick(profileSettingsPath)}
-                className="absolute -bottom-1 -right-1 h-7 w-7 bg-white rounded-full border border-slate-200/80 flex items-center justify-center text-slate-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:scale-105 hover:border-indigo-200 hover:text-indigo-600 dark:bg-slate-900 dark:border-slate-700/70"
-                title="Profile Settings"
-              >
-                <LuUserCog className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <h5 className="text-sm font-bold text-slate-900 truncate dark:text-slate-50">{user?.name || "User"}</h5>
-              <p className="text-xs text-slate-500 truncate mb-1 dark:text-slate-400">{user?.email || ""}</p>
-              {isPrivilegedUser && roleBadgeLabel && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-100">
-                  {roleBadgeLabel}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+    <aside className="w-full h-full rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_48px_rgba(17,25,40,0.08)] backdrop-blur-sm overflow-hidden flex flex-col dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
+      <nav className="flex-1 overflow-y-auto p-3 pt-4 space-y-1.5 custom-scrollbar">
         {(Array.isArray(sideMenuData)
           ? sideMenuData.filter((menu) => menu && typeof menu.label === "string")
           : []
@@ -149,7 +87,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
           return (
             <button
               key={`menu_${index}`}
-              className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 group relative overflow-hidden ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 group relative overflow-hidden ${
                 isActive
                   ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-100 dark:ring-indigo-400/30"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
@@ -174,7 +112,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
       
       <div className="p-4 border-t border-slate-100/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/70">
         <p className="text-[10px] text-center text-slate-400 tracking-[0.14em] dark:text-slate-500">
-          v1.0.0 • Vijay Trivedi Group
+          v1.0.0 | Vijay Trivedi Group
         </p>
       </div>
     </aside>

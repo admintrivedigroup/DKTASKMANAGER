@@ -30,7 +30,7 @@ const parseNotificationDate = (notification) => {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 };
 
-const NotificationBell = () => {
+const NotificationBell = ({ iconOverride = null }) => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate(); 
   const [open, setOpen] = useState(false);
@@ -186,9 +186,9 @@ const NotificationBell = () => {
       <button
         type="button"
         onClick={toggleDropdown}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-primary dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-indigo-200"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_10px_25px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-primary dark:border-slate-700/70 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:text-indigo-200"
       >
-        <LuBell className="text-xl" />
+        {iconOverride || <LuBell className="text-xl" />}
         {showBadge && (
           <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
             {displayBadgeValue}

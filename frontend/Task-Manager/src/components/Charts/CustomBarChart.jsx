@@ -40,20 +40,20 @@ const CustomBarChart = ({ data }) => {
   );
 
   return (
-    <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-inner dark:border-slate-800/70 dark:bg-slate-900/60 dark:shadow-slate-950/40">
+    <div className="mt-4 rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={safeData} barCategoryGap={24}>
-          <CartesianGrid stroke={gridColor} strokeDasharray="4 4" vertical={false} />
+        <BarChart data={safeData} barCategoryGap={28} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <CartesianGrid stroke={gridColor} strokeDasharray="3 3" vertical={false} />
 
           <XAxis
             dataKey="priority"
-            tick={{ fontSize: 12, fill: axisColor }}
+            tick={{ fontSize: 12, fill: axisColor, fontWeight: 500 }}
             stroke="none"
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            tick={{ fontSize: 12, fill: axisColor }}
+            tick={{ fontSize: 12, fill: axisColor, fontWeight: 500 }}
             stroke="none"
             tickLine={false}
             axisLine={false}
@@ -65,10 +65,9 @@ const CustomBarChart = ({ data }) => {
           <Bar
             dataKey="count"
             nameKey="priority"
-            fill="#FF8042"
-            radius={[10, 10, 0, 0]}
-            activeDot={{ r: 8, fill: "yellow" }}
-            activeBar={{ fill: "#7c3aed" }}
+            radius={[12, 12, 12, 12]}
+            maxBarSize={48}
+            animationDuration={500}
           >
             {safeData.map((entry, index) => (
               <Cell key={index} fill={getBarColor(entry)} />

@@ -44,7 +44,7 @@ const PageHeader = ({
             <div className="space-y-2">
               {typeof title === "string" ? (
                 <h1
-                  className={`text-3xl font-semibold leading-tight sm:text-4xl ${
+                  className={`text-2xl font-semibold leading-snug sm:text-3xl ${
                     isPrimary ? "text-white" : "text-slate-900 dark:text-slate-50"
                   }`}
                 >

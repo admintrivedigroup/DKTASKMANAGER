@@ -1,6 +1,14 @@
 import React, { useContext, useMemo } from "react";
 import { FaUser } from "react-icons/fa6";
-import { LuTrash2 } from "react-icons/lu";
+import {
+  LuClock3,
+  LuKeyRound,
+  LuLoader,
+  LuMail,
+  LuMapPin,
+  LuShieldCheck,
+  LuTrash2,
+} from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../../context/userContext.jsx";
 import {
@@ -8,6 +16,40 @@ import {
   normalizeRole,
   resolvePrivilegedPath,
 } from "../../utils/roleUtils";
+
+const ROLE_BADGE_STYLES = {
+  super_admin:
+    "bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-400/40",
+  admin:
+    "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-100 dark:ring-amber-400/40",
+  member:
+    "bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-100 dark:ring-indigo-400/40",
+  default:
+    "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700",
+};
+
+const STATUS_STYLES = {
+  Pending: {
+    icon: LuClock3,
+    badge:
+      "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-100 dark:ring-amber-400/40",
+  },
+  "In Progress": {
+    icon: LuLoader,
+    badge:
+      "bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-500/15 dark:text-sky-100 dark:ring-sky-400/40",
+  },
+  Completed: {
+    icon: LuShieldCheck,
+    badge:
+      "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-100 dark:ring-emerald-400/40",
+  },
+  default: {
+    icon: LuClock3,
+    badge:
+      "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
+  },
+};
 
 const UserCard = ({ userInfo, onDelete, onResetPassword }) => {
   const navigate = useNavigate();
@@ -30,6 +72,8 @@ const UserCard = ({ userInfo, onDelete, onResetPassword }) => {
     [normalizedRole],
   );
   const showRoleBadge = Boolean(roleLabel);
+  const roleBadgeTone =
+    ROLE_BADGE_STYLES[normalizedRole] || ROLE_BADGE_STYLES.default;
 
   const stats = useMemo(() => {
     if (normalizedRole === "client") {
@@ -112,100 +156,130 @@ const UserCard = ({ userInfo, onDelete, onResetPassword }) => {
     }
   };
 
+  const avatarAccentClass =
+    normalizedGender === "female"
+      ? "bg-rose-50 text-rose-500 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-400/40"
+      : normalizedGender === "male"
+      ? "bg-indigo-50 text-indigo-500 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-100 dark:ring-indigo-400/40"
+      : "bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700";
+
   return (
-    <div className="user-card">
+    <div className="user-card h-full">
       <div
-        className="relative cursor-pointer overflow-hidden rounded-[26px] border border-white/50 bg-white/70 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_50px_rgba(79,70,229,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-slate-800/70 dark:bg-slate-900/75 dark:shadow-slate-950/50 dark:focus-visible:ring-offset-slate-900"
+        className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white/95 p-4 shadow-[0_1px_4px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(15,23,42,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none dark:focus-visible:ring-indigo-500/70 dark:focus-visible:ring-offset-slate-900"
         role="button"
         tabIndex={0}
         onClick={handleNavigateToDetails}
         onKeyDown={handleKeyDown}
       >
-        <span className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.18),_transparent_60%)] dark:opacity-70" />
-        <span className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_bottom_right,_rgba(56,189,248,0.18),_transparent_60%)] dark:opacity-60" />
+        <span className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_12%,rgba(99,102,241,0.08),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(14,165,233,0.08),transparent_32%)] dark:opacity-70" />
 
-        <div className="relative flex items-center gap-4">
-          {userInfo?.profileImageUrl ? (
-            <img
-              src={userInfo?.profileImageUrl}
-              alt="Avatar"
-              className="h-14 w-14 rounded-2xl border-4 border-white object-cover shadow-[0_12px_24px_rgba(79,70,229,0.25)] dark:border-slate-800"
-            />
-          ) : (
-            <FaUser
-              className={`h-14 w-14 rounded-2xl border-4 border-white object-cover p-3 ${
-                normalizedGender === "female"
-                  ? "text-rose-300 shadow-[0_12px_24px_rgba(244,114,182,0.25)]"
-                  : normalizedGender === "male"
-                  ? "text-primary shadow-[0_12px_24px_rgba(79,70,229,0.25)]"
-                  : "text-indigo-300 shadow-[0_12px_24px_rgba(79,70,229,0.18)]"
-              } dark:border-slate-800`}
-            />
-          )}
-
-          <div>
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">
-              {userInfo?.name}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-300">
-              {userInfo?.email}
-            </p>
-            {showRoleBadge && (
-              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-100">
-                {roleLabel}
+        <div className="relative flex items-start gap-3">
+          <div className="relative">
+            {userInfo?.profileImageUrl ? (
+              <img
+                src={userInfo?.profileImageUrl}
+                alt=""
+                className="h-16 w-16 rounded-full object-cover ring-4 ring-white shadow-sm dark:ring-slate-800"
+              />
+            ) : (
+              <span
+                className={`flex h-16 w-16 items-center justify-center rounded-full ring-4 ring-white shadow-sm ${avatarAccentClass}`}
+              >
+                <FaUser className="text-xl" />
               </span>
             )}
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                {userInfo?.name || "Unknown user"}
+              </p>
+              {showRoleBadge && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${roleBadgeTone}`}
+                >
+                  <LuShieldCheck className="text-xs" />
+                  {roleLabel}
+                </span>
+              )}
+            </div>
+            {userInfo?.email && (
+              <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+                <LuMail className="text-base text-slate-400 dark:text-slate-400" />
+                <span className="truncate">{userInfo.email}</span>
+              </p>
+            )}
             {userInfo?.officeLocation && (
-              <p className="text-xs text-slate-500 dark:text-slate-300">
-                {userInfo.officeLocation}
+              <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+                <LuMapPin className="text-base text-slate-400 dark:text-slate-400" />
+                <span className="truncate">{userInfo.officeLocation}</span>
               </p>
             )}
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-white/40 bg-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-slate-800/60 dark:bg-slate-900/60 dark:shadow-slate-950/40">
-          <div className="grid grid-cols-3 divide-x divide-white/50 dark:divide-slate-800/70">
-            {stats.map((item) => (
-              <div
-                key={item.label}
-                className="flex flex-col items-center gap-1 py-4 text-center"
-              >
-                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-300">
-                  {item.label}
-                </span>
-                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                  {item.count}
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-                  {item.unit}
-                </span>
-              </div>
-            ))}
+        <div className="relative mt-4 flex flex-1 flex-col gap-4">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-slate-800/70 dark:bg-slate-900/70 dark:shadow-[inset_0_1px_0_rgba(15,23,42,0.6)]">
+            <div className="grid grid-cols-3 gap-3">
+              {stats.map((item) => {
+                const meta = STATUS_STYLES[item.label] || STATUS_STYLES.default;
+                const Icon = meta.icon;
+                return (
+                  <div
+                    key={item.label}
+                    className="flex flex-col gap-1.5 rounded-lg bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800/70 dark:shadow-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ring-1 ring-inset ${meta.badge}`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
+                        {item.label}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                        {item.count}
+                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                        {item.unit}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        {(typeof onDelete === "function" || typeof onResetPassword === "function") && (
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
-            {typeof onResetPassword === "function" && (
-              <button
-                type="button"
-                onClick={(event) => handleActionClick(event, onResetPassword)}
-                className="mx-auto flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-100 dark:hover:border-indigo-400 dark:hover:bg-indigo-500/25 dark:hover:text-indigo-50"
-              >
-                Change Password
-              </button>
-            )}
-            {typeof onDelete === "function" && (
-              <button
-                type="button"
-                onClick={(event) => handleActionClick(event, onDelete)}
-                className="mx-auto flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 dark:hover:border-rose-400 dark:hover:bg-rose-500/25 dark:hover:text-rose-50"
-              >
-                <LuTrash2 className="text-base" /> Delete User
-              </button>
-            )}
-          </div>
-        )}
+          {(typeof onDelete === "function" ||
+            typeof onResetPassword === "function") && (
+            <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              {typeof onResetPassword === "function" && (
+                <button
+                  type="button"
+                  onClick={(event) => handleActionClick(event, onResetPassword)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-indigo-900/40 sm:w-auto"
+                >
+                  <LuKeyRound className="text-base" />
+                  Change Password
+                </button>
+              )}
+              {typeof onDelete === "function" && (
+                <button
+                  type="button"
+                  onClick={(event) => handleActionClick(event, onDelete)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 dark:hover:border-rose-400 dark:hover:bg-rose-500/25 dark:hover:text-rose-50 dark:focus:ring-rose-900/40 sm:w-auto"
+                >
+                  <LuTrash2 className="text-base" />
+                  Delete User
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

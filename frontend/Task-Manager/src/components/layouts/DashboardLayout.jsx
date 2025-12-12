@@ -140,28 +140,28 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
     <ErrorBoundary>
       <SkipToContent />
       
-      <div className="relative min-h-screen bg-gradient-to-br from-[#eaf3ff] via-[#f5f9ff] to-[#eef6ff] font-sans pt-20 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-50">
+      <div className="relative min-h-screen bg-gradient-to-br from-[#f5f7fb] via-[#f8fbff] to-[#f0f4ff] font-sans pt-16 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-50">
         {/* Animated background */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(61,154,248,0.12),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(59,87,255,0.1),transparent_30%),radial-gradient(circle_at_60%_110%,rgba(14,165,233,0.12),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(61,154,248,0.2),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(59,87,255,0.16),transparent_30%),radial-gradient(circle_at_60%_110%,rgba(15,23,42,0.32),transparent_32%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_24%,rgba(99,102,241,0.08),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(56,189,248,0.08),transparent_30%),radial-gradient(circle_at_60%_110%,rgba(45,212,191,0.08),transparent_32%)] dark:bg-[radial-gradient(circle_at_20%_24%,rgba(99,102,241,0.18),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(56,189,248,0.16),transparent_30%),radial-gradient(circle_at_60%_110%,rgba(15,23,42,0.32),transparent_32%)]"
         />
 
         <div className="relative z-20">
           <Navbar />
         </div>
 
-        <div className="relative z-10 mx-auto flex w-full max-w-[1920px] flex-1 gap-6 px-4 py-10 sm:px-6 lg:gap-10 lg:px-12">
+        <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 gap-4 px-4 py-8 sm:px-5 lg:gap-8 lg:px-8">
           {/* Sidebar with collapse animation */}
           <motion.aside
             initial={false}
             animate={{
-              width: isSidebarCollapsed ? '80px' : '288px',
+              width: isSidebarCollapsed ? '76px' : '240px',
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="sticky top-24 hidden h-[calc(100vh-9rem)] shrink-0 lg:block"
+            className="sticky top-20 hidden h-[calc(100vh-8rem)] shrink-0 lg:block"
           >
-            <div className="h-full overflow-hidden rounded-[24px] border border-slate-200/80 bg-white/92 shadow-[0_22px_70px_rgba(17,25,40,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
+            <div className="h-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_16px_48px_rgba(17,25,40,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
               <SideMenu activeMenu={activeMenu} collapsed={isSidebarCollapsed} />
             </div>
           </motion.aside>
@@ -171,10 +171,10 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 min-w-0 pb-20 lg:pb-10"
+            className="flex-1 min-w-0 pb-16 lg:pb-8"
             id="main-content"
           >
-            <div className="h-full rounded-[26px] border border-slate-200/80 bg-white/96 px-4 py-6 shadow-[0_30px_90px_rgba(17,25,40,0.09)] backdrop-blur-sm sm:px-7 lg:px-10 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/45">
+            <div className="h-full rounded-2xl border border-slate-200/70 bg-white/96 px-4 py-5 shadow-[0_20px_60px_rgba(17,25,40,0.08)] backdrop-blur-sm sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/45">
               {/* Breadcrumb navigation */}
               {breadcrumbs && <Breadcrumb items={breadcrumbs} />}
               

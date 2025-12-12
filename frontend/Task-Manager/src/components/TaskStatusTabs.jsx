@@ -2,27 +2,27 @@ import React from "react";
 
 const TaskStatusTabs = ({ tabs, activeTab, setActiveTab }) => {
   return (
-    <div className="my-2 rounded-full border border-white/50 bg-white/70 p-1 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-colors duration-300 dark:border-slate-800/60 dark:bg-slate-900/60 dark:shadow-[0_20px_45px_rgba(2,6,23,0.5)]">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="rounded-xl border border-slate-200 bg-white/90 px-1.5 py-1 shadow-sm backdrop-blur-sm transition-colors duration-300 dark:border-slate-800/70 dark:bg-slate-900/70 dark:shadow-none">
+      <div className="flex flex-wrap items-center gap-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.label;
 
           return (
             <button
               key={tab.label}
-              className={`group relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+              className={`group inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                 isActive
-                  ? "bg-gradient-to-r from-primary/90 via-indigo-500 to-sky-500 text-white shadow-[0_12px_28px_rgba(59,130,246,0.35)]"
-                  : "text-slate-500 hover:text-primary dark:text-slate-300 dark:hover:text-indigo-300"
+                  ? "bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-100 dark:ring-indigo-800/60"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-200"
               }`}
               onClick={() => setActiveTab(tab.label)}
             >
                <span>{tab.label}</span>
               <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors duration-300 ${
+                className={`flex h-6 min-w-[1.6rem] items-center justify-center rounded-full border text-xs font-semibold transition-colors duration-300 ${
                   isActive
-                    ? "border-white/60 bg-white/20 text-white"
-                    : "border-slate-200 bg-white/80 text-slate-500 group-hover:border-primary/40 group-hover:text-primary dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300 dark:group-hover:text-indigo-300"
+                    ? "border-indigo-200 bg-white text-indigo-700 dark:border-indigo-700/70 dark:bg-indigo-900/60 dark:text-indigo-100"
+                    : "border-slate-200 bg-white text-slate-600 group-hover:border-indigo-200 group-hover:text-indigo-700 dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-slate-200"
                 }`}
               >
                 {tab.count}

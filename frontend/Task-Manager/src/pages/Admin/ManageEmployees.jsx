@@ -432,11 +432,7 @@ const ManageEmployees = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/70">People & Partners</p>
             <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Employees</h2>
-            <p className="mt-3 text-sm text-white/70">
-              Manage your internal team and keep every employee connected in one transparent view.
-            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

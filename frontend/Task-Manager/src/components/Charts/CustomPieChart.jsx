@@ -43,7 +43,7 @@ const CustomPieChart = React.memo(
 
     return (
       <ResponsiveContainer width="100%" height={height}>
-        <PieChart margin={{ top: 8, right: 8, bottom: 16, left: 8 }}>
+        <PieChart margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
           <Pie
             data={sanitizedData}
             dataKey="count"
