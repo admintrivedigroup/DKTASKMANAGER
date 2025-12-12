@@ -70,7 +70,7 @@ const Navbar = () => {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-[0_10px_36px_rgba(17,25,40,0.06)] transition-all duration-200 dark:border-slate-800/70 dark:bg-slate-900/80">
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-8">
+      <div className="mx-auto w-full px-6 md:px-8">
         <div className="flex h-16 items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <img

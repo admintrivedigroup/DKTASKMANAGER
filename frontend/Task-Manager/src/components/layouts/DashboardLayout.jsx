@@ -151,12 +151,12 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
           <Navbar />
         </div>
 
-        <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 gap-4 px-4 py-8 sm:px-5 lg:gap-8 lg:px-8">
+        <div className="relative z-10 mx-auto flex w-full flex-1 gap-4 px-6 py-8 md:px-8 lg:gap-6">
           {/* Sidebar with collapse animation */}
           <motion.aside
             initial={false}
             animate={{
-              width: isSidebarCollapsed ? '76px' : '240px',
+              width: isSidebarCollapsed ? '68px' : '200px',
             }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="sticky top-20 hidden h-[calc(100vh-8rem)] shrink-0 lg:block"
@@ -171,10 +171,10 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 min-w-0 pb-16 lg:pb-8"
+            className="min-w-0 flex-1 pb-16 lg:pb-8"
             id="main-content"
           >
-            <div className="h-full rounded-2xl border border-slate-200/70 bg-white/96 px-4 py-5 shadow-[0_20px_60px_rgba(17,25,40,0.08)] backdrop-blur-sm sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/45">
+            <div className="h-full rounded-2xl border border-slate-200/70 bg-white/96 px-6 py-5 shadow-[0_20px_60px_rgba(17,25,40,0.08)] backdrop-blur-sm md:px-8 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/45">
               {/* Breadcrumb navigation */}
               {breadcrumbs && <Breadcrumb items={breadcrumbs} />}
               
@@ -191,8 +191,8 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
         )}
 
         {/* Enhanced footer */}
-        <footer className="relative z-10 mt-auto border-t border-slate-200/80 bg-white/80 px-4 py-6 text-xs text-slate-500 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
-          <div className="mx-auto flex max-w-7xl flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-center sm:gap-6">
+        <footer className="relative z-10 mt-auto border-t border-slate-200/80 bg-white/80 px-6 py-6 text-xs text-slate-500 backdrop-blur-sm md:px-8 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
+          <div className="mx-auto flex w-full flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-center sm:gap-6">
             <span>&copy; 2025 Vijay Trivedi Group. All rights reserved.</span>
             <div className="flex items-center gap-4">
             <span className="hidden sm:inline">|</span>              
