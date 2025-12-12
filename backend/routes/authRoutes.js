@@ -7,7 +7,7 @@ const {
   resetPasswordWithAdminToken,
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadmiddleware");
+const upload = require("../config/cloudinaryStorage");
 
 const router = express.Router();
 
@@ -19,13 +19,15 @@ router.get("/profile", protect, getUserProfile); // Get User Profile
 router.put("/profile", protect, updateUserProfile); // Update Profile
 
 router.post("/upload-image", upload.single("image"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-  
-    const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    res.status(200).json({ imageUrl });
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  res.status(200).json({
+    imageUrl: req.file.path,
+    publicId: req.file.filename || req.file.public_id,
   });
+});
   
 
 module.exports = router;

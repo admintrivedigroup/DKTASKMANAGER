@@ -22,6 +22,7 @@ const buildUserPayload = (user, { includeToken = false } = {}) => {
     email: formattedUser.email,
     role: formattedUser.role,
     profileImageUrl: formattedUser.profileImageUrl,
+    profileImagePublicId: formattedUser.profileImagePublicId,
     birthdate: formattedUser.birthdate,
     gender: formattedUser.gender,
     officeLocation:
@@ -48,6 +49,7 @@ const registerUser = async (req, res) => {
       email,
       password,
       profileImageUrl,
+      profileImagePublicId,
       adminInviteToken,
       privilegedRole,
       birthdate,
@@ -112,6 +114,7 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       profileImageUrl,
+      profileImagePublicId,
       role,
       birthdate: parsedBirthdate && !isNaN(parsedBirthdate) ? parsedBirthdate : null,
       gender,

@@ -1,6 +1,6 @@
 const express = require("express");
 const { adminOnly, protect } = require("../middlewares/authMiddleware");
-const upload = require("../middlewares/uploadmiddleware");
+const upload = require("../config/cloudinaryStorage");
 const {
   getUsers,
   getUserById,

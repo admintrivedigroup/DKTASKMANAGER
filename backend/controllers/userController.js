@@ -6,6 +6,7 @@ const Task = require("../models/Task");
 const User = require("../models/User");
 const Matter = require("../models/Matter");
 const CaseFile = require("../models/CaseFile");
+const cloudinary = require("../config/cloudinary");
 const {
   PRIVILEGED_ROLES,
   formatUserRole,
@@ -391,8 +392,53 @@ const createUser = async (req, res) => {
   }
 };
 
-const deleteExistingProfileImage = (imageUrl) => {
+const deleteExistingProfileImage = async (user) => {
+  if (!user) return;
+
+  const publicId = user.profileImagePublicId;
+  if (publicId) {
+    try {
+      await cloudinary.uploader.destroy(publicId);
+      return;
+    } catch (error) {
+      console.error("Failed to delete profile image from Cloudinary", error);
+    }
+  }
+
+  // Fallback for legacy locally stored images
+  const imageUrl = user.profileImageUrl;
   if (!imageUrl) return;
+
+  const derivedCloudinaryPublicId = (() => {
+    try {
+      const url = new URL(imageUrl);
+      const parts = url.pathname.split("/").filter(Boolean);
+      const uploadIndex = parts.findIndex((part) => part === "upload");
+      if (uploadIndex === -1 || uploadIndex >= parts.length - 1) {
+        return "";
+      }
+
+      const publicIdParts = parts.slice(uploadIndex + 1);
+      if (publicIdParts.length === 0) {
+        return "";
+      }
+
+      const lastPart = publicIdParts.pop();
+      const [fileNameWithoutExt] = lastPart.split(".");
+      return [...publicIdParts, fileNameWithoutExt].join("/");
+    } catch (error) {
+      return "";
+    }
+  })();
+
+  if (derivedCloudinaryPublicId) {
+    try {
+      await cloudinary.uploader.destroy(derivedCloudinaryPublicId);
+      return;
+    } catch (error) {
+      console.error("Failed to delete derived Cloudinary profile image", error);
+    }
+  }
 
   try {
     const filePathFromUrl = imageUrl.startsWith("http")
@@ -403,7 +449,7 @@ const deleteExistingProfileImage = (imageUrl) => {
     if (fs.existsSync(absolutePath)) {
       fs.unlink(absolutePath, (err) => {
         if (err) {
-          console.error("Failed to remove old profile image", err);
+          console.error("Failed to remove old local profile image", err);
         }
       });
     }
@@ -499,7 +545,7 @@ const deleteUser = async (req, res) => {
       );
     }
 
-    deleteExistingProfileImage(user.profileImageUrl);
+    await deleteExistingProfileImage(user);
 
     await user.deleteOne();
 
@@ -541,22 +587,27 @@ const updateProfileImage = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    deleteExistingProfileImage(user.profileImageUrl);
+    await deleteExistingProfileImage(user);
 
-    const profileImageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const profileImageUrl = req.file.path;
+    const profileImagePublicId = req.file.filename || req.file.public_id || null;
+
     user.profileImageUrl = profileImageUrl;
+    user.profileImagePublicId = profileImagePublicId;
     const updatedUser = await user.save();
     const formattedUpdatedUser = formatUserRole(updatedUser);
 
     res.json({
       message: "Profile photo updated successfully",
       profileImageUrl,
+      profileImagePublicId,
       user: {
         _id: formattedUpdatedUser._id,
         name: formattedUpdatedUser.name,
         email: formattedUpdatedUser.email,
         role: formattedUpdatedUser.role,
         profileImageUrl: formattedUpdatedUser.profileImageUrl,
+        profileImagePublicId: formattedUpdatedUser.profileImagePublicId,
         birthdate: formattedUpdatedUser.birthdate,
         mustChangePassword: formattedUpdatedUser.mustChangePassword,
       },
@@ -580,20 +631,23 @@ const removeProfileImage = async (req, res) => {
       return res.status(400).json({ message: "No profile photo to remove" });
     }
 
-    deleteExistingProfileImage(user.profileImageUrl);
+    await deleteExistingProfileImage(user);
     user.profileImageUrl = "";
+    user.profileImagePublicId = "";
     const updatedUser = await user.save();
     const formattedUpdatedUser = formatUserRole(updatedUser);
 
     res.json({
       message: "Profile photo removed successfully",
       profileImageUrl: "",
+      profileImagePublicId: "",
       user: {
         _id: formattedUpdatedUser._id,
         name: formattedUpdatedUser.name,
         email: formattedUpdatedUser.email,
         role: formattedUpdatedUser.role,
         profileImageUrl: formattedUpdatedUser.profileImageUrl,
+        profileImagePublicId: formattedUpdatedUser.profileImagePublicId,
         birthdate: formattedUpdatedUser.birthdate,
         mustChangePassword: formattedUpdatedUser.mustChangePassword,
       },
