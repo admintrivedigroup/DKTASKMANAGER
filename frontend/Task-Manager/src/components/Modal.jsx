@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 const Modal = ({
   children,
@@ -10,9 +11,16 @@ const Modal = ({
   dialogClass = "",
   bodyClass = "",
 }) => {
-  if (!isOpen) return null;
+  const [portalTarget, setPortalTarget] = useState(null);
 
-  return (
+  useEffect(() => {
+    // Defer grabbing the body until after mount to avoid SSR mismatches.
+    setPortalTarget(document?.body || null);
+  }, []);
+
+  if (!isOpen || !portalTarget) return null;
+
+  const modalContent = (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-3 py-6 backdrop-blur-sm sm:px-5 ${overlayClass}`}
     >
@@ -65,6 +73,8 @@ const Modal = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, portalTarget);
 };
 
 export default Modal;

@@ -608,6 +608,46 @@ const validateChecklistPayload = (payload) => {
   };
 };
 
+const validatePersonalTaskPayload = (payload, req) => {
+  const requesterId =
+    req?.user?._id && typeof req.user._id.toString === "function"
+      ? req.user._id.toString()
+      : "";
+
+  if (!requesterId) {
+    throw createHttpError("Unauthorized", 401);
+  }
+
+  const normalizedPayload = {
+    ...payload,
+    assignedTo: [requesterId],
+  };
+
+  if (Array.isArray(payload.todoChecklist)) {
+    normalizedPayload.todoChecklist = payload.todoChecklist.map((item) => {
+      if (typeof item === "string") {
+        return { text: item, assignedTo: requesterId };
+      }
+
+      if (typeof item === "object" && item !== null) {
+        return {
+          ...item,
+          assignedTo:
+            item.assignedTo === undefined ||
+            item.assignedTo === null ||
+            item.assignedTo === ""
+              ? requesterId
+              : item.assignedTo,
+        };
+      }
+
+      return item;
+    });
+  }
+
+  return validateCreateTaskPayload(normalizedPayload);
+};
+
 const validateTaskQuery = (query) => {
   const sanitized = {};
 
@@ -643,6 +683,19 @@ const validateTaskQuery = (query) => {
     }
   }
 
+  if (hasOwn(query, "type")) {
+    const allowedTypes = new Set(["personal", "assigned", "all"]);
+    const typeValue = typeof query.type === "string" ? query.type.trim().toLowerCase() : "";
+
+    if (!typeValue) {
+      // ignore empty values
+    } else if (allowedTypes.has(typeValue)) {
+      sanitized.type = typeValue;
+    } else {
+      throw createHttpError("type must be personal, assigned, or all", 400);
+    }
+  }
+
   return sanitized;
 };
 
@@ -654,5 +707,6 @@ module.exports = {
   validateUpdateTaskPayload,
   validateStatusPayload,
   validateChecklistPayload,
+  validatePersonalTaskPayload,
   validateTaskQuery,
 };

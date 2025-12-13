@@ -10,11 +10,13 @@ import { formatDateTimeLabel } from "../../utils/dateUtils";
 import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
 import { hasPrivilegedAccess } from "../../utils/roleUtils";
+import TaskFormModal from "../../components/TaskFormModal";
 
 const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
   const { id } = useParams();
   const [task, setTask] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useContext(UserContext);
 
   const tasksRoute = useMemo(() => {
@@ -170,6 +172,12 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
 
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
+  const isPersonalTask = Boolean(task?.isPersonal);
+  const isAssignedToCurrentUser = assignedMembers.some((member) => {
+    const memberId =
+      member?._id || member?.id || (typeof member === "string" ? member : null);
+    return memberId && normalizedUserId && memberId.toString() === normalizedUserId;
+  });
   const hasTaskStarted = useMemo(() => {
     if (!task?.startDate) {
       return true;
@@ -189,20 +197,50 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         <LoadingOverlay message="Loading task details..." className="py-24" />
       ) : (
         <>
-          <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-slate-900 via-indigo-700 to-sky-600 px-4 py-7 text-white shadow-[0_20px_45px_rgba(30,64,175,0.35)] sm:px-6 sm:py-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.2),_transparent_60%)]" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.42em] text-white/60">Task Detail</p>
-                <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">{task?.title || "Task"}</h2>
+          <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 via-slate-50 to-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.08),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.08),transparent_36%)]" />
+            <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-2.5">
+                <div className="space-y-1.5">
+                  <h1 className="text-[28px] font-bold text-slate-900 sm:text-[30px]">
+                    {task?.title || "Task"}
+                  </h1>
+                  <p className="text-sm text-slate-600">
+                    Task details, status, and checklist progress.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {task?.status && (
+                    <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white ${getStatusTagColor(task.status)}`}>
+                      Status: {task.status}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
+                    Priority: {task?.priority || "N/A"}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
+                    Due: {formatDateTimeLabel(task?.dueDate, "N/A")}
+                  </span>
+                </div>
               </div>
 
-              {task?.status && (
-                <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.26em] ${getStatusTagColor(task.status)}`}>
-                  {task.status}
-                </div>
-              )}
+              <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                {isPersonalTask && isAssignedToCurrentUser && (
+                  <button
+                    type="button"
+                    className="add-btn h-11"
+                    onClick={() => setIsTaskFormOpen(true)}
+                  >
+                    Update Task
+                  </button>
+                )}
+                <Link
+                  to={tasksRoute}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                >
+                  Back to Tasks
+                </Link>
+              </div>
             </div>
           </section>
 
@@ -328,6 +366,16 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         </>
       )}
 
+      <TaskFormModal
+        isOpen={isTaskFormOpen}
+        onClose={() => setIsTaskFormOpen(false)}
+        onSuccess={() => {
+          getTaskDetailsByID();
+          setIsTaskFormOpen(false);
+        }}
+        taskId={isPersonalTask && isAssignedToCurrentUser ? id : null}
+        mode="personal"
+      />
     </DashboardLayout>
   );
 };

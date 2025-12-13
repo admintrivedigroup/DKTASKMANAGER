@@ -191,8 +191,8 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
         )}
 
         {/* Enhanced footer */}
-        <footer className="relative z-10 mt-auto border-t border-slate-200/80 bg-white/80 px-6 py-6 text-xs text-slate-500 backdrop-blur-sm md:px-8 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
-          <div className="mx-auto flex w-full flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-center sm:gap-6">
+        <footer className="relative z-10 mt-auto border-t border-slate-200/80 bg-white/80 px-4 py-2 text-xs text-slate-500 backdrop-blur-sm md:px-6 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
+          <div className="mx-auto flex w-full flex-col gap-1 text-center sm:flex-row sm:items-center sm:justify-center sm:gap-4">
             <span>&copy; 2025 Vijay Trivedi Group. All rights reserved.</span>
             <div className="flex items-center gap-4">
             <span className="hidden sm:inline">|</span>              

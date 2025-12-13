@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { LuCalendarDays, LuTrash2 } from "react-icons/lu";
 import toast from "react-hot-toast";
 
@@ -13,6 +13,7 @@ import { PRIORITY_DATA } from "../utils/data";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { formatDateTimeLocal } from "../utils/dateUtils";
+import { UserContext } from "../context/userContext.jsx";
 
 const createDefaultTaskData = () => ({
   title: "",
@@ -24,7 +25,7 @@ const createDefaultTaskData = () => ({
   todoChecklist: [],
 });
 
-const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
+const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }) => {
   const [taskData, setTaskData] = useState(createDefaultTaskData());
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,9 +33,32 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
   const [isFetchingTask, setIsFetchingTask] = useState(false);
   const [assignedUserDetails, setAssignedUserDetails] = useState([]);
+  const { user } = useContext(UserContext);
 
+  const isPersonalMode = mode === "personal";
   const isEditing = useMemo(() => Boolean(taskId), [taskId]);
   const assigneeCount = taskData.assignedTo?.length || 0;
+  const personalAssigneeId = useMemo(
+    () =>
+      user?._id && typeof user._id.toString === "function"
+        ? user._id.toString()
+        : "",
+    [user?._id]
+  );
+  const personalAssigneeDetails = useMemo(
+    () =>
+      personalAssigneeId
+        ? [
+            {
+              _id: personalAssigneeId,
+              name: user?.name,
+              email: user?.email,
+              profileImageUrl: user?.profileImageUrl,
+            },
+          ]
+        : [],
+    [personalAssigneeId, user?.email, user?.name, user?.profileImageUrl]
+  );
 
   const resetState = useCallback(() => {
     setTaskData(createDefaultTaskData());
@@ -47,6 +71,19 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
   }, []);
 
   const handleValueChange = (key, value) => {
+    if (isPersonalMode && key === "assignedTo") {
+      if (!personalAssigneeId) {
+        return;
+      }
+
+      setTaskData((prevState) => ({
+        ...prevState,
+        assignedTo: [personalAssigneeId],
+      }));
+      setAssignedUserDetails(personalAssigneeDetails);
+      return;
+    }
+
     if (key === "assignedTo") {
       setTaskData((prevState) => {
         const normalizedAssignees = Array.isArray(value)
@@ -90,7 +127,26 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     if (key === "todoChecklist") {
       setTaskData((prevState) => ({
         ...prevState,
-        todoChecklist: Array.isArray(value) ? value : [],
+        todoChecklist: Array.isArray(value)
+          ? value.map((item) => {
+              if (!isPersonalMode || !personalAssigneeId) {
+                return item;
+              }
+
+              if (typeof item === "string") {
+                return { text: item, assignedTo: personalAssigneeId };
+              }
+
+              if (typeof item === "object" && item !== null) {
+                if (item.assignedTo) {
+                  return item;
+                }
+                return { ...item, assignedTo: personalAssigneeId };
+              }
+
+              return item;
+            })
+          : [],
       }));
       return;
     }
@@ -121,7 +177,10 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
             item && typeof item === "object"
               ? item.assignedTo?._id || item.assignedTo || ""
               : "";
-          const assignedTo = assignedValue ? assignedValue.toString() : "";
+          const normalizedAssigned = assignedValue ? assignedValue.toString() : "";
+          const fallbackAssignee =
+            !normalizedAssigned && isPersonalMode ? personalAssigneeId : "";
+          const assignedTo = normalizedAssigned || fallbackAssignee;
 
           if (!assignedTo) {
             return null;
@@ -153,7 +212,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
         })
         .filter(Boolean);
     },
-    [currentTask?.todoChecklist, isEditing]
+    [currentTask?.todoChecklist, isEditing, isPersonalMode, personalAssigneeId]
   );
 
   const handleAssignedUserDetailsUpdate = useCallback((details) => {
@@ -193,7 +252,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
         todoChecklist,
       };
 
-      await axiosInstance.post(API_PATHS.TASKS.CREATE_TASK, payload);
+      const createEndpoint = isPersonalMode
+        ? API_PATHS.TASKS.CREATE_PERSONAL_TASK
+        : API_PATHS.TASKS.CREATE_TASK;
+
+      await axiosInstance.post(createEndpoint, payload);
 
       toast.success("Task created successfully");
       clearData();
@@ -354,6 +417,24 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
 
     if (!isEditing) {
       clearData();
+      if (isPersonalMode && personalAssigneeId) {
+        setTaskData((previous) => ({
+          ...createDefaultTaskData(),
+          assignedTo: [personalAssigneeId],
+          todoChecklist: Array.isArray(previous.todoChecklist)
+            ? previous.todoChecklist.map((item) => {
+                if (typeof item === "string") {
+                  return { text: item, assignedTo: personalAssigneeId };
+                }
+                if (typeof item === "object" && item !== null && !item.assignedTo) {
+                  return { ...item, assignedTo: personalAssigneeId };
+                }
+                return item;
+              })
+            : [],
+        }));
+        setAssignedUserDetails(personalAssigneeDetails);
+      }
       return;
     }
 
@@ -436,6 +517,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     taskId,
     clearData,
     resetState,
+    isPersonalMode,
+    personalAssigneeDetails,
+    personalAssigneeId,
   ]);
 
   useEffect(() => {
@@ -453,6 +537,39 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
     });
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isPersonalMode || !personalAssigneeId || !isOpen) {
+      return;
+    }
+
+    setAssignedUserDetails(personalAssigneeDetails);
+    setTaskData((previous) => {
+      const normalizedChecklist = Array.isArray(previous.todoChecklist)
+        ? previous.todoChecklist.map((item) => {
+            if (typeof item === "string") {
+              return { text: item, assignedTo: personalAssigneeId };
+            }
+            if (typeof item === "object" && item !== null && !item.assignedTo) {
+              return { ...item, assignedTo: personalAssigneeId };
+            }
+            return item;
+          })
+        : [];
+
+      return {
+        ...previous,
+        assignedTo: [personalAssigneeId],
+        todoChecklist: normalizedChecklist,
+      };
+    });
+  }, [isOpen, isPersonalMode, personalAssigneeDetails, personalAssigneeId]);
+
+  const modalTitle = isEditing
+    ? "Update Task"
+    : isPersonalMode
+    ? "Create Personal Task"
+    : "Create Task";
+
   return (
     <>
       <Modal
@@ -461,7 +578,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
           onClose?.();
           resetState();
         }}
-        title={isEditing ? "Update Task" : "Create Task"}
+        title={modalTitle}
         maxWidthClass="max-w-5xl"
         overlayClass="bg-black/40 backdrop-blur-sm items-start pt-6 sm:pt-10"
         dialogClass="max-h-[90vh]"
@@ -626,16 +743,22 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
                           Assign To
                         </label>
 
-                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 transition-colors duration-300 shadow-inner shadow-white/50 dark:border-slate-700/70 dark:bg-slate-900/60">
-                          <SelectUsers
-                            selectedUsers={taskData.assignedTo}
-                            setSelectedUsers={(value) => handleValueChange("assignedTo", value)}
-                            onSelectedUsersDetails={handleAssignedUserDetailsUpdate}
-                          />
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                            Assign at least one member to enable the checklist.
-                          </p>
-                        </div>
+                        {isPersonalMode ? (
+                          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-inner shadow-white/50 ring-1 ring-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-500/30">
+                            Assigned to you. Checklist items will be auto-assigned to your profile.
+                          </div>
+                        ) : (
+                          <div className="rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 transition-colors duration-300 shadow-inner shadow-white/50 dark:border-slate-700/70 dark:bg-slate-900/60">
+                            <SelectUsers
+                              selectedUsers={taskData.assignedTo}
+                              setSelectedUsers={(value) => handleValueChange("assignedTo", value)}
+                              onSelectedUsersDetails={handleAssignedUserDetailsUpdate}
+                            />
+                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                              Assign at least one member to enable the checklist.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -662,6 +785,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess }) => {
                     ? "Saving..."
                     : isEditing
                     ? "Update Task"
+                    : isPersonalMode
+                    ? "Create Personal Task"
                     : "Create Task"}
                 </button>
               </div>

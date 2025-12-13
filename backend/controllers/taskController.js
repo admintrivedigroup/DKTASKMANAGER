@@ -174,6 +174,19 @@ const deleteFileQuietly = (filePath) => {
     .catch(() => {});
 };
 
+const isPersonalTaskForAnotherUser = (task, requesterId) => {
+  if (!task?.isPersonal || !task?.createdBy || !requesterId) {
+    return false;
+  }
+
+  const createdById =
+    typeof task.createdBy === "object" && task.createdBy !== null && task.createdBy._id
+      ? task.createdBy._id.toString()
+      : task.createdBy.toString();
+
+  return createdById !== requesterId;
+};
+
 const sanitizeTodoChecklist = ({
   checklistInput,
   validAssigneeIds = [],
@@ -245,7 +258,11 @@ const sanitizeTodoChecklist = ({
 // @access  Private
 const getTasks = async (req, res, next) => {
   try {
-    const { status, scope, matter: matterId, caseFile: caseFileId } = req.query;
+    const { status, scope, matter: matterId, caseFile: caseFileId, type } = req.query;
+    const requesterId =
+      req.user?._id && typeof req.user._id.toString === "function"
+        ? req.user._id.toString()
+        : "";
     let filter = {};
 
     if (status) {
@@ -292,7 +309,35 @@ const getTasks = async (req, res, next) => {
       }
     }
 
-    const tasks = await Task.find({ ...filter, ...accessFilter })
+    const queryFilters = [];
+
+    if (Object.keys(filter).length) {
+      queryFilters.push(filter);
+    }
+
+    if (Object.keys(accessFilter).length) {
+      queryFilters.push(accessFilter);
+    }
+
+    if (type === "personal") {
+      queryFilters.push({
+        isPersonal: true,
+        createdBy: requesterId,
+      });
+    } else if (type === "assigned") {
+      queryFilters.push({ isPersonal: { $ne: true } });
+    } else if (isPrivileged(req.user.role)) {
+      queryFilters.push({
+        $or: [
+          { isPersonal: { $ne: true } },
+          { isPersonal: true, createdBy: requesterId },
+        ],
+      });
+    }
+
+    const tasks = await Task.find(
+      queryFilters.length > 1 ? { $and: queryFilters } : queryFilters[0] || {}
+    )
       .populate("assignedTo", "name email profileImageUrl")
       .populate({
         path: "matter",
@@ -313,8 +358,32 @@ const getTasks = async (req, res, next) => {
       })
     );
 
-    // Status summary counts
-    const summaryBaseFilter = shouldLimitToCurrentUser ? accessFilter : {};
+    const summaryFilters = [];
+
+    if (shouldLimitToCurrentUser && Object.keys(accessFilter).length) {
+      summaryFilters.push(accessFilter);
+    }
+
+    if (type === "personal") {
+      summaryFilters.push({
+        isPersonal: true,
+        createdBy: requesterId,
+      });
+    } else if (type === "assigned") {
+      summaryFilters.push({ isPersonal: { $ne: true } });
+    } else if (isPrivileged(req.user.role)) {
+      summaryFilters.push({
+        $or: [
+          { isPersonal: { $ne: true } },
+          { isPersonal: true, createdBy: requesterId },
+        ],
+      });
+    }
+
+    const summaryBaseFilter =
+      summaryFilters.length > 1
+        ? { $and: summaryFilters }
+        : summaryFilters[0] || {};
 
     const allTasks = await Task.countDocuments(summaryBaseFilter);
 
@@ -380,6 +449,15 @@ const getTaskById = async (req, res, next) => {
           
           if (!task) {
             throw createHttpError("Task not found", 404);
+          }
+
+          const requesterId =
+            req.user?._id && typeof req.user._id.toString === "function"
+              ? req.user._id.toString()
+              : "";
+
+          if (isPersonalTaskForAnotherUser(task, requesterId)) {
+            throw createHttpError("You do not have access to this task.", 403);
           }
 
           res.json(task);        
@@ -525,6 +603,110 @@ const createTask = async (req, res, next) => {
     }
 };
 
+// @desc    Create a personal task for the logged-in member
+// @route   POST /api/tasks/personal
+// @access  Private
+const createPersonalTask = async (req, res, next) => {
+  try {
+    const {
+      title,
+      description,
+      priority,
+      startDate,
+      dueDate,
+      attachments,
+      todoChecklist,
+      reminderMinutesBefore,
+      recurrence,
+      recurrenceEndDate,
+      estimatedHours,
+    } = req.body;
+
+    const assignedIds = [
+      req.user?._id && typeof req.user._id.toString === "function"
+        ? req.user._id.toString()
+        : req.user._id,
+    ].filter(Boolean);
+
+    const normalizedChecklist = Array.isArray(todoChecklist)
+      ? todoChecklist.map((item) => {
+          if (typeof item === "string") {
+            return { text: item, assignedTo: assignedIds[0] };
+          }
+
+          if (typeof item === "object" && item !== null) {
+            const assignedValue =
+              item.assignedTo?._id || item.assignedTo || assignedIds[0];
+
+            return {
+              ...item,
+              assignedTo: assignedValue || assignedIds[0],
+            };
+          }
+
+          return item;
+        })
+      : [];
+
+    const sanitizedTodoChecklist = sanitizeTodoChecklist({
+      checklistInput: normalizedChecklist,
+      validAssigneeIds: assignedIds,
+    });
+
+    const startDateValue =
+      startDate === null || startDate === undefined ? null : new Date(startDate);
+    const dueDateValue = dueDate ? new Date(dueDate) : null;
+    const recurrenceEndDateValue =
+      recurrenceEndDate === null || recurrenceEndDate === undefined
+        ? null
+        : new Date(recurrenceEndDate);
+
+    const taskPayload = {
+      title,
+      description,
+      priority,
+      dueDate: dueDateValue,
+      assignedTo: assignedIds,
+      createdBy: req.user._id,
+      todoChecklist: sanitizedTodoChecklist,
+      attachments: attachments ?? [],
+      recurrence: recurrence || "None",
+      isPersonal: true,
+    };
+
+    if (startDate !== undefined) {
+      taskPayload.startDate = startDateValue;
+    }
+
+    if (reminderMinutesBefore !== undefined) {
+      taskPayload.reminderMinutesBefore = reminderMinutesBefore;
+    }
+
+    if (recurrenceEndDate !== undefined) {
+      taskPayload.recurrenceEndDate = recurrenceEndDateValue;
+    }
+
+    if (estimatedHours !== undefined) {
+      taskPayload.estimatedHours = estimatedHours;
+    }
+
+    const task = await Task.create(taskPayload);
+
+    await logEntityActivity({
+      entityType: "task",
+      action: "created",
+      entityId: task._id,
+      entityName: task.title,
+      actor: req.user,
+      details: buildFieldChanges({}, task.toObject(), TASK_ACTIVITY_FIELDS),
+    });
+
+    res.status(201).json({ message: "Personal task created successfully", task });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update task details
 // @route   PUT /api/tasks/:id
 // @access  Private
@@ -536,11 +718,21 @@ if (!task) {
   throw createHttpError("Task not found", 404);
 }
 
+const requesterId =
+  req.user?._id && typeof req.user._id.toString === "function"
+    ? req.user._id.toString()
+    : "";
+
+if (isPersonalTaskForAnotherUser(task, requesterId)) {
+  throw createHttpError("You do not have permission to update this task.", 403);
+}
+
 const existingAssigneeIds = Array.isArray(task.assignedTo)
   ? task.assignedTo.map((id) => id.toString())
   : [];
 
 const originalTask = task.toObject();
+const previousStatus = task.status;
 
 const originalDueDate = task.dueDate ? task.dueDate.getTime() : null;
 const originalStartDate = task.startDate ? task.startDate.getTime() : null;
@@ -648,6 +840,23 @@ if (hasTodoChecklistUpdate) {
   });
 
   task.todoChecklist = sanitizedTodoChecklist;
+
+  // Recalculate progress and status when checklist changes
+  const completedCount = task.todoChecklist.filter((item) => item.completed).length;
+  const totalItems = task.todoChecklist.length;
+  task.progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
+
+  if (task.progress === 100) {
+    task.status = "Completed";
+    if (previousStatus !== "Completed" || !task.completedAt) {
+      task.completedAt = new Date();
+    }
+  } else {
+    task.status = task.progress > 0 ? "In Progress" : "Pending";
+    if (previousStatus === "Completed") {
+      task.completedAt = null;
+    }
+  }
 }
 
 if (Object.prototype.hasOwnProperty.call(req.body, "reminderMinutesBefore")) {
@@ -785,6 +994,15 @@ const deleteTask = async (req, res, next) => {
         throw createHttpError("Task not found", 404);
       }
 
+      const requesterId =
+        req.user?._id && typeof req.user._id.toString === "function"
+          ? req.user._id.toString()
+          : "";
+
+      if (isPersonalTaskForAnotherUser(task, requesterId)) {
+        throw createHttpError("You do not have permission to delete this task.", 403);
+      }
+
       const deletedTaskSnapshot = task.toObject();      
       await task.deleteOne();
       await logEntityActivity({
@@ -813,6 +1031,15 @@ const updateTaskStatus = async (req, res, next) => {
       const task = await Task.findById(req.params.id);
 if (!task) {
   throw createHttpError("Task not found", 404);
+}
+
+const requesterId =
+  req.user?._id && typeof req.user._id.toString === "function"
+    ? req.user._id.toString()
+    : "";
+
+if (isPersonalTaskForAnotherUser(task, requesterId)) {
+  throw createHttpError("You do not have permission to update this task.", 403);
 }
 
 const assignedUsers = Array.isArray(task.assignedTo)
@@ -888,6 +1115,15 @@ const updateTaskChecklist = async (req, res, next) => {
 
       if (!task) {
         throw createHttpError("Task not found", 404);
+      }
+
+      const personalRequesterId =
+        req.user?._id && typeof req.user._id.toString === "function"
+          ? req.user._id.toString()
+          : "";
+
+      if (isPersonalTaskForAnotherUser(task, personalRequesterId)) {
+        throw createHttpError("You do not have permission to update this task.", 403);
       }
 
       const assignedUsers = Array.isArray(task.assignedTo)
@@ -1154,12 +1390,17 @@ const getDashboardData = async (req, res, next) => {
         createdAtFilter.$lte = endDate;
       }
 
-      const baseTaskFilter = Object.keys(createdAtFilter).length
-        ? { createdAt: createdAtFilter }
-        : {};
+      const visibilityFilter = { isPersonal: { $ne: true } };
 
-      const baseMatchStages = Object.keys(createdAtFilter).length
-        ? [{ $match: { createdAt: createdAtFilter } }]
+      const baseTaskFilter = {
+        ...visibilityFilter,
+        ...(Object.keys(createdAtFilter).length
+          ? { createdAt: createdAtFilter }
+          : {}),
+      };
+
+      const baseMatchStages = Object.keys(baseTaskFilter).length
+        ? [{ $match: baseTaskFilter }]
         : [];
       
       // Fetch statistics
@@ -1661,6 +1902,7 @@ module.exports = {
     getTasks,
     getTaskById,
     createTask,
+    createPersonalTask,
     updateTask,
     deleteTask,
     updateTaskStatus,

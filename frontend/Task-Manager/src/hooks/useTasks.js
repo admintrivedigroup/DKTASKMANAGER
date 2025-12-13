@@ -24,6 +24,20 @@ const normalizeScope = (scope) => {
   return trimmed === "all" || trimmed === "my" ? trimmed : undefined;
 };
 
+const normalizeTaskType = (taskType) => {
+  if (typeof taskType !== "string") {
+    return undefined;
+  }
+
+  const trimmed = taskType.trim().toLowerCase();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const allowedTypes = new Set(["personal", "assigned", "all"]);
+  return allowedTypes.has(trimmed) ? trimmed : undefined;
+};
+
 const normalizeStatusFilter = (statusFilter) => {
   if (typeof statusFilter !== "string") {
     return undefined;
@@ -40,6 +54,7 @@ const normalizeStatusFilter = (statusFilter) => {
 const useTasks = ({
   statusFilter = "All",
   scope,
+  taskType,
   includePrioritySort = false,
   enabled = true,
   errorMessage = "Failed to fetch tasks. Please try again later.",
@@ -59,6 +74,7 @@ const useTasks = ({
       const params = {};
       const normalizedStatus = normalizeStatusFilter(statusFilter);
       const normalizedScope = normalizeScope(scope);
+      const normalizedTaskType = normalizeTaskType(taskType);
 
       if (normalizedStatus) {
         params.status = normalizedStatus;
@@ -66,6 +82,10 @@ const useTasks = ({
 
       if (normalizedScope) {
         params.scope = normalizedScope;
+      }
+
+      if (normalizedTaskType) {
+        params.type = normalizedTaskType;
       }
 
       const response = await axiosInstance.get(API_PATHS.TASKS.GET_ALL_TASKS, {
@@ -94,6 +114,7 @@ const useTasks = ({
     errorMessage,
     includePrioritySort,
     scope,
+    taskType,
     statusFilter,
   ]);
 

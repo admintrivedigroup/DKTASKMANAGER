@@ -311,20 +311,21 @@
 
   /* CTA Buttons used across dashboards */
   .add-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-[0_18px_40px_rgba(29,155,240,0.28)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70;
-    background: linear-gradient(120deg, #1d9bf0 0%, #556bff 45%, #00c2ff 100%);
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-[0_18px_40px_rgba(14,165,233,0.26)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70;
+    background: linear-gradient(120deg, #60a5fa 0%, #38bdf8 45%, #22d3ee 100%);
     background-size: 200% 100%;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   }
 
   .add-btn:hover {
     background-position: 100% 0;
-    box-shadow: 0 22px 52px rgba(29, 155, 240, 0.32);
+    box-shadow: 0 22px 52px rgba(14, 165, 233, 0.32);
     transform: translateY(-1px);
   }
 
   .add-btn:active {
     background-position: 85% 0;
-    box-shadow: 0 16px 34px rgba(29, 155, 240, 0.26);
+    box-shadow: 0 16px 34px rgba(14, 165, 233, 0.26);
   }
 
   .download-btn {

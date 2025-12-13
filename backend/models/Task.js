@@ -26,6 +26,7 @@ const taskSchema = new mongoose.Schema(
     assignedTo: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" }
     ],
+    isPersonal: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     attachments: [{ type: String }],
     todoChecklist: [todoSchema],

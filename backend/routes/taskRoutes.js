@@ -7,6 +7,7 @@ const {
   validateUpdateTaskPayload,
   validateStatusPayload,
   validateChecklistPayload,
+  validatePersonalTaskPayload,
   validateTaskQuery,
 } = require("../validators/taskValidators");
 const {
@@ -16,6 +17,7 @@ const {
   getTasks,
   getTaskById,
   createTask,
+  createPersonalTask,
   updateTask,
   deleteTask,
   updateTaskStatus,
@@ -31,6 +33,12 @@ router.get("/notifications", protect, getNotifications);
 router.get("/user-dashboard-data", protect, getUserDashboardData);
 router.get("/", protect, validateQuery(validateTaskQuery), getTasks); // Get all tasks (Admin: all, User: assigned)
 router.get("/:id", protect, getTaskById); // Get task by ID
+router.post(
+  "/personal",
+  protect,
+  validateBody(validatePersonalTaskPayload),
+  createPersonalTask
+); // Create a personal task (Member only visibility)
 router.post(
   "/",
   protect,
