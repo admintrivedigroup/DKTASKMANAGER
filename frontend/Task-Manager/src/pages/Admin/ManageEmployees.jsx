@@ -25,8 +25,14 @@ const ManageEmployees = () => {
     confirmPassword: "",
     gender: "",
     officeLocation: "",
+    employeeRole: "",
     role: "member",
   });
+  const [employeeRoles, setEmployeeRoles] = useState([]);
+  const [isRoleLoading, setIsRoleLoading] = useState(false);
+  const [showRoleCreator, setShowRoleCreator] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [isRoleSubmitting, setIsRoleSubmitting] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [resetPasswordData, setResetPasswordData] = useState({
@@ -79,11 +85,75 @@ const ManageEmployees = () => {
     }
   };
 
+  const loadEmployeeRoles = async () => {
+    try {
+      setIsRoleLoading(true);
+      const response = await axiosInstance.get(API_PATHS.ROLES.GET_ALL);
+      if (Array.isArray(response.data)) {
+        setEmployeeRoles(response.data);
+      } else {
+        setEmployeeRoles([]);
+      }
+    } catch (error) {
+      console.error("Error fetching employee roles:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Unable to load employee roles. Please try again.";
+      toast.error(message);
+      setEmployeeRoles([]);
+    } finally {
+      setIsRoleLoading(false);
+    }
+  };
+
   const handleInputChange = ({ target: { name, value, type, checked } }) => {
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleCreateEmployeeRole = async () => {
+    const trimmedRoleName = newRoleName.trim();
+    if (!trimmedRoleName || isRoleSubmitting) {
+      return;
+    }
+
+    try {
+      setIsRoleSubmitting(true);
+      const response = await axiosInstance.post(API_PATHS.ROLES.CREATE, {
+        name: trimmedRoleName,
+      });
+      const createdRole = response.data;
+      if (createdRole?.name) {
+        setEmployeeRoles((prev) => {
+          const exists = prev.some(
+            (role) =>
+              role?.slug === createdRole.slug ||
+              role?.name?.toLowerCase() === createdRole.name.toLowerCase()
+          );
+          const nextRoles = exists ? [...prev] : [...prev, createdRole];
+          return nextRoles.sort((first, second) =>
+            (first?.name || "").localeCompare(second?.name || "")
+          );
+        });
+        setFormData((prev) => ({
+          ...prev,
+          employeeRole: createdRole.name,
+        }));
+      }
+      toast.success("Role created successfully.");
+      setNewRoleName("");
+      setShowRoleCreator(false);
+    } catch (error) {
+      console.error("Error creating employee role:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Unable to create the role. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsRoleSubmitting(false);
+    }
   };
 
   const handleCreateUser = async (event) => {
@@ -96,6 +166,10 @@ const ManageEmployees = () => {
       typeof formData.officeLocation === "string"
         ? formData.officeLocation.trim()
         : "";
+    const trimmedEmployeeRole =
+      typeof formData.employeeRole === "string"
+        ? formData.employeeRole.trim()
+        : "";
 
     const payload = {
       name: formData.name.trim(),
@@ -104,6 +178,7 @@ const ManageEmployees = () => {
       role: requestedRole,
       gender: formData.gender,
       officeLocation: trimmedOfficeLocation,
+      employeeRole: trimmedEmployeeRole,
     };
 
     if (!payload.name || !payload.email || !payload.password || !payload.gender || !payload.officeLocation) {
@@ -128,6 +203,7 @@ const ManageEmployees = () => {
         confirmPassword: "",
         gender: "",
         officeLocation: "",
+        employeeRole: "",
         role: "member",
       });
       await getAllUsers();
@@ -273,6 +349,7 @@ const ManageEmployees = () => {
 
   useEffect(() => {
     getAllUsers();
+    loadEmployeeRoles();
 
     return () => {};
   }, []);
@@ -308,6 +385,13 @@ const ManageEmployees = () => {
       }));
     }
   }, [formData.role, normalizedCurrentUserRole, showCreateForm]);
+
+  useEffect(() => {
+    if (!showCreateForm) {
+      setShowRoleCreator(false);
+      setNewRoleName("");
+    }
+  }, [showCreateForm]);
 
   const availableRoleOptions = useMemo(() => {
     if (normalizedCurrentUserRole === "super_admin") {
@@ -448,9 +532,9 @@ const ManageEmployees = () => {
         </section>
 
         {showCreateForm && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-950/40">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/80 dark:bg-slate-950/70 dark:shadow-slate-950/60 dark:ring-1 dark:ring-white/5">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Add a new employee</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Provide the employee's details and choose their access level.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">Provide the employee's details, role, and access level.</p>
 
           <form className="mt-6 grid gap-5 md:grid-cols-2" onSubmit={handleCreateUser}>
             <div className="md:col-span-1">
@@ -463,7 +547,7 @@ const ManageEmployees = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Jane Cooper"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 type="text"
                 autoComplete="name"
               />
@@ -479,7 +563,7 @@ const ManageEmployees = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="member@company.com"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 type="email"
                 autoComplete="email"
               />
@@ -495,7 +579,7 @@ const ManageEmployees = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Create a secure password"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 type="password"
                 autoComplete="new-password"
               />
@@ -514,7 +598,7 @@ const ManageEmployees = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 >
                   <option value="" disabled>
                     Select gender
@@ -540,7 +624,7 @@ const ManageEmployees = () => {
                   name="officeLocation"
                   value={formData.officeLocation}
                   onChange={handleInputChange}
-                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 >
                   <option value="" disabled>
                     Select office location
@@ -555,6 +639,79 @@ const ManageEmployees = () => {
             </div>
 
             <div className="md:col-span-1">
+              <div className="flex items-center justify-between gap-3">
+                <label
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
+                  htmlFor="employeeRole"
+                >
+                  Employee Role
+                </label>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:text-indigo-200 dark:hover:text-indigo-100"
+                  onClick={() => setShowRoleCreator((prev) => !prev)}
+                  disabled={isRoleSubmitting}
+                >
+                  + New Role
+                </button>
+              </div>
+              <div className="custom-select mt-2">
+                <select
+                  id="employeeRole"
+                  name="employeeRole"
+                  value={formData.employeeRole}
+                  onChange={handleInputChange}
+                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  disabled={isRoleLoading}
+                >
+                  <option value="" disabled>
+                    Select role
+                  </option>
+                  {employeeRoles.map((role) => (
+                    <option key={role._id || role.slug || role.name} value={role.name}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {showRoleCreator && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={newRoleName}
+                    onChange={(event) => setNewRoleName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleCreateEmployeeRole();
+                      }
+                    }}
+                    placeholder="Role name"
+                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  />
+                  <button
+                    type="button"
+                    className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300 dark:disabled:bg-indigo-500/30"
+                    onClick={handleCreateEmployeeRole}
+                    disabled={!newRoleName.trim() || isRoleSubmitting}
+                  >
+                    {isRoleSubmitting ? "Creating..." : "Create"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"
+                    onClick={() => {
+                      setShowRoleCreator(false);
+                      setNewRoleName("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-1">
               <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300" htmlFor="confirmPassword">
                 Confirm Password
               </label>
@@ -564,7 +721,7 @@ const ManageEmployees = () => {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 placeholder="Re-enter the password"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 type="password"
                 autoComplete="new-password"
               />
@@ -583,7 +740,7 @@ const ManageEmployees = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleInputChange}
-                  className="custom-select__field dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-900/40"
+                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
                 >
                   {availableRoleOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -602,7 +759,7 @@ const ManageEmployees = () => {
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(79,70,229,0.35)] transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                className="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(79,70,229,0.35)] transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300 dark:shadow-[0_10px_25px_rgba(79,70,229,0.45)] dark:disabled:bg-indigo-500/25 dark:disabled:text-indigo-100/80"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Creating Employee..." : "Create Employee"}

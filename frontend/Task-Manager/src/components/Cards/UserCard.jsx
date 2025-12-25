@@ -75,6 +75,13 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
   const showRoleBadge = Boolean(roleLabel);
   const roleBadgeTone =
     ROLE_BADGE_STYLES[normalizedRole] || ROLE_BADGE_STYLES.default;
+  const employeeRole = useMemo(() => {
+    if (typeof userInfo?.employeeRole !== "string") {
+      return "";
+    }
+
+    return userInfo.employeeRole.trim();
+  }, [userInfo?.employeeRole]);
 
   const stats = useMemo(() => {
     if (normalizedRole === "client") {
@@ -215,6 +222,12 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
               <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
                 <LuMapPin className="text-base text-slate-400 dark:text-slate-400" />
                 <span className="truncate">{userInfo.officeLocation}</span>
+              </p>
+            )}
+            {employeeRole && (
+              <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+                <LuShieldCheck className="text-base text-slate-400 dark:text-slate-400" />
+                <span className="truncate">Employee Role: {employeeRole}</span>
               </p>
             )}
           </div>

@@ -29,6 +29,7 @@ const buildUserPayload = (user, { includeToken = false } = {}) => {
       typeof formattedUser.officeLocation === "string"
         ? formattedUser.officeLocation.trim()
         : formattedUser.officeLocation,
+    employeeRole: formattedUser.employeeRole,
     mustChangePassword: formattedUser.mustChangePassword,
   };
 

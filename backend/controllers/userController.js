@@ -23,6 +23,7 @@ const USER_ACTIVITY_FIELDS = [
   { path: "role", label: "Role" },
   { path: "gender", label: "Gender" },
   { path: "officeLocation", label: "Office Location" },
+  { path: "employeeRole", label: "Employee Role" },
 ];
 
 const buildTaskCountsForUser = async (userId) => {
@@ -318,10 +319,20 @@ const getUserById = async (req, res) => {
 // @access  Private (Admin)
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, role, gender, officeLocation } = req.body || {};
+    const {
+      name,
+      email,
+      password,
+      role,
+      gender,
+      officeLocation,
+      employeeRole,
+    } = req.body || {};
 
     const trimmedOfficeLocation =
       typeof officeLocation === "string" ? officeLocation.trim() : "";
+    const trimmedEmployeeRole =
+      typeof employeeRole === "string" ? employeeRole.trim() : "";
 
     if (!name || !email || !password || !gender || !trimmedOfficeLocation) {
       return res
@@ -361,6 +372,7 @@ const createUser = async (req, res) => {
       role: normalizedRole,
       gender,
       officeLocation: trimmedOfficeLocation,
+      employeeRole: trimmedEmployeeRole,
       mustChangePassword: true,
     });
 
@@ -385,6 +397,7 @@ const createUser = async (req, res) => {
       role: createdUser.role,
       gender: createdUser.gender,
       officeLocation: createdUser.officeLocation,
+      employeeRole: createdUser.employeeRole,
       mustChangePassword: createdUser.mustChangePassword,
     });
   } catch (error) {

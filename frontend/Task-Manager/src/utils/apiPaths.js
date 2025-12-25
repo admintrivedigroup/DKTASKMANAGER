@@ -75,4 +75,8 @@ export const API_PATHS = {
   IMAGE: {
     UPLOAD_IMAGE: "/api/upload/image",
   },
+  ROLES: {
+    GET_ALL: "/api/roles",
+    CREATE: "/api/roles",
+  },
 };
