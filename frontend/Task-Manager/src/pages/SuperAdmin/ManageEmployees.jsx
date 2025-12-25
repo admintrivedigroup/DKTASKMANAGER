@@ -602,18 +602,18 @@ const ManageEmployees = () => {
   return (
     <DashboardLayout activeMenu="Employees">
       <div className="page-shell space-y-5 sm:space-y-6">
-        <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 via-slate-50 to-white px-5 py-5 shadow-sm sm:px-6 sm:py-6">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.12),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.12),transparent_40%)]" />
+        <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-r from-indigo-50 via-slate-50 to-white px-5 py-5 shadow-sm dark:border-slate-800/70 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:shadow-slate-950/40 sm:px-6 sm:py-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.12),transparent_38%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.12),transparent_40%)] dark:bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.2),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.2),transparent_42%)]" />
           <div className="relative flex flex-col gap-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-baseline gap-3">
-                  <h1 className="text-[28px] font-bold leading-tight text-slate-900 sm:text-[30px]">
+                  <h1 className="text-[28px] font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-[30px]">
                     Employees
                   </h1>
                 </div>
-                <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-                  <LuUsers className="text-base text-indigo-500" />
+                <p className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <LuUsers className="text-base text-indigo-500 dark:text-indigo-300" />
                   {isLoading
                     ? "Loading teammates..."
                     : `${filteredUsers.length} teammates powering the mission`}
@@ -623,7 +623,7 @@ const ManageEmployees = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-indigo-500/90 dark:hover:bg-indigo-500 dark:focus:ring-indigo-500/30"
                   onClick={() => setShowCreateForm((prev) => !prev)}
                 >
                   {showCreateForm ? (
@@ -1002,7 +1002,7 @@ const ManageEmployees = () => {
                         return (
                           <tr
                             key={user._id}
-                            className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+                            className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-slate-800/70"
                             onClick={() => navigate(userDetailsPath)}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
@@ -1013,7 +1013,7 @@ const ManageEmployees = () => {
                             role="button"
                             tabIndex={0}
                           >
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {index + 1}
                             </td>
                             <td className="px-4 py-4 align-top">
@@ -1042,10 +1042,10 @@ const ManageEmployees = () => {
                             <td className="px-4 py-4 align-top text-sm text-slate-600">
                               {user?.officeLocation || "N/A"}
                             </td>
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {pendingTasks}
                             </td>
-                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">
+                            <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {inProgressTasks}
                             </td>
                             <td className="px-4 py-4 align-top text-sm font-semibold text-slate-900">

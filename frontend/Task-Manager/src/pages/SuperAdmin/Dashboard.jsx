@@ -81,7 +81,7 @@ const LiveGreeting = React.memo(({ userName }) => {
       <h2 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">
         {greetingMessage}, {userName}
       </h2>
-      <p className="mt-3 text-sm text-slate-600">{formattedDate}</p>
+      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{formattedDate}</p>
     </>
   );
 });
@@ -384,7 +384,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.All || 0
         ),
-        color: "text-indigo-700 bg-indigo-50",
+        color: "text-indigo-700 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-100",
         icon: LuClipboardList,
         filterStatus: "All"
       },
@@ -393,7 +393,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Pending || 0
         ),
-        color: "text-amber-700 bg-amber-50",
+        color: "text-amber-700 bg-amber-50 dark:bg-amber-500/15 dark:text-amber-100",
         icon: LuClock3,
         filterStatus: "Pending"
       },
@@ -402,7 +402,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.InProgress || 0
         ),
-        color: "text-cyan-700 bg-cyan-50",
+        color: "text-cyan-700 bg-cyan-50 dark:bg-cyan-500/15 dark:text-cyan-100",
         icon: LuRefreshCcw,
         filterStatus: "In Progress"
       },
@@ -411,7 +411,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Completed || 0
         ),
-        color: "text-emerald-700 bg-emerald-50",
+        color: "text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-100",
         icon: LuBadgeCheck,
         filterStatus: "Completed"
       }
@@ -565,7 +565,7 @@ const Dashboard = () => {
         <div className="page-shell">
           <Suspense
             fallback={
-              <div className="card mb-6 animate-pulse bg-white/60 text-sm text-slate-500">
+              <div className="card mb-6 animate-pulse bg-white/60 text-sm text-slate-500 dark:bg-slate-900/60 dark:text-slate-300">
                 Loading announcements...
               </div>
             }
@@ -588,7 +588,7 @@ const Dashboard = () => {
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/85">
                   Date range
                 </p>
-                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25">
+                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25 dark:border-white/10 dark:bg-white/5 dark:shadow-indigo-950/30">
                   {PRESET_RANGES.map(({ label, rangeFactory }) => {
                     const isActive = label === activePresetLabel;
                     return (
@@ -617,7 +617,7 @@ const Dashboard = () => {
                     onChange={({ target }) =>
                       handleDateInputChange("startDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 dark:border-white/20 dark:bg-white/10 dark:text-white/90 dark:focus:border-white/70 dark:focus:ring-white/30 sm:w-auto"
                   />
                   <span className="text-white/80 sm:mx-1">→</span>
                   <input
@@ -626,12 +626,12 @@ const Dashboard = () => {
                     onChange={({ target }) =>
                       handleDateInputChange("endDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 dark:border-white/20 dark:bg-white/10 dark:text-white/90 dark:focus:border-white/70 dark:focus:ring-white/30 sm:w-auto"
                   />
                   <button
                     type="submit"
                     disabled={!isRangeValid}
-                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60"
+                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60 dark:bg-white/85 dark:text-indigo-800 dark:hover:bg-white"
                   >
                     Apply Range
                   </button>
@@ -662,15 +662,15 @@ const Dashboard = () => {
           <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
               <div className="flex items-center justify-between pb-3">
-                <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Distribution</h5>
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700">
                   Overview
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -681,15 +681,15 @@ const Dashboard = () => {
 
             <div className="card">
               <div className="flex items-center justify-between pb-3">
-                <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Priority Levels</h5>
+                <span className="rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700">
                   Priority Mix
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -702,8 +702,8 @@ const Dashboard = () => {
           <section className="card">
             <div className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
-                <p className="text-sm text-slate-500">
+                <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Tasks</h5>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
                   Monitor the latest updates across the workspace at a glance.
                 </p>
               </div>
@@ -715,7 +715,7 @@ const Dashboard = () => {
 
             <Suspense
               fallback={
-                <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                   Loading recent tasks...
                 </div>
               }
@@ -729,18 +729,18 @@ const Dashboard = () => {
           <section className="card">
             <div className="flex flex-col gap-4 pb-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h5 className="text-lg font-semibold text-slate-900">
+                  <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Employee Leaderboard
                 </h5>
-                <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-300">
                   Celebrate on-time delivery and shine a light on the most reliable teammates.
                 </p>
                 {visibleTopPerformer ? (
-                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                     Top Performer · {visibleTopPerformer.name} · Score {topPerformerScore}
                   </p>
                 ) : (
-                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     Leaderboard updates once work is completed.
                   </p>
                 )}
@@ -749,7 +749,7 @@ const Dashboard = () => {
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-end sm:gap-4">
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500"
+                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400"
                     htmlFor="leaderboard-role-filter"
                   >
                     Team Role
@@ -772,7 +772,7 @@ const Dashboard = () => {
 
                 <div className="flex w-full flex-col sm:w-auto">
                   <label
-                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500"
+                    className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400"
                     htmlFor="leaderboard-office-filter"
                   >
                     Office
@@ -799,7 +799,7 @@ const Dashboard = () => {
 
             <Suspense
               fallback={
-                <div className="flex h-40 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                   Loading leaderboard...
                 </div>
               }

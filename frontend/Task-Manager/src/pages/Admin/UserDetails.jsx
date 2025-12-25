@@ -29,9 +29,12 @@ import { formatCurrency } from "../../utils/invoiceUtils";
 import CustomPieChart from "../../components/Charts/CustomPieChart.jsx";
 
 const statusBadgeStyles = {
-  Pending: "bg-amber-100 text-amber-600 border-amber-200",
-  "In Progress": "bg-sky-100 text-sky-600 border-sky-200",
-  Completed: "bg-emerald-100 text-emerald-600 border-emerald-200",
+  Pending:
+    "bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-500/15 dark:text-amber-100 dark:border-amber-500/30",
+  "In Progress":
+    "bg-sky-100 text-sky-600 border-sky-200 dark:bg-sky-500/15 dark:text-sky-100 dark:border-sky-500/30",
+  Completed:
+    "bg-emerald-100 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-100 dark:border-emerald-500/30",
 };
 
 const parseDate = (value) => {
@@ -445,20 +448,20 @@ const UserDetails = () => {
 
     return (
       <div className="space-y-8">
-        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] sm:px-6 sm:py-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)]" />
+        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] dark:border-white/10 dark:from-slate-900 dark:via-indigo-900 dark:to-slate-900 dark:shadow-[0_20px_45px_rgba(15,23,42,0.7)] sm:px-6 sm:py-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.25),transparent_65%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)] dark:bg-[radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.2),transparent_60%)]" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               {userData?.profileImageUrl ? (
                 <img
                   src={userData.profileImageUrl}
                   alt={userData.name}
-                  className="h-16 w-16 rounded-2xl border-4 border-white object-cover shadow-[0_14px_32px_rgba(79,70,229,0.3)]"
+                  className="h-16 w-16 rounded-2xl border-4 border-white object-cover shadow-[0_14px_32px_rgba(79,70,229,0.3)] dark:border-slate-900"
                 />
               ) : (
                 <span
-                  className={`flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white bg-white/20 shadow-[0_14px_32px_rgba(79,70,229,0.3)] ${
+                  className={`flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white bg-white/20 shadow-[0_14px_32px_rgba(79,70,229,0.3)] dark:border-slate-900 dark:bg-white/10 ${
                     normalizedUserGender === "female"
                       ? "text-rose-100"
                       : normalizedUserGender === "male"
@@ -498,17 +501,17 @@ const UserDetails = () => {
           {summaryItems.map((item) => (
             <div
               key={item.label}
-              className={`relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]`}
+              className={`relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50`}
             >
               <span className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-10`} />
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
                 {item.label}
               </p>
-              <p className="mt-3 text-3xl font-semibold text-slate-900">
+              <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">
                 {item.displayValue ?? formatCount(item.value)}
               </p>
              {item.caption ? (
-                <p className="mt-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-400">
+                <p className="mt-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
                   {item.caption}
                 </p>
               ) : null}              
@@ -516,11 +519,11 @@ const UserDetails = () => {
           ))}
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">KPI Performance</h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">KPI Performance</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
                 Completion, delivery, and task health for this account.
               </p>
             </div>
@@ -535,27 +538,27 @@ const UserDetails = () => {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-3xl border border-slate-200 bg-slate-50/60 px-4 py-4 shadow-sm"
+                className="rounded-3xl border border-slate-200 bg-slate-50/60 px-4 py-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/60"
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
                   {item.label}
                 </p>
-                <p className="mt-3 text-2xl font-semibold text-slate-900">{item.value}</p>
+                <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">{item.value}</p>
               </div>
             ))}
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-900">Monthly Completed Tasks</p>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Monthly Completed Tasks</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
                   Last months
                 </span>
               </div>
               <div className="mt-3 h-64">
                 {kpiData.monthlyCompleted.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     No completion data yet.
                   </div>
                 ) : (
@@ -595,16 +598,16 @@ const UserDetails = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm overflow-hidden dark:border-slate-800/70 dark:bg-slate-900/70">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-900">Task Status</p>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Task Status</p>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
                   Snapshot
                 </span>
               </div>
               <div className="mt-3 h-56">
                 {kpiData.statusBreakdown.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     No task status data yet.
                   </div>
                 ) : (
@@ -621,28 +624,28 @@ const UserDetails = () => {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Assigned Tasks</h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Assigned Tasks</h3>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
                 Every task shared with {userData?.name?.split(" ")[0] || "this account"}.
               </p>
             </div>
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600">
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
               {tasks.length} {tasks.length === 1 ? "Task" : "Tasks"}
             </span>
           </div>
 
           {tasks.length === 0 ? (
-            <div className="mt-8 rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-sm text-slate-500">
+            <div className="mt-8 rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-sm text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/60 dark:text-slate-300">
               No tasks have been assigned to this account yet.
             </div>
           ) : (
             <div className="mt-6 overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-600">
+              <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-600 dark:divide-slate-800 dark:text-slate-300">
                 <thead>
-                  <tr className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  <tr className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
                     <th scope="col" className="px-4 py-3">S.No.</th>
                     <th scope="col" className="px-4 py-3">Task</th>
                     <th scope="col" className="px-4 py-3">Status</th>
@@ -652,39 +655,40 @@ const UserDetails = () => {
                     <th scope="col" className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
                   {paginatedTasks.map((task, index) => (
-                    <tr key={task._id} className="transition hover:bg-slate-50/60">
-                      <td className="px-4 py-4 text-sm font-semibold text-slate-900">
+                    <tr key={task._id} className="transition hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
+                      <td className="px-4 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {(currentPage - 1) * PAGE_SIZE + index + 1}
                       </td>
                       <td className="max-w-[220px] px-4 py-4">
-                        <p className="text-sm font-semibold text-slate-900 line-clamp-2">{task.title}</p>
-                        <p className="mt-1 text-xs text-slate-500 line-clamp-2">{task.description}</p>
+                        <p className="text-sm font-semibold text-slate-900 line-clamp-2 dark:text-slate-100">{task.title}</p>
+                        <p className="mt-1 text-xs text-slate-500 line-clamp-2 dark:text-slate-400">{task.description}</p>
                       </td>
                       <td className="px-4 py-4">
                         <span
                           className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            statusBadgeStyles[task.status] || "bg-slate-100 text-slate-600 border-slate-200"
+                            statusBadgeStyles[task.status] ||
+                            "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700"
                           }`}
                         >
                           {task.status}
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                           {task.priority}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-sm font-medium text-slate-700">{formatDate(task.dueDate)}</td>
-                      <td className="px-4 py-4 text-sm font-medium text-slate-700">
+                      <td className="px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200">{formatDate(task.dueDate)}</td>
+                      <td className="px-4 py-4 text-sm font-medium text-slate-700 dark:text-slate-200">
                         {task.completedTodoCount || 0} / {task.todoChecklist?.length || 0}
                       </td>
                       <td className="px-4 py-4 text-right">
                         <button
                           type="button"
                           onClick={() => handleOpenTaskDetails(task._id)}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-700 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-100 dark:hover:border-indigo-400 dark:hover:bg-indigo-500/20"
                         >
                           View <LuExternalLink className="text-sm" />
                         </button>
@@ -697,8 +701,8 @@ const UserDetails = () => {
           )}
 
           {tasks.length > 0 && totalPages > 1 && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-800/70 dark:bg-slate-900/60 dark:text-slate-300">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                 Showing {pageStart} – {pageEnd} of {tasks.length}
               </span>
               <div className="flex items-center gap-2">
@@ -706,7 +710,7 @@ const UserDetails = () => {
                   type="button"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-indigo-400/60 dark:hover:bg-slate-800 dark:hover:text-indigo-200 dark:disabled:border-slate-800 dark:disabled:bg-slate-900/40 dark:disabled:text-slate-500"
                 >
                   Prev
                 </button>
@@ -722,7 +726,7 @@ const UserDetails = () => {
                         className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
                           isActive
                             ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/40"
-                            : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                            : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-indigo-400/60 dark:hover:bg-slate-800 dark:hover:text-indigo-200"
                         }`}
                         aria-current={isActive ? "page" : undefined}
                       >
@@ -735,7 +739,7 @@ const UserDetails = () => {
                   type="button"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-indigo-400/60 dark:hover:bg-slate-800 dark:hover:text-indigo-200 dark:disabled:border-slate-800 dark:disabled:bg-slate-900/40 dark:disabled:text-slate-500"
                 >
                   Next
                 </button>
@@ -749,16 +753,16 @@ const UserDetails = () => {
 
   return (
     <DashboardLayout activeMenu={backNavigationLabel}>
-      <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+      <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-300">
         <button
           type="button"
           onClick={handleBackToTeam}
-          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
         >
           <LuArrowLeft className="text-base" /> Back to {backNavigationLabel}
         </button>
         {userData?.name && (
-          <span className="text-xs font-semibold uppercase tracking-[0.42em] text-slate-400">
+          <span className="text-xs font-semibold uppercase tracking-[0.42em] text-slate-400 dark:text-slate-500">
             {userData.name}
           </span>
         )}

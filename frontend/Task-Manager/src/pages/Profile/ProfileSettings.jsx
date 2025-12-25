@@ -310,8 +310,8 @@ const ProfileSettings = () => {
 
   return (
     <DashboardLayout activeMenu="Profile Setting">
-      <section className="relative overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-r from-indigo-600 via-indigo-500 to-sky-500 px-6 py-5 text-white shadow-[0_18px_40px_rgba(59,130,246,0.25)] md:px-8 md:py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.16),transparent_55%),radial-gradient(circle_at_78%_0%,rgba(56,189,248,0.18),transparent_55%)]" />
+      <section className="relative overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-r from-indigo-600 via-indigo-500 to-sky-500 px-6 py-5 text-white shadow-[0_18px_40px_rgba(59,130,246,0.25)] dark:border-white/10 dark:from-slate-900 dark:via-indigo-900 dark:to-slate-900 dark:shadow-[0_18px_40px_rgba(15,23,42,0.7)] md:px-8 md:py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.16),transparent_55%),radial-gradient(circle_at_78%_0%,rgba(56,189,248,0.18),transparent_55%)] dark:bg-[radial-gradient(circle_at_18%_20%,rgba(99,102,241,0.18),transparent_55%),radial-gradient(circle_at_78%_0%,rgba(14,165,233,0.2),transparent_55%)]" />
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1 space-y-1.5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">Account</p>
@@ -325,7 +325,7 @@ const ProfileSettings = () => {
             <button
               type="button"
               onClick={openDeleteAccountModal}
-              className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:border-rose-200 hover:bg-rose-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600 sm:mt-0"
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:border-rose-200 hover:bg-rose-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600 dark:border-white/15 dark:bg-white/10 dark:hover:bg-rose-500/20 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-slate-900 sm:mt-0"
             >
               <LuTrash2 className="text-sm" /> Delete Account
             </button>
@@ -336,12 +336,12 @@ const ProfileSettings = () => {
       <div className="mt-4 space-y-5 md:mt-5 md:space-y-6">
         <form
           onSubmit={handleProfileSubmit}
-          className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm md:px-8"
+          className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-8"
         >
           <div className="flex flex-col gap-1.5 md:flex-row md:items-start md:justify-between md:gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Profile Information</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile Information</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Update your display name and share your birthdate to receive a special greeting.
               </p>
             </div>
@@ -349,7 +349,7 @@ const ProfileSettings = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="displayName" className="text-sm font-medium text-slate-700">
+              <label htmlFor="displayName" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Display Name
               </label>
               <input
@@ -357,13 +357,13 @@ const ProfileSettings = () => {
                 type="text"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                 placeholder="Enter your name"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="birthdate" className="text-sm font-medium text-slate-700">
+              <label htmlFor="birthdate" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Birthdate
               </label>
               <input
@@ -371,19 +371,19 @@ const ProfileSettings = () => {
                 type="date"
                 value={birthdate}
                 onChange={(event) => setBirthdate(event.target.value)}
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                 max={new Date().toISOString().slice(0, 10)}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium text-slate-700">Gender</p>
-              <div className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Gender</p>
+              <div className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
                 {gender}
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium text-slate-700">Office Name</p>
-              <div className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Office Name</p>
+              <div className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
                 {officeLocation}
               </div>
             </div>
@@ -409,23 +409,23 @@ const ProfileSettings = () => {
         <div className="grid gap-5 md:grid-cols-[0.32fr_0.68fr] md:items-stretch">
           <form
             onSubmit={handlePhotoSubmit}
-            className="flex h-full flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm md:px-7"
+            className="flex h-full flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-7"
           >
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-slate-900">Profile Photo</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile Photo</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Upload a clear photo so your team can recognise you instantly.
               </p>
             </div>
 
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <div className="relative">
-                <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-primary/18 to-cyan-200/25 blur-xl" />
+                <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-primary/18 to-cyan-200/25 blur-xl dark:from-indigo-500/25 dark:to-sky-500/25" />
                 {currentProfileImage ? (
                   <img
                     src={currentProfileImage}
                     alt="Profile"
-                    className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-[0_14px_30px_rgba(59,130,246,0.28)]"
+                    className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-[0_14px_30px_rgba(59,130,246,0.28)] dark:border-slate-900"
                   />
                 ) : (
                   <FaUser
@@ -435,7 +435,7 @@ const ProfileSettings = () => {
                         : normalizedGender === "male"
                         ? "text-primary"
                         : "text-indigo-200"
-                    }`}
+                    } dark:border-slate-900 dark:bg-slate-900/70`}
                   />
                 )}
                 {(previewUrl || user?.profileImageUrl) && (
@@ -443,7 +443,7 @@ const ProfileSettings = () => {
                     type="button"
                     onClick={handleRemovePhoto}
                     disabled={isRemovingPhoto}
-                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-[0_8px_16px_rgba(15,23,42,0.15)] transition hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-[0_8px_16px_rgba(15,23,42,0.15)] transition hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:text-rose-400"
                     aria-label="Remove profile photo"
                     title="Remove profile photo"
                   >
@@ -456,15 +456,15 @@ const ProfileSettings = () => {
                 )}
                 <label
                   htmlFor="profileImage"
-                  className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-primary via-indigo-500 to-sky-400 text-white shadow-[0_12px_24px_rgba(79,70,229,0.35)] ring-2 ring-white"
+                  className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-primary via-indigo-500 to-sky-400 text-white shadow-[0_12px_24px_rgba(79,70,229,0.35)] ring-2 ring-white dark:ring-slate-900"
                 >
                   <LuCamera className="text-lg" />
                 </label>
               </div>
 
-              <div className="flex-1 text-sm text-slate-600">
-                <p className="font-medium text-slate-700">Recommended formats</p>
-                <p className="mt-1 text-slate-500">JPEG or PNG up to 5MB.</p>
+              <div className="flex-1 text-sm text-slate-600 dark:text-slate-300">
+                <p className="font-medium text-slate-700 dark:text-slate-200">Recommended formats</p>
+                <p className="mt-1 text-slate-500 dark:text-slate-400">JPEG or PNG up to 5MB.</p>
                 <input
                   id="profileImage"
                   name="profileImage"
@@ -495,15 +495,15 @@ const ProfileSettings = () => {
 
           <form
             onSubmit={handlePasswordSubmit}
-            className="flex h-full flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm md:px-7"
+            className="flex h-full flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-7"
           >
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 via-cyan-500 to-sky-500 text-white shadow-[0_10px_20px_rgba(14,165,233,0.32)]">
                 <LuShieldCheck className="text-base" />
               </span>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Change Password</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Change Password</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Ensure your new password is unique and hard to guess.
                 </p>
               </div>
@@ -511,7 +511,7 @@ const ProfileSettings = () => {
 
             <div className="grid gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="currentPassword" className="text-sm font-medium text-slate-700">
+                <label htmlFor="currentPassword" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Current Password
                 </label>
                 <input
@@ -519,13 +519,13 @@ const ProfileSettings = () => {
                   type="password"
                   value={currentPassword}
                   onChange={(event) => setCurrentPassword(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                   placeholder="Enter current password"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="newPassword" className="text-sm font-medium text-slate-700">
+                <label htmlFor="newPassword" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   New Password
                 </label>
                 <input
@@ -533,13 +533,13 @@ const ProfileSettings = () => {
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                   placeholder="Enter new password"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Confirm Password
                 </label>
                 <input
@@ -547,7 +547,7 @@ const ProfileSettings = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                   placeholder="Re-enter new password"
                 />
               </div>
@@ -573,14 +573,14 @@ const ProfileSettings = () => {
       </div>
 
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 dark:bg-slate-950/80">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl dark:bg-slate-900 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Delete Super Admin Account
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   This action permanently removes your profile and related
                   data.
                 </p>
@@ -588,7 +588,7 @@ const ProfileSettings = () => {
               <button
                 type="button"
                 onClick={closeDeleteAccountModal}
-                className="rounded-full border border-slate-200 p-1 text-slate-400 transition hover:border-slate-300 hover:text-slate-500"
+                className="rounded-full border border-slate-200 p-1 text-slate-400 transition hover:border-slate-300 hover:text-slate-500 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200"
                 disabled={isDeletingAccount}
                 aria-label="Close delete account dialog"
               >
@@ -601,7 +601,7 @@ const ProfileSettings = () => {
                 <div className="space-y-2">
                   <label
                     htmlFor="superAdminInviteToken"
-                    className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400"
                   >
                     Admin Invite Token
                   </label>
@@ -610,7 +610,7 @@ const ProfileSettings = () => {
                     type="text"
                     value={inviteToken}
                     onChange={(event) => setInviteToken(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-rose-400 dark:focus:ring-rose-500/20"
                     placeholder="Enter the invite token"
                     autoComplete="off"
                     disabled={isDeletingAccount}
@@ -621,14 +621,14 @@ const ProfileSettings = () => {
                   <button
                     type="button"
                     onClick={closeDeleteAccountModal}
-                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition hover:border-slate-300 hover:text-slate-600"
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
                     disabled={isDeletingAccount}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600"
+                    className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100"
                     disabled={isDeletingAccount}
                   >
                     Continue
@@ -637,14 +637,14 @@ const ProfileSettings = () => {
               </form>
             ) : (
               <div className="mt-6 space-y-5">
-                <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3 text-rose-600">
+                <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-3 text-rose-600 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
                   <LuTriangleAlert className="text-lg" />
                   <p className="text-sm font-medium">
                     Deleting your Super Admin account will remove access for this
                     user immediately.
                   </p>
                 </div>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
                   Please confirm that you wish to permanently delete your
                   account. This action cannot be undone.
                 </p>
@@ -652,7 +652,7 @@ const ProfileSettings = () => {
                   <button
                     type="button"
                     onClick={() => setDeleteAccountStep("token")}
-                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition hover:border-slate-300 hover:text-slate-600"
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
                     disabled={isDeletingAccount}
                   >
                     Back
@@ -660,7 +660,7 @@ const ProfileSettings = () => {
                   <button
                     type="button"
                     onClick={handleConfirmDeleteAccount}
-                    className="inline-flex items-center justify-center rounded-2xl border border-rose-300 bg-rose-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-[0_12px_24px_rgba(244,63,94,0.35)] transition hover:bg-rose-600 disabled:opacity-70"
+                    className="inline-flex items-center justify-center rounded-2xl border border-rose-300 bg-rose-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-[0_12px_24px_rgba(244,63,94,0.35)] transition hover:bg-rose-600 disabled:opacity-70 dark:border-rose-400/70 dark:bg-rose-600 dark:shadow-[0_12px_24px_rgba(244,63,94,0.4)]"
                     disabled={isDeletingAccount}
                   >
                     {isDeletingAccount ? (

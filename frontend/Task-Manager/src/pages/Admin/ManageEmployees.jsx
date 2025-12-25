@@ -511,9 +511,9 @@ const ManageEmployees = () => {
   return (
     <DashboardLayout activeMenu="Employees">
       <div className="space-y-6">
-        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] sm:px-6 sm:py-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)]" />
+        <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-primary via-indigo-500 to-purple-500 px-4 py-7 text-white shadow-[0_20px_45px_rgba(126,58,242,0.28)] dark:border-white/10 dark:from-slate-900 dark:via-indigo-900 dark:to-slate-900 dark:shadow-[0_20px_45px_rgba(15,23,42,0.7)] sm:px-6 sm:py-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.18),_transparent_65%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.25),transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.16),_transparent_60%)] dark:bg-[radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.2),transparent_60%)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Employees</h2>

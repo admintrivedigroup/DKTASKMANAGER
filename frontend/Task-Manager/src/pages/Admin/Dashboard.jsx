@@ -81,7 +81,7 @@ const LiveGreeting = React.memo(({ userName }) => {
       <h2 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">
         {greetingMessage}, {userName}
       </h2>
-      <p className="mt-3 text-sm text-slate-600">{formattedDate}</p>
+      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{formattedDate}</p>
     </>
   );
 });
@@ -397,7 +397,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.All || 0
         ),
-        color: "text-indigo-700 bg-indigo-50",
+        color: "text-indigo-700 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-100",
         icon: LuClipboardList,
         filterStatus: "All"
       },
@@ -406,7 +406,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Pending || 0
         ),
-        color: "text-amber-700 bg-amber-50",
+        color: "text-amber-700 bg-amber-50 dark:bg-amber-500/15 dark:text-amber-100",
         icon: LuClock3,
         filterStatus: "Pending"
       },
@@ -415,7 +415,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.InProgress || 0
         ),
-        color: "text-cyan-700 bg-cyan-50",
+        color: "text-cyan-700 bg-cyan-50 dark:bg-cyan-500/15 dark:text-cyan-100",
         icon: LuRefreshCcw,
         filterStatus: "In Progress"
       },
@@ -424,7 +424,7 @@ const Dashboard = () => {
         value: addThousandsSeparator(
           dashboardData?.charts?.taskDistribution?.Completed || 0
         ),
-        color: "text-emerald-700 bg-emerald-50",
+        color: "text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-100",
         icon: LuBadgeCheck,
         filterStatus: "Completed"
       }
@@ -603,7 +603,7 @@ const Dashboard = () => {
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/85">
                   Date range
                 </p>
-                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25">
+                <div className="flex flex-wrap gap-2 rounded-2xl border border-white/25 bg-white/10 p-2 shadow-inner shadow-indigo-900/25 dark:border-white/10 dark:bg-white/5 dark:shadow-indigo-950/30">
                   {PRESET_RANGES.map(({ label, rangeFactory }) => {
                     const isActive = label === activePresetLabel;
                     return (
@@ -632,7 +632,7 @@ const Dashboard = () => {
                     onChange={({ target }) =>
                       handleDateInputChange("startDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 dark:border-white/20 dark:bg-white/10 dark:text-white/90 dark:focus:border-white/70 dark:focus:ring-white/30 sm:w-auto"
                   />
                   <span className="text-white/80 sm:mx-1">→</span>
                   <input
@@ -641,12 +641,12 @@ const Dashboard = () => {
                     onChange={({ target }) =>
                       handleDateInputChange("endDate", target.value)
                     }
-                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 sm:w-auto"
+                    className="w-full rounded-xl border border-white/30 bg-white/15 px-3 py-2 text-sm text-white placeholder-white/70 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50 dark:border-white/20 dark:bg-white/10 dark:text-white/90 dark:focus:border-white/70 dark:focus:ring-white/30 sm:w-auto"
                   />
                   <button
                     type="submit"
                     disabled={!isRangeValid}
-                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60"
+                    className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm shadow-indigo-900/20 transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-60 dark:bg-white/85 dark:text-indigo-800 dark:hover:bg-white"
                   >
                     Apply Range
                   </button>

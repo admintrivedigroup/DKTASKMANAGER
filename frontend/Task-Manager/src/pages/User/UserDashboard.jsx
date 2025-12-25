@@ -120,7 +120,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.All || 0
       ),
-      color: "text-indigo-600 bg-indigo-50",
+      color: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-100",
       icon: LuClipboardList,
     },
     {
@@ -128,7 +128,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.Pending || 0
       ),
-      color: "text-amber-600 bg-amber-50",
+      color: "text-amber-600 bg-amber-50 dark:bg-amber-500/15 dark:text-amber-100",
       icon: LuClock3,
     },
     {
@@ -136,7 +136,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.InProgress || 0
       ),
-      color: "text-sky-600 bg-sky-50",
+      color: "text-sky-600 bg-sky-50 dark:bg-sky-500/15 dark:text-sky-100",
       icon: LuRefreshCcw,
     },
     {
@@ -144,7 +144,7 @@ const UserDashboard = () => {
       value: addThousandsSeparator(
         dashboardData?.charts?.taskDistribution?.Completed || 0
       ),
-      color: "text-emerald-600 bg-emerald-50",
+      color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-100",
       icon: LuBadgeCheck,
     },
   ];
@@ -161,7 +161,7 @@ const UserDashboard = () => {
         <div className="page-shell">
           <Suspense
             fallback={
-              <div className="card animate-pulse bg-slate-50 text-sm text-slate-500">
+              <div className="card animate-pulse bg-slate-50 text-sm text-slate-500 dark:bg-slate-900/60 dark:text-slate-300">
                 Loading announcements...
               </div>
             }
@@ -176,7 +176,7 @@ const UserDashboard = () => {
             meta={[`Now: ${formattedTimestamp}`, `${recentTasksCount} recent task${recentTasksCount === 1 ? "" : "s"}`]}
             actions={
               <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-4 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
                   Momentum
                 </p>
                 <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -200,16 +200,16 @@ const UserDashboard = () => {
 
           <section className="grid gap-8 lg:grid-cols-2">
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h5 className="text-base font-semibold text-slate-900">Task Distribution</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Distribution</h5>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                   Progress Mix
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -221,16 +221,16 @@ const UserDashboard = () => {
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h5 className="text-base font-semibold text-slate-900">Task Priority Levels</h5>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                <h5 className="text-base font-semibold text-slate-900 dark:text-slate-100">Task Priority Levels</h5>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
                   Priorities
                 </span>
               </div>
 
               <Suspense
                 fallback={
-                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500">
+                  <div className="flex h-[325px] items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                     Loading chart data...
                   </div>
                 }
@@ -243,22 +243,22 @@ const UserDashboard = () => {
           </section>
 
           <section className="card">
-            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h5 className="text-lg font-semibold text-slate-900">Recent Tasks</h5>
-                <p className="text-sm text-slate-500">
+                <h5 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Tasks</h5>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
                   Track status updates, collaborations and what needs your attention next.
                 </p>
               </div>
 
-              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700" onClick={onSeeMore}>
+              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-200 dark:hover:text-indigo-100" onClick={onSeeMore}>
                 View All Tasks <LuArrowRight className="ml-1 inline text-base" />
               </button>
             </div>
 
             <Suspense
               fallback={
-                <div className="flex h-32 items-center justify-center text-sm text-slate-500">
+                <div className="flex h-32 items-center justify-center text-sm text-slate-500 dark:text-slate-300">
                   Loading recent tasks...
                 </div>
               }
