@@ -15,6 +15,8 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
 
   const getStatusBadgeColor = (status) => {
     switch (status) {
+      case "Draft":
+        return "bg-gradient-to-r from-slate-400 to-slate-300 text-white";
       case "Completed":
         return "bg-gradient-to-r from-emerald-500 to-lime-500 text-white shadow-sm";
       case "Pending":

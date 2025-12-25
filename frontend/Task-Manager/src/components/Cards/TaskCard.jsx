@@ -68,6 +68,8 @@ const TaskCard = ({
 
   const getStatusTagColor = () => {
     switch (status) {
+      case "Draft":
+        return "bg-slate-100 text-slate-700 ring-slate-200";
       case "In Progress":
         return "bg-sky-100 text-sky-700 ring-sky-200";
       case "Completed":

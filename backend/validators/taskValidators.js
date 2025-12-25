@@ -1,7 +1,7 @@
 const { createHttpError } = require("../utils/httpError");
 
 const TASK_PRIORITIES = new Set(["High", "Medium", "Low"]);
-const TASK_STATUSES = new Set(["Pending", "In Progress", "Completed"]);
+const TASK_STATUSES = new Set(["Draft", "Pending", "In Progress", "Completed"]);
 const TASK_RECURRENCE = new Set(["None", "Daily", "Weekly", "Monthly"]);
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -293,7 +293,7 @@ const validateStatus = (value, { required = false } = {}) => {
   const normalized = value.trim();
   if (!TASK_STATUSES.has(normalized)) {
     throw createHttpError(
-      "status must be one of Pending, In Progress or Completed",
+      "status must be one of Draft, Pending, In Progress or Completed",
       400
     );
   }
@@ -358,17 +358,28 @@ const validateCreateTaskPayload = (payload) => {
     throw createHttpError("title is required", 400);
   }
 
+  const status = validateStatus(payload.status, { required: false });
+  const isDraft = status === "Draft";
+
   sanitized.title = payload.title.trim();
   sanitized.description = sanitizeDescription(payload.description, {
-    required: true,
+    required: !isDraft,
   });
-  sanitized.priority = validatePriority(payload.priority, { required: true });
-  const dueDate = normalizeDueDate(payload.dueDate, { required: true });
+  sanitized.priority = validatePriority(payload.priority, {
+    required: !isDraft,
+  });
+  const dueDate = normalizeDueDate(payload.dueDate, { required: !isDraft });
   if (dueDate !== undefined) {
     sanitized.dueDate = dueDate;
   }
 
-  sanitized.assignedTo = normalizeAssigneeIds(payload.assignedTo);
+  if (payload.assignedTo === undefined && isDraft) {
+    // Drafts can be saved without assignments.
+  } else if (Array.isArray(payload.assignedTo) && !payload.assignedTo.length && isDraft) {
+    sanitized.assignedTo = [];
+  } else {
+    sanitized.assignedTo = normalizeAssigneeIds(payload.assignedTo);
+  }
   const checklist = normalizeChecklist(payload.todoChecklist);
   if (checklist !== undefined) {
     sanitized.todoChecklist = checklist;
@@ -421,6 +432,10 @@ const validateCreateTaskPayload = (payload) => {
     sanitized.estimatedHours = estimatedHours;
   }
 
+  if (status) {
+    sanitized.status = status;
+  }
+
   if (sanitized.startDate && sanitized.dueDate) {
     const start = new Date(sanitized.startDate);
     const due = new Date(sanitized.dueDate);
@@ -433,7 +448,8 @@ const validateCreateTaskPayload = (payload) => {
   if (
     sanitized.recurrence &&
     sanitized.recurrence !== "None" &&
-    sanitized.recurrenceEndDate
+    sanitized.recurrenceEndDate &&
+    sanitized.dueDate
   ) {
     const recurrenceEnd = new Date(sanitized.recurrenceEndDate);
     const due = new Date(sanitized.dueDate);

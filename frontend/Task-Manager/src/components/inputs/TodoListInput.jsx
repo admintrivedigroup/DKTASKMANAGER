@@ -54,13 +54,17 @@ const TodoListInput = ({
   const handleAddOption = () => {
     const trimmedOption = option.trim();
 
-    if (!trimmedOption || !selectedAssignee) {
+    if (!trimmedOption) {
+      return;
+    }
+
+    if (hasAssignees && !selectedAssignee) {
       return;
     }
 
     const newItem = {
       text: trimmedOption,
-      assignedTo: selectedAssignee,
+      assignedTo: hasAssignees ? selectedAssignee : "",
       completed: false,
     };
 
@@ -92,10 +96,10 @@ const TodoListInput = ({
   const normalizedTodoList = Array.isArray(todoList) ? todoList : [];
 
   return (
-    <div className="mt-4 space-y-4">
+    <div className="mt-4 space-y-5">
       {!hasAssignees && (
-        <p className="text-xs font-medium text-rose-500">
-          Assign the task to at least one member to add checklist items.
+        <p className="text-xs font-medium text-slate-400 leading-relaxed">
+          Assign a member to enable checklist tracking.
         </p>
       )}
 
@@ -121,7 +125,7 @@ const TodoListInput = ({
 
                 <button
                   type="button"
-                  className="self-start rounded-full bg-rose-50 p-2 text-rose-500 transition hover:bg-rose-100 disabled:opacity-60"
+                  className="self-start rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
                   onClick={() => handleDeleteOption(index)}
                   disabled={disabled}
                 >
@@ -134,10 +138,11 @@ const TodoListInput = ({
                   Assigned to
                 </p>
                 <select
-                  className="form-input mt-0 h-10 bg-slate-50 text-left"
+                  className="form-input mt-0 h-10 bg-slate-50 text-left transition-all duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus:shadow-[0_0_0_4px_rgba(59,130,246,0.14)]"
                   value={itemAssigned}
                   onChange={({ target }) => handleAssigneeChange(index, target.value)}
                   disabled={disabled || !hasAssignees}
+                  data-skip-enter-submit="true"
                 >
                   <option value="">
                     {hasAssignees ? "Select member" : "No members available"}
@@ -155,7 +160,7 @@ const TodoListInput = ({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex w-full flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 transition-shadow duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.14)] sm:flex-row sm:items-center">
           <input
             type="text"
             placeholder="Enter task name"
@@ -163,12 +168,14 @@ const TodoListInput = ({
             onChange={({ target }) => setOption(target.value)}
             className="w-full text-sm text-slate-700 outline-none placeholder:text-slate-400"
             disabled={disabled}
+            data-skip-enter-submit="true"
           />
           <select
-            className="form-input mt-0 h-10 bg-slate-50 text-left sm:w-48"
+            className="form-input mt-0 h-10 bg-slate-50 text-left transition-all duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus:shadow-[0_0_0_4px_rgba(59,130,246,0.14)] sm:w-48"
             value={selectedAssignee}
             onChange={({ target }) => setSelectedAssignee(target.value)}
             disabled={disabled || !hasAssignees}
+            data-skip-enter-submit="true"
           >
              <option value="">
               {hasAssignees ? "Assign to member" : "No members available"}
@@ -185,7 +192,7 @@ const TodoListInput = ({
           className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           onClick={handleAddOption}
           disabled={
-            disabled || !hasAssignees || !option.trim() || !selectedAssignee
+            disabled || !option.trim() || (hasAssignees && !selectedAssignee)
           }
         >
           <HiMiniPlus className="text-lg" /> Add

@@ -192,6 +192,7 @@ const sanitizeTodoChecklist = ({
   checklistInput,
   validAssigneeIds = [],
   previousChecklist = [],
+  allowUnassigned = false,
 }) => {
   if (!Array.isArray(checklistInput) || checklistInput.length === 0) {
     return [];
@@ -221,7 +222,13 @@ const sanitizeTodoChecklist = ({
 
       const assignedTo = assignedValue ? assignedValue.toString() : "";
 
-      if (!assignedTo || !validAssigneeSet.has(assignedTo)) {
+      if (!assignedTo) {
+        if (!allowUnassigned) {
+          throw createHttpError(
+            "Each checklist item must be assigned to a selected member."
+          );
+        }
+      } else if (!validAssigneeSet.has(assignedTo)) {
         throw createHttpError(
           "Each checklist item must be assigned to a selected member."
         );
@@ -241,7 +248,7 @@ const sanitizeTodoChecklist = ({
 
       const sanitizedItem = {
         text,
-        assignedTo,
+        assignedTo: assignedTo && validAssigneeSet.has(assignedTo) ? assignedTo : null,
         completed,
       };
 
@@ -393,6 +400,11 @@ const getTasks = async (req, res, next) => {
       status: "Pending",
     });
 
+    const draftTasks = await Task.countDocuments({
+      ...summaryBaseFilter,
+      status: "Draft",
+    });
+
     const inProgressTasks = await Task.countDocuments({
       ...summaryBaseFilter,
       status: "In Progress",
@@ -407,6 +419,7 @@ const getTasks = async (req, res, next) => {
       tasks: tasksWithChecklistCounts,
       statusSummary: {
         all: allTasks,
+        draftTasks,
         pendingTasks,
         inProgressTasks,
         completedTasks,
@@ -481,6 +494,7 @@ const createTask = async (req, res, next) => {
             assignedTo,
             attachments,
             todoChecklist,
+            status,
             matter: matterId,
             caseFile: caseFileId,
             relatedDocuments,
@@ -499,9 +513,12 @@ const createTask = async (req, res, next) => {
             resolvedCaseId ?? undefined
           );
 
+          const isDraft = status === "Draft";
+          const assignedUserIds = Array.isArray(assignedTo) ? assignedTo : [];
           const sanitizedTodoChecklist = sanitizeTodoChecklist({
             checklistInput: todoChecklist,
-            validAssigneeIds: assignedTo,
+            validAssigneeIds: assignedUserIds,
+            allowUnassigned: isDraft,
           });
 
           const startDateValue =
@@ -521,12 +538,15 @@ const createTask = async (req, res, next) => {
             description,
             priority,
             dueDate: dueDateValue,
-            assignedTo,
+            assignedTo: assignedUserIds,
             createdBy: req.user._id,
             todoChecklist: sanitizedTodoChecklist,
             attachments: attachments ?? [],
             recurrence: recurrence || "None",
           };
+          if (status) {
+            taskPayload.status = status;
+          }
 
           if (startDate !== undefined) {
             taskPayload.startDate = startDateValue;
@@ -574,22 +594,24 @@ const createTask = async (req, res, next) => {
             details: buildFieldChanges({}, task.toObject(), TASK_ACTIVITY_FIELDS),
           });       
           try {
-            const assignees = await User.find({
-              _id: { $in: assignedTo },
-            }).select("name email");
+            if (assignedUserIds.length && status !== "Draft") {
+              const assignees = await User.find({
+                _id: { $in: assignedUserIds },
+              }).select("name email");
 
-            if (assignees.length) {
-              // Fire and forget to avoid blocking task creation on SMTP delays
-              sendTaskAssignmentEmail({
-                task,
-                assignees,
-                assignedBy: req.user,
-              }).catch((notificationError) =>
-                console.error(
-                  "Failed to send task assignment notification:",
-                  notificationError
-                )
-              );
+              if (assignees.length) {
+                // Fire and forget to avoid blocking task creation on SMTP delays
+                sendTaskAssignmentEmail({
+                  task,
+                  assignees,
+                  assignedBy: req.user,
+                }).catch((notificationError) =>
+                  console.error(
+                    "Failed to send task assignment notification:",
+                    notificationError
+                  )
+                );
+              }
             }
           } catch (notificationError) {
             console.error(
@@ -617,6 +639,7 @@ const createPersonalTask = async (req, res, next) => {
       dueDate,
       attachments,
       todoChecklist,
+      status,
       reminderMinutesBefore,
       recurrence,
       recurrenceEndDate,
@@ -674,6 +697,9 @@ const createPersonalTask = async (req, res, next) => {
       recurrence: recurrence || "None",
       isPersonal: true,
     };
+    if (status) {
+      taskPayload.status = status;
+    }
 
     if (startDate !== undefined) {
       taskPayload.startDate = startDateValue;
@@ -1461,7 +1487,7 @@ const getDashboardData = async (req, res, next) => {
       });
 
       // Ensure all possible statuses are included
-      const taskStatuses = ["Pending", "In Progress", "Completed"];
+      const taskStatuses = ["Draft", "Pending", "In Progress", "Completed"];
       const taskDistributionRaw = await Task.aggregate([
         ...baseMatchStages,        
         {
@@ -1730,7 +1756,7 @@ const overdueTasks = await Task.countDocuments({
 });
 
 // Task distribution by status
-const taskStatuses = ["Pending", "In Progress", "Completed"];
+const taskStatuses = ["Draft", "Pending", "In Progress", "Completed"];
 const taskDistributionRaw = await Task.aggregate([
   { $match: { assignedTo: userId } },
   { $group: { _id: "$status", count: { $sum: 1 } } },

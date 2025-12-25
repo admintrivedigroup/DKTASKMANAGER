@@ -11,9 +11,9 @@ const taskSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: { type: String },
     priority: { type: String, enum: ["Low", "Medium", "High"], default: "Medium" },
-    status: { type: String, enum: ["Pending", "In Progress", "Completed"], default: "Pending" },
+    status: { type: String, enum: ["Draft", "Pending", "In Progress", "Completed"], default: "Pending" },
     startDate: { type: Date, default: null },
-    dueDate: { type: Date, required: true },
+    dueDate: { type: Date, default: null },
     reminderMinutesBefore: { type: Number, min: 0, max: 10080, default: null },
     recurrence: {
       type: String,

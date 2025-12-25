@@ -48,6 +48,10 @@ const normalizeStatusFilter = (statusFilter) => {
     return undefined;
   }
 
+  if (trimmed.toLowerCase() === "drafts" || trimmed.toLowerCase() === "draft") {
+    return "Draft";
+  }
+
   return trimmed;
 };
 

@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+const modalStack = [];
 
 const Modal = ({
   children,
@@ -12,11 +14,67 @@ const Modal = ({
   bodyClass = "",
 }) => {
   const [portalTarget, setPortalTarget] = useState(null);
+  const modalId = useRef(`modal_${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     // Defer grabbing the body until after mount to avoid SSR mismatches.
     setPortalTarget(document?.body || null);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const id = modalId.current;
+    modalStack.push(id);
+
+    return () => {
+      const index = modalStack.lastIndexOf(id);
+      if (index !== -1) {
+        modalStack.splice(index, 1);
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        const topModal = modalStack[modalStack.length - 1];
+        if (topModal !== modalId.current) {
+          return;
+        }
+
+        event.stopPropagation();
+        event.preventDefault();
+        onClose?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const { body, documentElement } = document || {};
+    if (!body || !documentElement) return undefined;
+
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [isOpen]);
 
   if (!isOpen || !portalTarget) return null;
 
