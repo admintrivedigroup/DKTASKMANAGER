@@ -13,6 +13,7 @@ const {
 const {
   getDashboardData,
   getNotifications,
+  deleteNotifications,
   getUserDashboardData,
   getTasks,
   getTaskById,
@@ -30,6 +31,7 @@ const router = express.Router();
 // Task Management Routes
 router.get("/dashboard-data", protect, getDashboardData);
 router.get("/notifications", protect, getNotifications);
+router.delete("/notifications", protect, deleteNotifications);
 router.get("/user-dashboard-data", protect, getUserDashboardData);
 router.get("/", protect, validateQuery(validateTaskQuery), getTasks); // Get all tasks (Admin: all, User: assigned)
 router.get("/:id", protect, getTaskById); // Get task by ID

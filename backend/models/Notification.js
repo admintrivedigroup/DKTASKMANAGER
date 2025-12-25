@@ -47,6 +47,11 @@ const notificationSchema = new mongoose.Schema(
     actor: actorSchema,
     details: { type: [changeDetailSchema], default: undefined },
     meta: { type: mongoose.Schema.Types.Mixed },
+    deletedFor: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

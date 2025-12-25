@@ -29,6 +29,7 @@ export const API_PATHS = {
   TASKS: {
     GET_DASHBOARD_DATA: "/api/tasks/dashboard-data", // Get Dashboard Data
     GET_NOTIFICATIONS: "/api/tasks/notifications", // Get dashboard notifications
+    DELETE_NOTIFICATIONS: "/api/tasks/notifications", // Delete notifications for current user
     GET_USER_DASHBOARD_DATA: "/api/tasks/user-dashboard-data", // Get User Dashboard Data
     GET_ALL_TASKS: "/api/tasks", // Get all tasks (Admin: all, User: only assigned tasks)
     GET_TASK_BY_ID: (taskId) => `/api/tasks/${taskId}`, // Get task by ID

@@ -7,12 +7,15 @@ import React, {
 } from "react";
 import {
   LuBell,
+  LuSquareCheck,
   LuCircleAlert,
   LuCircleCheck,
   LuCircleX,
   LuInfo,
   LuLoader,
   LuRefreshCcw,
+  LuTrash2,
+  LuX,
 } from "react-icons/lu";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import axiosInstance from "../../utils/axiosInstance";
@@ -122,6 +125,9 @@ const getMeaningfulDetails = (details) => {
     .filter(Boolean);
 };
 
+const getNotificationId = (notification) =>
+  notification?.notificationId || notification?._id || "";
+
 const NotificationCenter = () => {
   useUserAuth();
 
@@ -133,6 +139,8 @@ const NotificationCenter = () => {
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedNotificationIds, setSelectedNotificationIds] = useState([]);
 
   const fetchNotifications = useCallback(
     async (showInlineSpinner = false) => {
@@ -203,6 +211,16 @@ const NotificationCenter = () => {
     }
   }, [currentPage, notifications.length]);
 
+  useEffect(() => {
+    setSelectedNotificationIds((previous) =>
+      previous.filter((id) =>
+        notifications.some(
+          (notification) => getNotificationId(notification) === id
+        )
+      )
+    );
+  }, [notifications]);
+
   const totalNotifications = notifications.length;
   const totalPages = Math.max(
     1,
@@ -213,6 +231,102 @@ const NotificationCenter = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return notifications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [currentPage, notifications]);
+
+  const currentPageNotificationIds = useMemo(
+    () =>
+      paginatedNotifications
+        .map((notification) => getNotificationId(notification))
+        .filter(Boolean),
+    [paginatedNotifications]
+  );
+
+  const hasDeletableNotifications = useMemo(
+    () => notifications.some((notification) => getNotificationId(notification)),
+    [notifications]
+  );
+
+  const allCurrentPageSelected =
+    selectionMode &&
+    currentPageNotificationIds.length > 0 &&
+    currentPageNotificationIds.every((id) =>
+      selectedNotificationIds.includes(id)
+    );
+
+  const selectedCount = selectedNotificationIds.length;
+
+  const handleToggleSelectionMode = () => {
+    setSelectionMode((previous) => {
+      if (previous) {
+        setSelectedNotificationIds([]);
+      }
+      return !previous;
+    });
+  };
+
+  const handleToggleNotification = (notificationId) => {
+    if (!notificationId) {
+      return;
+    }
+
+    setSelectedNotificationIds((previous) =>
+      previous.includes(notificationId)
+        ? previous.filter((id) => id !== notificationId)
+        : [...previous, notificationId]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    if (currentPageNotificationIds.length === 0) {
+      return;
+    }
+
+    setSelectedNotificationIds((previous) => {
+      if (allCurrentPageSelected) {
+        return previous.filter(
+          (id) => !currentPageNotificationIds.includes(id)
+        );
+      }
+
+      const next = new Set(previous);
+      currentPageNotificationIds.forEach((id) => next.add(id));
+      return Array.from(next);
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedNotificationIds.length) {
+      return;
+    }
+
+    const confirmationMessage =
+      selectedNotificationIds.length === 1
+        ? "Are you sure you want to delete this notification?"
+        : `Are you sure you want to delete ${selectedNotificationIds.length} notifications?`;
+    const confirmed = window.confirm(confirmationMessage);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await axiosInstance.delete(API_PATHS.TASKS.DELETE_NOTIFICATIONS, {
+        data: { notificationIds: selectedNotificationIds },
+      });
+
+      setNotifications((previous) =>
+        previous.filter(
+          (notification) =>
+            !selectedNotificationIds.includes(getNotificationId(notification))
+        )
+      );
+      setSelectedNotificationIds([]);
+    } catch (err) {
+      console.error("Failed to delete notifications", err);
+      window.alert(
+        "We couldn't delete the selected notifications. Please try again."
+      );
+    }
+  };
 
   const renderStatusBadge = (notification) => {
     const statusKey = notification?.status || "info";
@@ -250,7 +364,7 @@ const NotificationCenter = () => {
         </div>
       </section>
 
-      <div className="rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_24px_52px_rgba(15,23,42,0.08)]">
+      <div className="mt-3 rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-[0_24px_52px_rgba(15,23,42,0.08)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
@@ -260,24 +374,57 @@ const NotificationCenter = () => {
               Showing {paginatedNotifications.length} of {totalNotifications} total updates.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => fetchNotifications(true)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20"
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <>
-                <LuLoader className="h-4 w-4 animate-spin" />
-                Refreshing...
-              </>
-            ) : (
-              <>
-                <LuRefreshCcw className="h-4 w-4" />
-                Refresh list
-              </>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleSelectionMode}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary/40 hover:text-primary"
+              disabled={
+                loading || totalNotifications === 0 || !hasDeletableNotifications
+              }
+              aria-pressed={selectionMode}
+            >
+              {selectionMode ? (
+                <>
+                  <LuX className="h-4 w-4" />
+                  Cancel selection
+                </>
+              ) : (
+                <>
+                  <LuSquareCheck className="h-4 w-4" />
+                  Select
+                </>
+              )}
+            </button>
+            {selectionMode && selectedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100"
+              >
+                <LuTrash2 className="h-4 w-4" />
+                Delete selected ({selectedCount})
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              onClick={() => fetchNotifications(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20"
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <>
+                  <LuLoader className="h-4 w-4 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <LuRefreshCcw className="h-4 w-4" />
+                  Refresh list
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -299,6 +446,17 @@ const NotificationCenter = () => {
               <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50/80">
                   <tr>
+                    {selectionMode && (
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/40"
+                          checked={allCurrentPageSelected}
+                          onChange={handleToggleSelectAll}
+                          aria-label="Select all notifications on this page"
+                        />
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                       S.No.
                     </th>
@@ -324,6 +482,11 @@ const NotificationCenter = () => {
                     const serialNumber = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                     const indicator = getNotificationIndicator(notification);
                     const actionLabel = getActionLabel(notification);
+                    const notificationId = getNotificationId(notification);
+                    const isSelected =
+                      selectionMode &&
+                      notificationId &&
+                      selectedNotificationIds.includes(notificationId);
                     const actorRoleLabel = notification.actor?.role
                       ? getRoleLabel(notification.actor.role) ||
                         notification.actor.role.replace(/_/g, " ")
@@ -332,6 +495,18 @@ const NotificationCenter = () => {
 
                     return (
                       <tr key={notification.id || notification._id} className="align-top">
+                        {selectionMode && (
+                          <td className="px-6 py-5 text-sm text-slate-600">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/40"
+                              checked={Boolean(isSelected)}
+                              onChange={() => handleToggleNotification(notificationId)}
+                              disabled={!notificationId}
+                              aria-label={`Select notification ${serialNumber}`}
+                            />
+                          </td>
+                        )}
                         <td className="px-6 py-5 text-sm font-semibold text-slate-900">
                           {serialNumber}
                         </td>

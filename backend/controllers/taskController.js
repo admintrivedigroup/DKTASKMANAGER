@@ -1,4 +1,5 @@
 const fs = require("fs");
+const mongoose = require("mongoose");
 const path = require("path");
 
 const Task = require("../models/Task");
@@ -1224,7 +1225,9 @@ if (isPrivileged(req.user.role)) {
           .replace(/_/g, " ")
           .replace(/\b\w/g, (char) => char.toUpperCase());
 
-      const activityFeed = await Notification.find({})
+      const activityFeed = await Notification.find({
+        deletedFor: { $nin: [req.user._id] },
+      })
         .sort({ createdAt: -1 })
         .limit(20)
         .lean();
@@ -1243,6 +1246,7 @@ if (isPrivileged(req.user.role)) {
 
         notifications.push({
           id: `activity-${activity._id}`,
+          notificationId: activity._id,
           type: `${activity.entityType}_${activity.action}`,
           action: activity.action,
           entityType: activity.entityType,
@@ -1334,6 +1338,43 @@ if (isPrivileged(req.user.role)) {
       notifications: limitedNotifications,
       count: limitedNotifications.length,
       total: notifications.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete notifications for current user
+// @route   DELETE /api/tasks/notifications
+// @access  Private
+const deleteNotifications = async (req, res, next) => {
+  try {
+    if (!isPrivileged(req.user.role)) {
+      throw createHttpError("Access denied, admin only", 403);
+    }
+
+    const rawIds = Array.isArray(req.body?.notificationIds)
+      ? req.body.notificationIds
+      : [];
+    const notificationIds = rawIds
+      .map((id) => (id ? id.toString() : ""))
+      .filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+    if (!notificationIds.length) {
+      throw createHttpError("No valid notifications selected.", 400);
+    }
+
+    const result = await Notification.updateMany(
+      { _id: { $in: notificationIds } },
+      { $addToSet: { deletedFor: req.user._id } }
+    );
+
+    const deletedCount =
+      result.modifiedCount ?? result.nModified ?? notificationIds.length;
+
+    res.json({
+      message: "Notifications deleted for this user.",
+      deletedCount,
     });
   } catch (error) {
     next(error);
@@ -1908,6 +1949,7 @@ module.exports = {
     updateTaskStatus,
     updateTaskChecklist,
     getNotifications,
+    deleteNotifications,
     getDashboardData,
     uploadTaskDocument,
     getUserDashboardData,
