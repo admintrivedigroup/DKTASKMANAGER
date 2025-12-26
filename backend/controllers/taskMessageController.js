@@ -4,6 +4,7 @@ const Task = require("../models/Task");
 const TaskMessage = require("../models/TaskMessage");
 const { createHttpError } = require("../utils/httpError");
 const { hasPrivilegedAccess } = require("../utils/roleUtils");
+const { getIo, getTaskRoom } = require("../utils/socket");
 
 const ensureValidObjectId = (id, label) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -51,6 +52,20 @@ const ensureTaskChannelAccess = async (taskId, user, { requireAssignee = false }
   return { task, assignedIds, isAssigned, isPrivileged };
 };
 
+const populateMessage = (messageId) =>
+  TaskMessage.findById(messageId)
+    .populate("author", "name email profileImageUrl role")
+    .populate("dueDateRequest.decidedBy", "name email profileImageUrl role");
+
+const emitTaskEvent = (taskId, event, payload) => {
+  try {
+    const io = getIo();
+    io.to(getTaskRoom(taskId)).emit(event, payload);
+  } catch (error) {
+    console.error(`Socket emit failed (${event}):`, error.message);
+  }
+};
+
 const createSystemMessage = async ({ taskId, text, actorId }) => {
   if (!text) {
     return null;
@@ -96,10 +111,9 @@ const createTaskMessage = async (req, res, next) => {
       text,
     });
 
-    const populatedMessage = await TaskMessage.findById(message._id).populate(
-      "author",
-      "name email profileImageUrl role"
-    );
+    const populatedMessage = await populateMessage(message._id);
+
+    emitTaskEvent(task._id, "new-message", { message: populatedMessage });
 
     res.status(201).json({ message: populatedMessage });
   } catch (error) {
@@ -138,15 +152,19 @@ const createDueDateRequest = async (req, res, next) => {
     });
 
     const requestorName = req.user?.name || "A member";
-    await createSystemMessage({
+    const systemMessage = await createSystemMessage({
       taskId: task._id,
       actorId: req.user._id,
       text: `${requestorName} submitted a due date extension request.`,
     });
 
-    const populatedRequest = await TaskMessage.findById(
-      requestMessage._id
-    ).populate("author", "name email profileImageUrl role");
+    const populatedRequest = await populateMessage(requestMessage._id);
+    emitTaskEvent(task._id, "due-date-requested", { message: populatedRequest });
+
+    if (systemMessage) {
+      const populatedSystem = await populateMessage(systemMessage._id);
+      emitTaskEvent(task._id, "new-message", { message: populatedSystem });
+    }
 
     res.status(201).json({ message: populatedRequest });
   } catch (error) {
@@ -189,7 +207,7 @@ const approveDueDateRequest = async (req, res, next) => {
     await requestMessage.save();
 
     const approverName = req.user?.name || "An admin";
-    await createSystemMessage({
+    const systemMessage = await createSystemMessage({
       taskId: task._id,
       actorId: req.user._id,
       text: `${approverName} approved the due date request. New due date: ${proposedDueDate.toLocaleDateString(
@@ -197,17 +215,22 @@ const approveDueDateRequest = async (req, res, next) => {
       )}.`,
     });
 
-    const populatedRequest = await TaskMessage.findById(
-      requestMessage._id
-    )
-      .populate("author", "name email profileImageUrl role")
-      .populate("dueDateRequest.decidedBy", "name email profileImageUrl role");
+    const populatedRequest = await populateMessage(requestMessage._id);
 
-    res.json({
+    const responsePayload = {
       message: "Due date request approved.",
       request: populatedRequest,
       task: { _id: task._id, dueDate: task.dueDate },
-    });
+    };
+
+    emitTaskEvent(task._id, "due-date-approved", responsePayload);
+
+    if (systemMessage) {
+      const populatedSystem = await populateMessage(systemMessage._id);
+      emitTaskEvent(task._id, "new-message", { message: populatedSystem });
+    }
+
+    res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -243,22 +266,27 @@ const rejectDueDateRequest = async (req, res, next) => {
     await requestMessage.save();
 
     const approverName = req.user?.name || "An admin";
-    await createSystemMessage({
+    const systemMessage = await createSystemMessage({
       taskId: task._id,
       actorId: req.user._id,
       text: `${approverName} rejected the due date request.`,
     });
 
-    const populatedRequest = await TaskMessage.findById(
-      requestMessage._id
-    )
-      .populate("author", "name email profileImageUrl role")
-      .populate("dueDateRequest.decidedBy", "name email profileImageUrl role");
+    const populatedRequest = await populateMessage(requestMessage._id);
 
-    res.json({
+    const responsePayload = {
       message: "Due date request rejected.",
       request: populatedRequest,
-    });
+    };
+
+    emitTaskEvent(task._id, "due-date-rejected", responsePayload);
+
+    if (systemMessage) {
+      const populatedSystem = await populateMessage(systemMessage._id);
+      emitTaskEvent(task._id, "new-message", { message: populatedSystem });
+    }
+
+    res.json(responsePayload);
   } catch (error) {
     next(error);
   }

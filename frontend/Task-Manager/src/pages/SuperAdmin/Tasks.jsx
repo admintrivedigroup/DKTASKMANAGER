@@ -75,12 +75,7 @@ const Tasks = () => {
       return;
     }
 
-    if (taskScope === "My Task") {
-      navigate(`/super-admin/task-details/${taskId}`);
-      return;
-    }
-
-    openTaskForm(taskId);
+    navigate(`/super-admin/task-details/${taskId}`);
   };
 
   useEffect(() => {
@@ -103,13 +98,18 @@ const Tasks = () => {
   }, [location.pathname, locationState, navigate]);
 
   useEffect(() => {
-    if (
-      location.state?.filterStatus &&
-      location.state.filterStatus !== filterStatus
-    ) {
-      setFilterStatus(location.state.filterStatus);
+    if (typeof locationState?.filterStatus !== "string") {
+      return;
     }
-  }, [location.state?.filterStatus, filterStatus]);
+
+    setFilterStatus(locationState.filterStatus);
+
+    const { filterStatus: _filterStatus, ...restState } = locationState;
+    navigate(location.pathname, {
+      replace: true,
+      state: restState,
+    });
+  }, [location.pathname, locationState, navigate]);
 
   useEffect(() => {
     if (!locationState?.openTaskForm) {
@@ -422,6 +422,7 @@ const Tasks = () => {
                       isHighlighting && highlightTaskId === item._id
                     }
                     onClick={() => handleTaskCardClick(item._id)}
+                    onEdit={() => openTaskForm(item._id)}
                   />
                 ))}
 
@@ -439,6 +440,7 @@ const Tasks = () => {
                   <TaskListTable
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
+                    onEdit={(task) => openTaskForm(task?._id)}
                     className="mt-0"
                   />
                 ) : (

@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const path = require("path");
 
@@ -41,6 +42,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const weeklySummaryRoutes = require("./routes/weeklySummary.routes");
 const dueDateRequestRoutes = require("./routes/dueDateRequestRoutes");
+const { initSocket } = require("./utils/socket");
 
 const app = express();
 app.disable("x-powered-by");
@@ -138,6 +140,9 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 10000;
 startTaskReminderJob();
 
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
+const server = http.createServer(app);
+initSocket(server, { corsOrigin: process.env.CLIENT_URL || "*" });
+
+server.listen(PORT, () =>
+  console.log(`dYs? Server running on port ${PORT}`)
 );

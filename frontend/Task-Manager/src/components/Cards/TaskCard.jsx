@@ -1,6 +1,6 @@
 import React from "react";
 import AvatarGroup from "../AvatarGroup";
-import { LuPaperclip } from "react-icons/lu";
+import { LuPaperclip, LuPencil } from "react-icons/lu";
 import { formatDateTimeLabel } from "../../utils/dateUtils";
 import {
   calculateTaskCompletion,
@@ -21,9 +21,11 @@ const TaskCard = ({
   completedTodoCount,
   todoChecklist,
   onClick,
+  onEdit,
   cardId,
   isHighlighted = false,
 }) => {
+  const hasEditAction = typeof onEdit === "function";
   const assigneeAvatars = Array.isArray(assignedTo)
     ? assignedTo.map((user) => {
         if (typeof user === "string") {
@@ -113,10 +115,26 @@ const TaskCard = ({
         >
           {status}
         </div>
-        <div
-          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${getPriorityTagColor()}`}
-        >
-          {priority} priority
+        <div className="flex items-center gap-2">
+          <div
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${getPriorityTagColor()}`}
+          >
+            {priority} priority
+          </div>
+          {hasEditAction && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              aria-label="Edit task"
+            >
+              <LuPencil className="text-xs" />
+              Edit
+            </button>
+          )}
         </div>
       </div>
 

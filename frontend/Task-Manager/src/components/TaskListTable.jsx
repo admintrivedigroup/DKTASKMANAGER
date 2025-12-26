@@ -6,7 +6,12 @@ import {
   getProgressBarColor,
 } from "../utils/taskProgress";
 
-const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
+const TaskListTable = ({
+  tableData,
+  onTaskClick,
+  onEdit,
+  className = "",
+}) => {
   const safeTableData = Array.isArray(tableData)
     ? tableData
     : tableData?.tasks && Array.isArray(tableData.tasks)
@@ -100,7 +105,7 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
     return `${baseClasses} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60`;
   };
 
-  const getProgressMeta = (task) => {
+ const getProgressMeta = (task) => {
     const percentage = calculateTaskCompletion({
       progress:
         task?.progress ??
@@ -132,6 +137,8 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
     .filter(Boolean)
     .join(" ");
 
+  const hasEditAction = typeof onEdit === "function";
+
   return (
     <div className={containerClassName}>
       <div className="hidden overflow-x-auto md:block">
@@ -145,6 +152,9 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
               <th className="hidden px-6 py-3 md:table-cell">Due Date</th>
               <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
               <th className="hidden px-6 py-3 md:table-cell">Start Date</th>
+              {hasEditAction && (
+                <th className="px-6 py-3 text-right">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900/60">
@@ -207,6 +217,20 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                   <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                     {formatDate(task.startDate || task.createdAt)}
                   </td>
+                  {hasEditAction && (
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit(task);
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -236,13 +260,27 @@ const TaskListTable = ({ tableData, onTaskClick, className = "" }) => {
                       {task.title}
                     </h3>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
-                      task.status
-                    )}`}
-                  >
-                    {task.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeColor(
+                        task.status
+                      )}`}
+                    >
+                      {task.status}
+                    </span>
+                    {hasEditAction && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEdit(task);
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">

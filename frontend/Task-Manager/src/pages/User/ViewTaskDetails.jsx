@@ -181,6 +181,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
     return memberId && normalizedUserId && memberId.toString() === normalizedUserId;
   });
   const canAccessChannel = isPrivilegedUser || isAssignedToCurrentUser;
+  const isChannelOpen = activeTab === "channel";
   const hasTaskStarted = useMemo(() => {
     if (!task?.startDate) {
       return true;
@@ -193,6 +194,34 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
 
     return parsed.getTime() <= Date.now();
   }, [task?.startDate]);
+
+  useEffect(() => {
+    if (!isChannelOpen) {
+      return undefined;
+    }
+
+    const { body } = document || {};
+    const previousOverflow = body?.style?.overflow;
+
+    if (body?.style) {
+      body.style.overflow = "hidden";
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setActiveTab("details");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (body?.style) {
+        body.style.overflow = previousOverflow || "";
+      }
+    };
+  }, [isChannelOpen]);
 
   return (
     <DashboardLayout activeMenu={activeMenu}>
@@ -397,23 +426,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
                     </Link>
                   </aside>
                 </section>
-              ) : (
-                <section className="mt-6">
-                  {canAccessChannel ? (
-                    <TaskChannel
-                      task={task}
-                      user={user}
-                      isAssigned={isAssignedToCurrentUser}
-                      isPrivileged={isPrivilegedUser}
-                    />
-                  ) : (
-                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                      The channel is available to assignees, admins, and super
-                      admins only.
-                    </div>
-                  )}
-                </section>
-              )}
+              ) : null}
             </>
           ) : (
             <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
@@ -433,6 +446,47 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         taskId={isPersonalTask && isAssignedToCurrentUser ? id : null}
         mode="personal"
       />
+
+      {task && isChannelOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm">
+          <div className="flex h-full w-full flex-col bg-slate-50">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  Task Channel
+                </p>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {task?.title || "Task"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("details")}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden px-4 py-5 sm:px-6">
+              {canAccessChannel ? (
+                <TaskChannel
+                  task={task}
+                  user={user}
+                  isAssigned={isAssignedToCurrentUser}
+                  isPrivileged={isPrivilegedUser}
+                  isFullscreen
+                />
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                  The channel is available to assignees, admins, and super admins
+                  only.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
