@@ -107,13 +107,15 @@ const Navbar = () => {
               >
                 <div className="flex items-center gap-2 px-2">
                   {profileImageUrl ? (
-                    <img
-                      src={profileImageUrl}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover ring-1 ring-indigo-100 dark:ring-indigo-400/30"
-                    />
+                    <span className="avatar-shell h-8 w-8 shrink-0">
+                      <img
+                        src={profileImageUrl}
+                        alt="Profile"
+                        className="avatar-image ring-1 ring-indigo-100 dark:ring-indigo-400/30"
+                      />
+                    </span>
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold uppercase text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-100 dark:ring-indigo-400/30">
+                    <div className="avatar-shell flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold uppercase text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-100 dark:ring-indigo-400/30">
                       {initials}
                     </div>
                   )}

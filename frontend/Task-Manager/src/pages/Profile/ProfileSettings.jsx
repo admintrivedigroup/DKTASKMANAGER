@@ -421,23 +421,25 @@ const ProfileSettings = () => {
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <div className="relative">
                 <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-gradient-to-tr from-primary/18 to-cyan-200/25 blur-xl dark:from-indigo-500/25 dark:to-sky-500/25" />
-                {currentProfileImage ? (
-                  <img
-                    src={currentProfileImage}
-                    alt="Profile"
-                    className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-[0_14px_30px_rgba(59,130,246,0.28)] dark:border-slate-900"
-                  />
-                ) : (
-                  <FaUser
-                    className={`h-28 w-28 rounded-full border-4 border-white object-cover p-3 shadow-[0_14px_30px_rgba(59,130,246,0.2)] ${
-                      normalizedGender === "female"
-                        ? "text-rose-300"
-                        : normalizedGender === "male"
-                        ? "text-primary"
-                        : "text-indigo-200"
-                    } dark:border-slate-900 dark:bg-slate-900/70`}
-                  />
-                )}
+                <div className="avatar-shell h-28 w-28 shrink-0">
+                  {currentProfileImage ? (
+                    <img
+                      src={currentProfileImage}
+                      alt="Profile"
+                      className="avatar-image border-4 border-white shadow-[0_14px_30px_rgba(59,130,246,0.28)] dark:border-slate-900"
+                    />
+                  ) : (
+                    <FaUser
+                      className={`h-full w-full rounded-full border-4 border-white object-cover p-3 shadow-[0_14px_30px_rgba(59,130,246,0.2)] ${
+                        normalizedGender === "female"
+                          ? "text-rose-300"
+                          : normalizedGender === "male"
+                          ? "text-primary"
+                          : "text-indigo-200"
+                      } dark:border-slate-900 dark:bg-slate-900/70`}
+                    />
+                  )}
+                </div>
                 {(previewUrl || user?.profileImageUrl) && (
                   <button
                     type="button"

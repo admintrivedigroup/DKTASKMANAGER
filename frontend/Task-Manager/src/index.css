@@ -204,6 +204,28 @@
     @apply bg-white/90 shadow-md;
   }
 
+  .avatar-shell {
+    flex: 0 0 auto;
+    border-radius: 9999px;
+    filter: none;
+    backdrop-filter: none;
+    transform: none;
+    isolation: isolate;
+  }
+
+  .avatar-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    object-fit: cover;
+    filter: none;
+    backdrop-filter: none;
+    transform: none;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
   /* Dark mode glass variants */
   .dark .glass {
     @apply bg-slate-900/70 border-slate-800/50;
