@@ -40,6 +40,13 @@ export const API_PATHS = {
 
     UPDATE_TASK_STATUS: (taskId) => `/api/tasks/${taskId}/status`, // Update task status
     UPDATE_TODO_CHECKLIST: (taskId) => `/api/tasks/${taskId}/todo`, // Update todo checklist
+    GET_TASK_MESSAGES: (taskId) => `/api/tasks/${taskId}/messages`,
+    POST_TASK_MESSAGE: (taskId) => `/api/tasks/${taskId}/messages`,
+    CREATE_DUE_DATE_REQUEST: (taskId) => `/api/tasks/${taskId}/due-date-request`,
+  },
+  DUE_DATE_REQUESTS: {
+    APPROVE: (requestId) => `/api/due-date-requests/${requestId}/approve`,
+    REJECT: (requestId) => `/api/due-date-requests/${requestId}/reject`,
   },
   NOTICES: {
     PUBLISH: "/api/notices",

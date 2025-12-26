@@ -781,6 +781,12 @@ if (Object.prototype.hasOwnProperty.call(req.body, "priority")) {
   task.priority = req.body.priority;
 }
 if (Object.prototype.hasOwnProperty.call(req.body, "dueDate")) {
+  if (!isPrivileged(req.user?.role) && !task.isPersonal) {
+    throw createHttpError(
+      "Only admins can change due dates. Please submit a due date request.",
+      403
+    );
+  }
   const incomingDueDate = new Date(req.body.dueDate);
   if (!Number.isNaN(incomingDueDate.getTime())) {
     dueDateChanged = originalDueDate !== incomingDueDate.getTime();

@@ -40,6 +40,7 @@ const emailRoutes = require("./routes/emailRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const weeklySummaryRoutes = require("./routes/weeklySummary.routes");
+const dueDateRequestRoutes = require("./routes/dueDateRequestRoutes");
 
 const app = express();
 app.disable("x-powered-by");
@@ -122,6 +123,7 @@ app.use("/api/email", emailRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/weekly-summary", weeklySummaryRoutes);
+app.use("/api/due-date-requests", dueDateRequestRoutes);
 
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

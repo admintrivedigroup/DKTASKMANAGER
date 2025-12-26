@@ -11,12 +11,14 @@ import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
 import { hasPrivilegedAccess } from "../../utils/roleUtils";
 import TaskFormModal from "../../components/TaskFormModal";
+import TaskChannel from "../../components/TaskChannel";
 
 const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
   const { id } = useParams();
   const [task, setTask] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const { user } = useContext(UserContext);
 
   const tasksRoute = useMemo(() => {
@@ -178,6 +180,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
       member?._id || member?.id || (typeof member === "string" ? member : null);
     return memberId && normalizedUserId && memberId.toString() === normalizedUserId;
   });
+  const canAccessChannel = isPrivilegedUser || isAssignedToCurrentUser;
   const hasTaskStarted = useMemo(() => {
     if (!task?.startDate) {
       return true;
@@ -245,119 +248,173 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
           </section>
 
           {task ? (
-            <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-              <div className="form-card">
-                <div className="grid grid-cols-1 gap-6">
-                    <InfoBox label="Description" value={task?.description} />
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <InfoBox label="Priority" value={task?.priority} />
-                    <InfoBox
-                      label="Start Date"
-                      value={formatDateTimeLabel(task?.startDate, "N/A")}
-                    />
-                    <InfoBox
-                      label="Due Date"
-                      value={formatDateTimeLabel(task?.dueDate, "N/A")}
-                    />
-                                        <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Assigned To</p>
-                      <div className="mt-2 rounded-2xl border border-white/60 bg-white/80 p-3">
-                        <AvatarGroup
-                          avatars={assignedMembers?.map?.((item) => item?.profileImageUrl)}
-                          maxVisible={5}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Todo Checklist</p>
-                    <div className="mt-3 space-y-3">
-                      {todoChecklistItems?.map?.((item, index) => {
-                        const todoIdValue = item?._id || item?.id || null;
-                        const todoId = todoIdValue
-                          ? todoIdValue.toString()
-                          : null;
-                        const assignedValue =
-                          item?.assignedTo?._id || item?.assignedTo || "";
-                        const assignedId = assignedValue
-                          ? assignedValue.toString()
-                          : "";
-
-                        const assigneeDetails =
-                          (typeof item?.assignedTo === "object" &&
-                            item?.assignedTo !== null
-                            ? item.assignedTo
-                            : null) ||
-                          assignedMembers.find((member) => {
-                            const memberId = member?._id || member?.id || member;
-                            return memberId && memberId.toString() === assignedId;
-                          });
-
-                        const assigneeName = assigneeDetails?.name || "";
-                        const canToggleUser =
-                          isPrivilegedUser ||
-                          (assignedId && assignedId === normalizedUserId);
-                        const canToggle = hasTaskStarted && canToggleUser;
-                        const disabledMessage = !hasTaskStarted
-                          ? "Checklist unlocks once the task start time is reached."
-                          : !canToggleUser
-                          ? assigneeName
-                            ? `Only ${assigneeName} can mark this item complete.`
-                            : "Only the assigned member can mark this item complete."
-                          : "";
-
-                        return (
-                          <TodoCheckList
-                            key={`todo_${todoId || index}`}
-                            text={item.text}
-                            isChecked={item?.completed}
-                            onChange={() => {
-                              if (canToggle && todoId) {
-                                updateTodoCheckList(todoId);
-                              }
-                            }}
-                            disabled={!canToggle || !todoId}
-                            assigneeName={assigneeName}
-                            disabledMessage={disabledMessage}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {task?.attachments?.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">Attachments</p>
-                      <div className="mt-3 space-y-3">
-                        {task?.attachments?.map?.((link, index) => (
-                          <Attachment
-                            key={`link_${index}`}
-                            link={link}
-                            index={index}
-                            onClick={() => handleLinkClick(link)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {[
+                  { id: "details", label: "Details" },
+                  { id: "channel", label: "Channel" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                      activeTab === tab.id
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                    }`}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
-              <aside className="form-card space-y-4">
-                <h3 className="text-lg font-semibold text-slate-900">Project Pulse</h3>
-                <p className="text-sm text-slate-500">
-                  Track status, due dates and collaboration at a glance.
-                </p>
-                <Link
-                  to={tasksRoute}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:bg-gradient-to-r hover:from-slate-900 hover:to-indigo-600 hover:text-white"
-                >
-                  Back to Tasks
-                </Link>
-              </aside>
-            </section>
+              {activeTab === "details" ? (
+                <section className="mt-6 grid gap-6 lg:grid-cols-[2fr,1fr]">
+                  <div className="form-card">
+                    <div className="grid grid-cols-1 gap-6">
+                      <InfoBox label="Description" value={task?.description} />
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        <InfoBox label="Priority" value={task?.priority} />
+                        <InfoBox
+                          label="Start Date"
+                          value={formatDateTimeLabel(task?.startDate, "N/A")}
+                        />
+                        <InfoBox
+                          label="Due Date"
+                          value={formatDateTimeLabel(task?.dueDate, "N/A")}
+                        />
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+                            Assigned To
+                          </p>
+                          <div className="mt-2 rounded-2xl border border-white/60 bg-white/80 p-3">
+                            <AvatarGroup
+                              avatars={assignedMembers?.map?.(
+                                (item) => item?.profileImageUrl
+                              )}
+                              maxVisible={5}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+                          Todo Checklist
+                        </p>
+                        <div className="mt-3 space-y-3">
+                          {todoChecklistItems?.map?.((item, index) => {
+                            const todoIdValue = item?._id || item?.id || null;
+                            const todoId = todoIdValue
+                              ? todoIdValue.toString()
+                              : null;
+                            const assignedValue =
+                              item?.assignedTo?._id || item?.assignedTo || "";
+                            const assignedId = assignedValue
+                              ? assignedValue.toString()
+                              : "";
+
+                            const assigneeDetails =
+                              (typeof item?.assignedTo === "object" &&
+                                item?.assignedTo !== null
+                                ? item.assignedTo
+                                : null) ||
+                              assignedMembers.find((member) => {
+                                const memberId =
+                                  member?._id || member?.id || member;
+                                return (
+                                  memberId &&
+                                  memberId.toString() === assignedId
+                                );
+                              });
+
+                            const assigneeName = assigneeDetails?.name || "";
+                            const canToggleUser =
+                              isPrivilegedUser ||
+                              (assignedId && assignedId === normalizedUserId);
+                            const canToggle = hasTaskStarted && canToggleUser;
+                            const disabledMessage = !hasTaskStarted
+                              ? "Checklist unlocks once the task start time is reached."
+                              : !canToggleUser
+                              ? assigneeName
+                                ? `Only ${assigneeName} can mark this item complete.`
+                                : "Only the assigned member can mark this item complete."
+                              : "";
+
+                            return (
+                              <TodoCheckList
+                                key={`todo_${todoId || index}`}
+                                text={item.text}
+                                isChecked={item?.completed}
+                                onChange={() => {
+                                  if (canToggle && todoId) {
+                                    updateTodoCheckList(todoId);
+                                  }
+                                }}
+                                disabled={!canToggle || !todoId}
+                                assigneeName={assigneeName}
+                                disabledMessage={disabledMessage}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {task?.attachments?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+                            Attachments
+                          </p>
+                          <div className="mt-3 space-y-3">
+                            {task?.attachments?.map?.((link, index) => (
+                              <Attachment
+                                key={`link_${index}`}
+                                link={link}
+                                index={index}
+                                onClick={() => handleLinkClick(link)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <aside className="form-card space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Project Pulse
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Track status, due dates and collaboration at a glance.
+                    </p>
+                    <Link
+                      to={tasksRoute}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:bg-gradient-to-r hover:from-slate-900 hover:to-indigo-600 hover:text-white"
+                    >
+                      Back to Tasks
+                    </Link>
+                  </aside>
+                </section>
+              ) : (
+                <section className="mt-6">
+                  {canAccessChannel ? (
+                    <TaskChannel
+                      task={task}
+                      user={user}
+                      isAssigned={isAssignedToCurrentUser}
+                      isPrivileged={isPrivilegedUser}
+                    />
+                  ) : (
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                      The channel is available to assignees, admins, and super
+                      admins only.
+                    </div>
+                  )}
+                </section>
+              )}
+            </>
           ) : (
             <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
               Unable to load this task. Please return to your task list.

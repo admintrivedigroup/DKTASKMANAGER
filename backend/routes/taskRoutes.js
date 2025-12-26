@@ -25,6 +25,11 @@ const {
   updateTaskChecklist,
   uploadTaskDocument,
 } = require("../controllers/taskController");
+const {
+  getTaskMessages,
+  createTaskMessage,
+  createDueDateRequest,
+} = require("../controllers/taskMessageController");
 
 const router = express.Router();
 
@@ -73,5 +78,8 @@ router.post(
   documentUpload.single("file"),
   uploadTaskDocument
 );
+router.get("/:id/messages", protect, getTaskMessages);
+router.post("/:id/messages", protect, createTaskMessage);
+router.post("/:id/due-date-request", protect, createDueDateRequest);
 
 module.exports = router;
