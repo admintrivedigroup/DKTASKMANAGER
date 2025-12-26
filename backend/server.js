@@ -18,6 +18,7 @@ connectDB(); // MUST RUN BEFORE ROUTES
 // Import middlewares
 const { startTaskReminderJob } = require("./jobs/taskReminderJob");
 require("./cron/weeklySummary.cron");
+require("./cron/weeklySummaryEmail.cron");
 const {
   addSecurityHeaders,
   createRateLimiter,

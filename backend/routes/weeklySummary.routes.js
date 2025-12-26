@@ -6,6 +6,6 @@ const {
 
 const router = express.Router();
 
-router.post("/run", runWeeklySummary);
+router.post("/run", protect, adminOnly, runWeeklySummary);
 
 module.exports = router;

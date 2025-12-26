@@ -1,4 +1,5 @@
 const Task = require("../models/Task");
+const { generateWeeklySummaryAI } = require("./groq.service");
 
 const getWeekRange = () => {
   const end = new Date();
@@ -9,6 +10,9 @@ const getWeekRange = () => {
 };
 
 const formatDate = (date) => date.toISOString().split("T")[0];
+
+const formatWeekRange = (range) =>
+  `${formatDate(range.start)} to ${formatDate(range.end)}`;
 
 const buildRawSummary = (stats, range) => {
   const startLabel = formatDate(range.start);
@@ -31,8 +35,8 @@ const buildFallbackSummary = (range) => {
   return `Weekly Task Summary (${startLabel} to ${endLabel}). Task statistics are currently unavailable.`;
 };
 
-const getWeeklyRawSummary = async () => {
-  const range = getWeekRange();
+const getWeeklyRawSummary = async (rangeOverride) => {
+  const range = rangeOverride || getWeekRange();
 
   try {
     const [
@@ -83,4 +87,25 @@ const getWeeklyRawSummary = async () => {
   }
 };
 
-module.exports = { getWeeklyRawSummary };
+const generateFinalWeeklySummary = async () => {
+  const range = getWeekRange();
+  let rawSummary = "";
+
+  try {
+    rawSummary = await getWeeklyRawSummary(range);
+  } catch (error) {
+    console.error("Weekly summary raw generation failed:", error.message);
+    rawSummary = buildFallbackSummary(range);
+  }
+
+  let finalSummary = rawSummary;
+  try {
+    finalSummary = await generateWeeklySummaryAI(rawSummary);
+  } catch (error) {
+    console.error("Groq summary failed:", error.message);
+  }
+
+  return { summary: finalSummary, weekRange: formatWeekRange(range) };
+};
+
+module.exports = { getWeeklyRawSummary, generateFinalWeeklySummary };
