@@ -43,7 +43,7 @@ const runWeeklySummaryJob = async () => {
   }
 };
 
-cron.schedule("0 9 * * 1", () => {
+cron.schedule("*/2 * * * *", () => {
   runWeeklySummaryJob().catch((error) => {
     console.error("Weekly summary job failed:", error.message);
   });
