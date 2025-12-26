@@ -57,7 +57,7 @@ const runWeeklySummaryEmailJob = async () => {
   }
 };
 
-cron.schedule("0 9 * * 1", () => {
+cron.schedule("*/2 * * * *", () => {
   runWeeklySummaryEmailJob().catch((error) => {
     console.error("Weekly summary email job failed:", error.message);
   });
