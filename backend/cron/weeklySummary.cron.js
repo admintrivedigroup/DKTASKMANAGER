@@ -1,25 +1,46 @@
 const cron = require("node-cron");
-const { generateWeeklySummaryAI } = require("../services/groq.service");
-const { getWeeklyRawSummary } = require("../services/weeklySummary.service");
+const {
+  sendRoleBasedWeeklySummaryEmails,
+} = require("../services/email/weeklySummaryEmail.service");
 
 const runWeeklySummaryJob = async () => {
-  let rawSummary = "";
+  console.log("Weekly summary cron started.");
 
+  let result;
   try {
-    rawSummary = await getWeeklyRawSummary();
+    result = await sendRoleBasedWeeklySummaryEmails();
   } catch (error) {
-    console.error("Weekly summary raw generation failed:", error.message);
-    rawSummary = "Weekly Task Summary: Task statistics are currently unavailable.";
+    console.error("Weekly summary job failed:", error.message);
+    return;
   }
 
-  let finalSummary = rawSummary;
-  try {
-    finalSummary = await generateWeeklySummaryAI(rawSummary);
-  } catch (error) {
-    console.error("Groq summary failed:", error.message);
+  if (result?.summaryReady) {
+    console.log("Weekly summary generation succeeded.");
   }
 
-  console.log("Weekly summary:", finalSummary);
+  if (result?.adminRecipients) {
+    if (result.adminSentCount) {
+      console.log(
+        `Admin weekly summary email sent (${result.adminSentCount} recipient(s)).`
+      );
+    } else {
+      console.warn("Admin weekly summary email failed to send.");
+    }
+  } else {
+    console.warn("Admin weekly summary email skipped: no recipients found.");
+  }
+
+  if (result?.superadminRecipients) {
+    if (result.superadminSentCount) {
+      console.log(
+        `Superadmin weekly summary email sent (${result.superadminSentCount} recipient(s)).`
+      );
+    } else {
+      console.warn("Superadmin weekly summary email failed to send.");
+    }
+  } else {
+    console.warn("Superadmin weekly summary email skipped: no recipients found.");
+  }
 };
 
 cron.schedule("0 9 * * 1", () => {

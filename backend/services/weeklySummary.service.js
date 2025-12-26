@@ -1,4 +1,6 @@
 const Task = require("../models/Task");
+const User = require("../models/User");
+const { getRoleLabel, normalizeRole } = require("../utils/roleUtils");
 const { generateWeeklySummaryAI } = require("./groq.service");
 
 /**
@@ -16,6 +18,118 @@ const formatDate = (date) => date.toISOString().split("T")[0];
 
 const formatWeekRange = (range) =>
   `${formatDate(range.start)} to ${formatDate(range.end)}`;
+
+const DEFAULT_USER_STATS = Object.freeze({
+  totalTasks: 0,
+  completedTasks: 0,
+  pendingTasks: 0,
+  inProgressTasks: 0,
+  overdueTasks: 0,
+});
+
+const buildUserTaskStatsMap = async (range) => {
+  const stats = await Task.aggregate([
+    { $match: { assignedTo: { $exists: true, $ne: [] } } },
+    { $unwind: "$assignedTo" },
+    {
+      $group: {
+        _id: "$assignedTo",
+        totalTasks: { $sum: 1 },
+        completedTasks: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $gte: ["$completedAt", range.start] },
+                  { $lt: ["$completedAt", range.end] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        pendingTasks: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "Pending"] }, 1, 0],
+          },
+        },
+        inProgressTasks: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "In Progress"] }, 1, 0],
+          },
+        },
+        overdueTasks: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: ["$dueDate", null] },
+                  { $lt: ["$dueDate", range.end] },
+                  { $ne: ["$status", "Completed"] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  const statsMap = new Map();
+  stats.forEach((item) => {
+    statsMap.set(String(item._id), {
+      totalTasks: item.totalTasks || 0,
+      completedTasks: item.completedTasks || 0,
+      pendingTasks: item.pendingTasks || 0,
+      inProgressTasks: item.inProgressTasks || 0,
+      overdueTasks: item.overdueTasks || 0,
+    });
+  });
+
+  return statsMap;
+};
+
+const getWeeklyUserTaskStats = async (rangeOverride) => {
+  const range = rangeOverride || getWeekRange();
+  let users = [];
+
+  try {
+    users = await User.find({ role: { $in: ["member", "admin", "super_admin"] } })
+      .select("name email role")
+      .lean();
+  } catch (error) {
+    console.error("Weekly summary user lookup failed:", error.message);
+    return { range, weekRangeLabel: formatWeekRange(range), users: [] };
+  }
+
+  let statsMap = new Map();
+  try {
+    statsMap = await buildUserTaskStatsMap(range);
+  } catch (error) {
+    console.error("Weekly summary user stats error:", error.message);
+  }
+
+  const summaries = users
+    .map((user) => {
+      const userId = String(user?._id || "");
+      const stats = statsMap.get(userId) || { ...DEFAULT_USER_STATS };
+
+      return {
+        id: userId,
+        name: user?.name || "Unknown",
+        email: user?.email || "",
+        role: normalizeRole(user?.role) || "member",
+        roleLabel: getRoleLabel(user?.role),
+        stats,
+      };
+    })
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  return { range, weekRangeLabel: formatWeekRange(range), users: summaries };
+};
 
 /**
  * Build raw summary text from stats
@@ -147,6 +261,7 @@ const generateFinalWeeklySummary = async () => {
 };
 
 module.exports = {
+  getWeeklyUserTaskStats,
   getWeeklyRawSummary,
   generateFinalWeeklySummary,
 };
