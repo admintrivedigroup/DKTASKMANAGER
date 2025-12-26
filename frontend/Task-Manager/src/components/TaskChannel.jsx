@@ -8,6 +8,7 @@ import {
 } from "../utils/dateUtils";
 import { matchesRole } from "../utils/roleUtils";
 import { connectSocket } from "../utils/socket";
+import Modal from "./Modal";
 import toast from "react-hot-toast";
 
 const TaskChannel = ({
@@ -28,6 +29,7 @@ const TaskChannel = ({
   const [isSending, setIsSending] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [isUpdatingRequest, setIsUpdatingRequest] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const requestPanelRef = useRef(null);
   const messagesBodyRef = useRef(null);
   const hasScrolledOnLoad = useRef(false);
@@ -40,6 +42,8 @@ const TaskChannel = ({
     !canRequestDueDate || isTaskCompleted || isRequesting;
   const composerDisabled = !canSendMessage;
   const currentUserId = user?._id ? user._id.toString() : "";
+  const isMemberRole = matchesRole(user?.role, "member");
+  const showRequestPanel = !isMemberRole;
 
   const fetchMessages = useCallback(async () => {
     if (!taskId) {
@@ -174,6 +178,7 @@ const TaskChannel = ({
         ...prev,
         reason: "",
       }));
+      setIsRequestModalOpen(false);
       toast.success("Due date request submitted.");
     } catch (error) {
       console.error("Failed to request due date change", error);
@@ -383,7 +388,7 @@ const TaskChannel = ({
   }, [messages.length, currentUserId, lastMessageId, lastMessageAuthorId]);
 
   const containerClasses = [
-    "grid gap-6 lg:grid-cols-[2fr,1fr]",
+    showRequestPanel ? "grid gap-6 lg:grid-cols-[2fr,1fr]" : "grid gap-6",
     isFullscreen ? "h-full min-h-0" : "",
   ]
     .filter(Boolean)
@@ -477,12 +482,17 @@ const TaskChannel = ({
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={() =>
+                  onClick={() => {
+                    if (isMemberRole) {
+                      setIsRequestModalOpen(true);
+                      return;
+                    }
+
                     requestPanelRef.current?.scrollIntoView({
                       behavior: "smooth",
                       block: "start",
-                    })
-                  }
+                    });
+                  }}
                   disabled={!canRequestDueDate || isTaskCompleted}
                 >
                   ⏳ Request Extension
@@ -507,63 +517,135 @@ const TaskChannel = ({
         </div>
       </div>
 
-      <aside
-        ref={requestPanelRef}
-        className={`form-card space-y-5 ${isFullscreen ? "h-full overflow-y-auto" : ""}`}
-      >
+      {showRequestPanel && (
+        <aside
+          ref={requestPanelRef}
+          className={`form-card space-y-5 ${isFullscreen ? "h-full overflow-y-auto" : ""}`}
+        >
+          {!canRequestDueDate && (
+            <p className="text-xs text-slate-500">
+              Only assigned members can request due date extensions.
+            </p>
+          )}
+          {canRequestDueDate && (
+            <form onSubmit={handleSubmitRequest} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+                  Proposed Due Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={requestForm.proposedDueDate}
+                  onChange={(event) =>
+                    setRequestForm((prev) => ({
+                      ...prev,
+                      proposedDueDate: event.target.value,
+                    }))
+                  }
+                  disabled={isRequestDisabled}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+                  Reason
+                </label>
+                <textarea
+                  rows={4}
+                  value={requestForm.reason}
+                  onChange={(event) =>
+                    setRequestForm((prev) => ({
+                      ...prev,
+                      reason: event.target.value,
+                    }))
+                  }
+                  disabled={isRequestDisabled}
+                  placeholder="Explain why you need more time..."
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex h-10 w-full items-center justify-center rounded-full bg-amber-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                disabled={isRequestDisabled}
+              >
+                {isRequesting ? "Submitting..." : "Submit Request"}
+              </button>
+              {isTaskCompleted && (
+                <p className="text-xs text-slate-500">
+                  Task is completed. Extensions are locked.
+                </p>
+              )}
+            </form>
+          )}
+        </aside>
+      )}
 
-        {canRequestDueDate && (
-          <form onSubmit={handleSubmitRequest} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
-                Proposed Due Date
-              </label>
-              <input
-                type="datetime-local"
-                value={requestForm.proposedDueDate}
-                onChange={(event) =>
-                  setRequestForm((prev) => ({
-                    ...prev,
-                    proposedDueDate: event.target.value,
-                  }))
-                }
-                disabled={isRequestDisabled}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
-                Reason
-              </label>
-              <textarea
-                rows={4}
-                value={requestForm.reason}
-                onChange={(event) =>
-                  setRequestForm((prev) => ({
-                    ...prev,
-                    reason: event.target.value,
-                  }))
-                }
-                disabled={isRequestDisabled}
-                placeholder="Explain why you need more time..."
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
-              />
-            </div>
+      <Modal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        title="Request Due Date Extension"
+        maxWidthClass="max-w-xl"
+      >
+        <form onSubmit={handleSubmitRequest} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+              Proposed Due Date
+            </label>
+            <input
+              type="datetime-local"
+              value={requestForm.proposedDueDate}
+              onChange={(event) =>
+                setRequestForm((prev) => ({
+                  ...prev,
+                  proposedDueDate: event.target.value,
+                }))
+              }
+              disabled={isRequestDisabled}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
+              Reason
+            </label>
+            <textarea
+              rows={4}
+              value={requestForm.reason}
+              onChange={(event) =>
+                setRequestForm((prev) => ({
+                  ...prev,
+                  reason: event.target.value,
+                }))
+              }
+              disabled={isRequestDisabled}
+              placeholder="Explain why you need more time..."
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsRequestModalOpen(false)}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              className="inline-flex h-10 w-full items-center justify-center rounded-full bg-amber-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-amber-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300"
               disabled={isRequestDisabled}
             >
               {isRequesting ? "Submitting..." : "Submit Request"}
             </button>
-            {isTaskCompleted && (
-              <p className="text-xs text-slate-500">
-                Task is completed. Extensions are locked.
-              </p>
-            )}
-          </form>
-        )}
-      </aside>
+          </div>
+          {isTaskCompleted && (
+            <p className="text-xs text-slate-500">
+              Task is completed. Extensions are locked.
+            </p>
+          )}
+        </form>
+      </Modal>
     </div>
   );
 };
