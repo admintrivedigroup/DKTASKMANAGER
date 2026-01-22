@@ -28,6 +28,12 @@ const buildTaskLink = (taskId) => {
   return `${base}/tasks/${taskId}`;
 };
 
+const buildTaskChannelLink = (taskId) => {
+  if (!CLIENT_URL || !taskId) return null;
+  const base = CLIENT_URL.endsWith("/") ? CLIENT_URL.slice(0, -1) : CLIENT_URL;
+  return `${base}/tasks/${taskId}?tab=channel`;
+};
+
 const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
   const title = task?.title || "Task";
   const description = task?.description || "No description provided.";
@@ -166,6 +172,85 @@ const sendTaskReminderEmail = async ({
   });
 };
 
+const buildDueDateRequestEmail = ({
+  task,
+  requestor,
+  proposedDueDate,
+  reason,
+  channelLink,
+}) => {
+  const title = task?.title || "Task";
+  const requesterName = requestor?.name || requestor?.email || "A member";
+  const formattedDueDate = proposedDueDate ? formatDate(proposedDueDate) : "";
+
+  return `
+    <div style="background-color:#f8fafc;padding:24px 0;margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+        <tr>
+          <td align="center" style="padding:0 16px;">
+            <div style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,0.12);padding:24px;box-sizing:border-box;">
+              <h2 style="margin:0 0 8px 0;font-size:20px;color:#0f172a;">Due Date Extension Requested</h2>
+              <p style="margin:0 0 14px 0;font-size:14px;color:#475569;">
+                ${requesterName} requested a new due date for <strong>${title}</strong>.
+              </p>
+              <div style="background:#f1f5f9;border-radius:12px;padding:12px 14px;margin:0 0 16px 0;border:1px solid #e2e8f0;">
+                <p style="margin:0;font-size:13px;color:#0f172a;line-height:1.5;"><strong>Task:</strong> ${title}</p>
+                ${
+                  formattedDueDate
+                    ? `<p style="margin:6px 0 0 0;font-size:13px;color:#0f172a;line-height:1.5;"><strong>Requested due date:</strong> ${formattedDueDate}</p>`
+                    : ""
+                }
+              </div>
+              <div style="margin:0 0 18px 0;">
+                <p style="margin:0 0 6px 0;font-size:13px;color:#0f172a;"><strong>Reason</strong></p>
+                <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">${reason || "No reason provided."}</p>
+              </div>
+              ${
+                channelLink
+                  ? `<a href="${channelLink}" target="_blank" rel="noopener" style="display:inline-block;background-color:#f59e0b;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 6px 18px rgba(245,158,11,0.3);">Review in Task Channel</a>`
+                  : ""
+              }
+              <p style="margin:18px 0 0 0;font-size:12px;color:#94a3b8;">This is an automated notification from Task Manager.</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+};
+
+const sendDueDateRequestEmail = async ({
+  task,
+  requestor,
+  proposedDueDate,
+  reason,
+  recipients = [],
+}) => {
+  const recipientEmails = recipients
+    .map((recipient) => recipient?.email)
+    .filter(Boolean);
+
+  if (!recipientEmails.length) {
+    return;
+  }
+
+  const subject = `Due Date Extension Request: ${task?.title || "Task"}`;
+  const channelLink = buildTaskChannelLink(task?._id);
+  const html = buildDueDateRequestEmail({
+    task,
+    requestor,
+    proposedDueDate,
+    reason,
+    channelLink,
+  });
+
+  await sendEmail({
+    to: recipientEmails,
+    subject,
+    html,
+  });
+};
+
 const sendTestEmail = async ({ to }) => {
   const recipient = Array.isArray(to) ? to.filter(Boolean) : to;
   await sendEmail({
@@ -180,5 +265,6 @@ module.exports = {
   sendTaskAssignmentEmail,
   sendTaskReminder,
   sendTaskReminderEmail,
+  sendDueDateRequestEmail,
   sendTestEmail,
 };

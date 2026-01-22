@@ -26,7 +26,19 @@ const taskMessageSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, trim: true },
+    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "TaskMessage", default: null },
     dueDateRequest: { type: dueDateRequestSchema, default: null },
+    seenBy: {
+      type: [
+        {
+          user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          seenAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

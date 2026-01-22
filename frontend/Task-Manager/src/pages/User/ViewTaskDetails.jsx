@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
@@ -13,13 +14,32 @@ import { hasPrivilegedAccess } from "../../utils/roleUtils";
 import TaskFormModal from "../../components/TaskFormModal";
 import TaskChannel from "../../components/TaskChannel";
 
-const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
+const ViewTaskDetails = ({ activeMenu } = {}) => {
   const { id } = useParams();
   const [task, setTask] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const { user } = useContext(UserContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handleTabChange = useCallback(
+    (tabId) => {
+      setActiveTab(tabId);
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          if (tabId === "channel") {
+            next.set("tab", "channel");
+          } else {
+            next.delete("tab");
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const tasksRoute = useMemo(() => {
     const role = user?.role;
@@ -182,6 +202,13 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
   });
   const canAccessChannel = isPrivilegedUser || isAssignedToCurrentUser;
   const isChannelOpen = activeTab === "channel";
+  const resolvedActiveMenu = useMemo(() => {
+    if (activeMenu) {
+      return activeMenu;
+    }
+
+    return isPrivilegedUser ? "Tasks" : "My Tasks";
+  }, [activeMenu, isPrivilegedUser]);
   const hasTaskStarted = useMemo(() => {
     if (!task?.startDate) {
       return true;
@@ -209,7 +236,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setActiveTab("details");
+        handleTabChange("details");
       }
     };
 
@@ -221,10 +248,23 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         body.style.overflow = previousOverflow || "";
       }
     };
-  }, [isChannelOpen]);
+  }, [handleTabChange, isChannelOpen]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+
+    if (tabParam === "channel" && activeTab !== "channel") {
+      setActiveTab("channel");
+      return;
+    }
+
+    if (!tabParam && activeTab !== "details") {
+      setActiveTab("details");
+    }
+  }, [activeTab, searchParams]);
 
   return (
-    <DashboardLayout activeMenu={activeMenu}>
+    <DashboardLayout activeMenu={resolvedActiveMenu}>
       {isLoading ? (
         <LoadingOverlay message="Loading task details..." className="py-24" />
       ) : (
@@ -291,7 +331,7 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
                         ? "bg-slate-900 text-white"
                         : "border border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
                     }`}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                   >
                     {tab.label}
                   </button>
@@ -447,46 +487,50 @@ const ViewTaskDetails = ({ activeMenu = "My Tasks" }) => {
         mode="personal"
       />
 
-      {task && isChannelOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm">
-          <div className="flex h-full w-full flex-col bg-slate-50">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                  Task Channel
-                </p>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  {task?.title || "Task"}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab("details")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden px-4 py-5 sm:px-6">
-              {canAccessChannel ? (
-                <TaskChannel
-                  task={task}
-                  user={user}
-                  isAssigned={isAssignedToCurrentUser}
-                  isPrivileged={isPrivilegedUser}
-                  isFullscreen
-                />
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                  The channel is available to assignees, admins, and super admins
-                  only.
+      {task &&
+        isChannelOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[1200] bg-slate-950/40 backdrop-blur-sm">
+            <div className="flex h-[100dvh] w-screen flex-col bg-slate-50">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                    Task Channel
+                  </p>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {task?.title || "Task"}
+                  </h2>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("details")}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-hidden px-0 py-0 sm:px-6 sm:py-5">
+                {canAccessChannel ? (
+                  <TaskChannel
+                    task={task}
+                    user={user}
+                    isAssigned={isAssignedToCurrentUser}
+                    isPrivileged={isPrivilegedUser}
+                    isFullscreen
+                  />
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                    The channel is available to assignees, admins, and super admins
+                    only.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </DashboardLayout>
   );
 };

@@ -25,6 +25,7 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import { UserContext } from "../../context/userContext.jsx";
 import { getRoleLabel } from "../../utils/roleUtils";
 import { useUserAuth } from "../../hooks/useUserAuth.jsx";
+import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -132,6 +133,7 @@ const NotificationCenter = () => {
   useUserAuth();
 
   const { user } = useContext(UserContext);
+  const navigate = useNavigate();
   const storageKey = user ? `notifications:lastSeen:${user._id}` : null;
 
   const [notifications, setNotifications] = useState([]);
@@ -343,6 +345,18 @@ const NotificationCenter = () => {
     );
   };
 
+  const resolveNotificationRedirect = (notification) => {
+    if (notification?.meta?.redirectUrl) {
+      return notification.meta.redirectUrl;
+    }
+
+    if (notification?.taskId) {
+      return `/tasks/${notification.taskId}?tab=channel`;
+    }
+
+    return "";
+  };
+
   return (
     <DashboardLayout activeMenu="Notifications">
       <section className="rounded-[32px] border border-white/60 bg-gradient-to-br from-indigo-600 via-primary to-sky-500 px-5 py-8 text-white shadow-[0_24px_52px_rgba(79,70,229,0.35)]">
@@ -531,6 +545,24 @@ const NotificationCenter = () => {
                                   {notification.message}
                                 </p>
                               ) : null}
+                              {(() => {
+                                const redirectUrl = resolveNotificationRedirect(
+                                  notification
+                                );
+                                if (!redirectUrl) {
+                                  return null;
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(redirectUrl)}
+                                    className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-700 transition hover:-translate-y-0.5 hover:border-indigo-300"
+                                  >
+                                    Open Channel
+                                  </button>
+                                );
+                              })()}
                             </div>
                           </div>
                         </td>

@@ -10,6 +10,8 @@ const TaskListTable = ({
   tableData,
   onTaskClick,
   onEdit,
+  getUnreadCount,
+  onNotificationClick,
   className = "",
 }) => {
   const safeTableData = Array.isArray(tableData)
@@ -105,6 +107,45 @@ const TaskListTable = ({
     return `${baseClasses} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60`;
   };
 
+  const resolveUnreadCount = (task) => {
+    if (typeof getUnreadCount === "function") {
+      return getUnreadCount(task);
+    }
+
+    return task?.unreadCount;
+  };
+
+  const renderUnreadBadge = (task, options = {}) => {
+    const count = resolveUnreadCount(task);
+    const normalized =
+      typeof count === "number" && Number.isFinite(count)
+        ? Math.max(0, Math.floor(count))
+        : 0;
+
+    if (!normalized || typeof onNotificationClick !== "function") {
+      return null;
+    }
+
+    const label = normalized > 9 ? "9+" : normalized;
+
+    return (
+      <button
+        type="button"
+        className={`inline-flex min-w-[1.75rem] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm ${options.className || ""}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (typeof onNotificationClick === "function") {
+            const taskId = task?._id || task?.id;
+            onNotificationClick(taskId);
+          }
+        }}
+        aria-label={`Open ${normalized} unread task updates`}
+      >
+        {label}
+      </button>
+    );
+  };
+
  const getProgressMeta = (task) => {
     const percentage = calculateTaskCompletion({
       progress:
@@ -174,7 +215,10 @@ const TaskListTable = ({
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">
                     <div className="space-y-2">
-                      <span className="line-clamp-1">{task.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="line-clamp-1">{task.title}</span>
+                        {renderUnreadBadge(task)}
+                      </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                           <span>Progress</span>
@@ -259,6 +303,7 @@ const TaskListTable = ({
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {task.title}
                     </h3>
+                    {renderUnreadBadge(task, { className: "ml-1" })}
                   </div>
                   <div className="flex items-center gap-2">
                     <span

@@ -99,6 +99,7 @@ const App = () => {
 
               <Route element={<PrivateRoute />}>
                 <Route path="/notifications" element={<NotificationCenter />} />
+                <Route path="/tasks/:id" element={<ViewTaskDetails />} />
               </Route>
 
               <Route path="/unauthorized" element={<Unauthorized />} />

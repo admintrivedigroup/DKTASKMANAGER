@@ -7,6 +7,7 @@ import TaskCard from "../../components/Cards/TaskCard";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import useTasks from "../../hooks/useTasks";
 import TaskFormModal from "../../components/TaskFormModal";
+import useTaskNotifications from "../../hooks/useTaskNotifications";
 
 const MyTasks = () => {
   const [filterStatus, setFilterStatus] = useState("All");
@@ -20,9 +21,21 @@ const MyTasks = () => {
     taskType,
     includePrioritySort: false,
   });
+  const { getUnreadCount, clearTaskNotifications } = useTaskNotifications(
+    fetchedTasks
+  );
 
   const handleClick = (taskId) => {
     navigate(`/user/task-details/${taskId}`);
+  };
+
+  const handleNotificationClick = async (taskId) => {
+    if (!taskId) {
+      return;
+    }
+
+    await clearTaskNotifications(taskId);
+    navigate(`/tasks/${taskId}?tab=channel`);
   };
 
   const allTasks = useMemo(() => fetchedTasks, [fetchedTasks]);
@@ -126,9 +139,11 @@ const MyTasks = () => {
                   attachmentCount={item.attachments?.length || 0}
                   completedTodoCount={item.completedTodoCount || 0}
                   todoChecklist={item.todoChecklist || []}
+                  unreadCount={getUnreadCount(item)}
                   onClick={() => {
                     handleClick(item._id);
                   }}
+                  onBadgeClick={() => handleNotificationClick(item._id)}
                 />
               ))}
 

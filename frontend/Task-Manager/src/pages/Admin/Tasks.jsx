@@ -17,6 +17,7 @@ import TaskFormModal from "../../components/TaskFormModal";
 import ViewToggle from "../../components/ViewToggle";
 import TaskListTable from "../../components/TaskListTable";
 import useTasks from "../../hooks/useTasks";
+import useTaskNotifications from "../../hooks/useTaskNotifications";
 
 const Tasks = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +47,7 @@ const Tasks = () => {
     scope: taskScope === "My Task" ? "my" : "all",
     includePrioritySort: true,
   });
+  const { getUnreadCount, clearTaskNotifications } = useTaskNotifications(tasks);
 
   const hasActiveFilters =
     filterStatus !== "All" || searchQuery.trim() || selectedDate.trim();
@@ -77,6 +79,15 @@ const Tasks = () => {
     }
 
     navigate(`/admin/task-details/${taskId}`);
+  };
+
+  const handleTaskNotificationClick = async (taskId) => {
+    if (!taskId) {
+      return;
+    }
+
+    await clearTaskNotifications(taskId);
+    navigate(`/tasks/${taskId}?tab=channel`);
   };
 
   useEffect(() => {
@@ -419,10 +430,12 @@ const Tasks = () => {
                     attachmentCount={item.attachments?.length || 0}
                     completedTodoCount={item.completedTodoCount || 0}
                     todoChecklist={item.todoChecklist || []}
+                    unreadCount={getUnreadCount(item)}
                     isHighlighted={
                       isHighlighting && highlightTaskId === item._id
                     }
                     onClick={() => handleTaskCardClick(item._id)}
+                    onBadgeClick={() => handleTaskNotificationClick(item._id)}
                     onEdit={() => openTaskForm(item._id)}
                   />
                 ))}
@@ -442,6 +455,8 @@ const Tasks = () => {
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
                     onEdit={(task) => openTaskForm(task?._id)}
+                    getUnreadCount={getUnreadCount}
+                    onNotificationClick={handleTaskNotificationClick}
                     className="mt-0"
                   />
                 ) : (

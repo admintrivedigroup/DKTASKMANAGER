@@ -42,7 +42,12 @@ export const API_PATHS = {
     UPDATE_TODO_CHECKLIST: (taskId) => `/api/tasks/${taskId}/todo`, // Update todo checklist
     GET_TASK_MESSAGES: (taskId) => `/api/tasks/${taskId}/messages`,
     POST_TASK_MESSAGE: (taskId) => `/api/tasks/${taskId}/messages`,
+    UPDATE_TASK_MESSAGE: (messageId) => `/api/tasks/messages/${messageId}`,
+    DELETE_TASK_MESSAGE: (messageId) => `/api/tasks/messages/${messageId}`,
     CREATE_DUE_DATE_REQUEST: (taskId) => `/api/tasks/${taskId}/due-date-request`,
+    MARK_TASK_NOTIFICATIONS_READ: (taskId) =>
+      `/api/tasks/${taskId}/channel-notifications/read`,
+    GET_CHANNEL_NOTIFICATIONS_UNREAD: "/api/tasks/channel-notifications/unread-count",
   },
   DUE_DATE_REQUESTS: {
     APPROVE: (requestId) => `/api/due-date-requests/${requestId}/approve`,

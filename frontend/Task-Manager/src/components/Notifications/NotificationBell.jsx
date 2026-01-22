@@ -13,6 +13,7 @@ import { UserContext } from "../../context/userContext.jsx";
 import { getRoleLabel, hasPrivilegedAccess } from "../../utils/roleUtils";
 import PublishNoticeModal from "./PublishNoticeModal.jsx";
 import { formatRelativeTimeFromNow } from "../../utils/dateUtils";
+import { connectSocket } from "../../utils/socket";
 
 const STATUS_STYLES = {
   info: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-100",
@@ -109,6 +110,24 @@ const NotificationBell = ({ iconOverride = null }) => {
   }, [fetchNotifications, lastSeenReady, user]);
 
   useEffect(() => {
+    if (!user || !lastSeenReady) {
+      return;
+    }
+
+    const socket = connectSocket();
+
+    const handleTaskNotification = () => {
+      fetchNotifications();
+    };
+
+    socket.on("task-notification", handleTaskNotification);
+
+    return () => {
+      socket.off("task-notification", handleTaskNotification);
+    };
+  }, [fetchNotifications, lastSeenReady, user]);
+
+  useEffect(() => {
     if (!isPrivilegedUser || !user || !lastSeenReady) {
       return undefined;
     }
@@ -179,6 +198,29 @@ const NotificationBell = ({ iconOverride = null }) => {
     markNotificationsAsSeen();
     setOpen(false);
     navigate("/notifications");
+  };
+
+  const resolveNotificationRedirect = (notification) => {
+    if (notification?.meta?.redirectUrl) {
+      return notification.meta.redirectUrl;
+    }
+
+    if (notification?.taskId) {
+      return `/tasks/${notification.taskId}?tab=channel`;
+    }
+
+    return "";
+  };
+
+  const handleNotificationClick = (notification) => {
+    const redirectUrl = resolveNotificationRedirect(notification);
+    if (!redirectUrl) {
+      return;
+    }
+
+    markNotificationsAsSeen();
+    setOpen(false);
+    navigate(redirectUrl);
   };
 
   return (
@@ -277,10 +319,23 @@ const NotificationBell = ({ iconOverride = null }) => {
                 const trimmedDetails = changeDetails.slice(0, 3);
                 const remainingDetails = changeDetails.length - trimmedDetails.length;
 
+                const redirectUrl = resolveNotificationRedirect(notification);
+                const Wrapper = redirectUrl ? "button" : "div";
+
                 return (
-                  <div
+                  <Wrapper
                     key={notification.id}
-                    className="flex gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 dark:border-slate-800/70"
+                    type={redirectUrl ? "button" : undefined}
+                    onClick={
+                      redirectUrl
+                        ? () => handleNotificationClick(notification)
+                        : undefined
+                    }
+                    className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 dark:border-slate-800/70 ${
+                      redirectUrl
+                        ? "transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                        : ""
+                    }`}
                   >
                     <div
                       className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${statusClass}`}
@@ -358,7 +413,7 @@ const NotificationBell = ({ iconOverride = null }) => {
                         {formatRelativeTimeFromNow(notification.date)}
                       </span>
                     </div>
-                  </div>
+                  </Wrapper>
                 );
               })
             ) : (

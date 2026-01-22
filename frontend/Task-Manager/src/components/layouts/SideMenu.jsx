@@ -1,7 +1,10 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SIDE_MENU_DATA, SIDE_MENU_USER_DATA } from "../../utils/data";
 import { UserContext } from "../../context/userContext.jsx";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import { connectSocket } from "../../utils/socket";
 import {
   hasPrivilegedAccess,
   normalizeRole,
@@ -11,6 +14,7 @@ import {
 const SideMenu = ({ activeMenu, collapsed = false }) => {
   const { user } = useContext(UserContext);
   const [sideMenuData, setSideMenuData] = useState([]);
+  const [channelUnreadCount, setChannelUnreadCount] = useState(0);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +42,27 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
   const normalizedRole = useMemo(() => normalizeRole(user?.role), [user?.role]);
   const isPrivilegedUser = hasPrivilegedAccess(normalizedRole);
 
+  const fetchChannelUnreadCount = useCallback(async () => {
+    if (!user) {
+      setChannelUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get(
+        API_PATHS.TASKS.GET_CHANNEL_NOTIFICATIONS_UNREAD
+      );
+      const nextCount = response.data?.unreadCount;
+      setChannelUnreadCount(
+        typeof nextCount === "number" && Number.isFinite(nextCount)
+          ? Math.max(0, Math.floor(nextCount))
+          : 0
+      );
+    } catch (error) {
+      console.error("Failed to fetch channel notification count", error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       setSideMenuData([]);
@@ -60,6 +85,37 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
 
     return () => {};
   }, [isPrivilegedUser, normalizedRole, user]);
+
+  useEffect(() => {
+    fetchChannelUnreadCount();
+  }, [fetchChannelUnreadCount, location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const socket = connectSocket();
+
+    const handleTaskNotification = () => {
+      fetchChannelUnreadCount();
+    };
+
+    const handleNotificationsCleared = () => {
+      fetchChannelUnreadCount();
+    };
+
+    socket.on("task-notification", handleTaskNotification);
+    window.addEventListener("task-notifications-cleared", handleNotificationsCleared);
+
+    return () => {
+      socket.off("task-notification", handleTaskNotification);
+      window.removeEventListener(
+        "task-notifications-cleared",
+        handleNotificationsCleared
+      );
+    };
+  }, [fetchChannelUnreadCount, user]);
 
   return (
     <aside className="w-full h-full rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_48px_rgba(17,25,40,0.08)] backdrop-blur-sm overflow-hidden flex flex-col dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
@@ -84,6 +140,11 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
 
           const isActive = isActiveLabel || isActivePath;
 
+          const isTaskMenuItem =
+            typeof normalizedPath === "string" &&
+            normalizedPath.includes("/tasks");
+          const showTaskBadge = isTaskMenuItem && channelUnreadCount > 0;
+
           return (
             <button
               key={`menu_${index}`}
@@ -100,11 +161,21 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
               )}
               
               {Icon && (
-                <span className={`text-lg transition-colors duration-200 ${isActive ? "text-indigo-600 dark:text-indigo-200" : "text-slate-400 group-hover:text-slate-500 dark:text-slate-500 dark:group-hover:text-slate-300"}`}>
+                <span className={`relative text-lg transition-colors duration-200 ${isActive ? "text-indigo-600 dark:text-indigo-200" : "text-slate-400 group-hover:text-slate-500 dark:text-slate-500 dark:group-hover:text-slate-300"}`}>
                   <Icon />
+                  {collapsed && showTaskBadge && (
+                    <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                  )}
                 </span>
               )}
-              {!collapsed && <span className="relative z-10">{item.label}</span>}
+              {!collapsed && (
+                <>
+                  <span className="relative z-10">{item.label}</span>
+                  {showTaskBadge && (
+                    <span className="ml-auto h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white/60 dark:ring-slate-900" />
+                  )}
+                </>
+              )}
             </button>
           );
         })}

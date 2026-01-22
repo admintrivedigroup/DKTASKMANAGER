@@ -8,6 +8,7 @@ const Matter = require("../models/Matter");
 const CaseFile = require("../models/CaseFile");
 const Document = require("../models/Document");
 const Notification = require("../models/Notification");
+const TaskNotification = require("../models/TaskNotification");
 const { sendTaskAssignmentEmail } = require("../utils/emailService");
 const { hasPrivilegedAccess, matchesRole } = require("../utils/roleUtils");
 const {
@@ -355,14 +356,47 @@ const getTasks = async (req, res, next) => {
       .populate("caseFile", "title caseNumber status")
       .populate("relatedDocuments", "title documentType version fileUrl");
 
+    const taskIds = tasks.map((task) => task._id).filter(Boolean);
+    let unreadCountsByTaskId = {};
+
+    if (taskIds.length) {
+      const unreadCounts = await TaskNotification.aggregate([
+        {
+          $match: {
+            recipient: req.user._id,
+            task: { $in: taskIds },
+            readAt: null,
+          },
+        },
+        {
+          $group: {
+            _id: "$task",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      unreadCountsByTaskId = unreadCounts.reduce((acc, entry) => {
+        if (entry?._id) {
+          acc[entry._id.toString()] = entry.count || 0;
+        }
+        return acc;
+      }, {});
+    }
+
     // Add completed todoChecklist count to each task
     const tasksWithChecklistCounts = await Promise.all(
       tasks.map(async (task) => {
         const completedCount = task.todoChecklist.filter(
           (item) => item.completed
         ).length;
+        const taskId = task._id?.toString();
 
-        return { ...task._doc, completedTodoCount: completedCount };
+        return {
+          ...task._doc,
+          completedTodoCount: completedCount,
+          unreadCount: taskId ? unreadCountsByTaskId[taskId] || 0 : 0,
+        };
       })
     );
 
@@ -1242,9 +1276,46 @@ res.json({ message: "Task checklist updated", task: updatedTask });
 const getNotifications = async (req, res, next) => {
   try {
     const notifications = [];
-const now = new Date();
+    const now = new Date();
+    const taskNotificationStatusMap = {
+      message: "info",
+      due_date_request: "warning",
+      due_date_approved: "success",
+      due_date_rejected: "danger",
+    };
 
-if (isPrivileged(req.user.role)) {
+    const taskNotifications = await TaskNotification.find({
+      recipient: req.user._id,
+    })
+      .sort({ createdAt: -1 })
+      .limit(40)
+      .populate("task", "title")
+      .lean();
+
+    taskNotifications.forEach((taskNotification) => {
+      const taskTitle = taskNotification.task?.title || "Task";
+      const typeLabel = taskNotification.type?.replace(/_/g, " ");
+
+      notifications.push({
+        id: `task-notification-${taskNotification._id}`,
+        type: taskNotification.type,
+        taskId: taskNotification.task?._id,
+        title: `Task Channel: ${taskTitle}`,
+        message:
+          taskNotification.text ||
+          `New ${typeLabel || "update"} in "${taskTitle}".`,
+        date: taskNotification.createdAt,
+        status:
+          taskNotificationStatusMap[taskNotification.type] || "info",
+        actor: taskNotification.actor,
+        meta: {
+          redirectUrl: taskNotification.redirectUrl,
+          ...taskNotification.meta,
+        },
+      });
+    });
+
+    if (isPrivileged(req.user.role)) {
   const actionStatusMap = {
     created: "success",
     updated: "warning",

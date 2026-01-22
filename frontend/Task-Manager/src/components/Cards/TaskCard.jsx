@@ -24,6 +24,8 @@ const TaskCard = ({
   onEdit,
   cardId,
   isHighlighted = false,
+  unreadCount = 0,
+  onBadgeClick,
 }) => {
   const hasEditAction = typeof onEdit === "function";
   const assigneeAvatars = Array.isArray(assignedTo)
@@ -67,6 +69,12 @@ const TaskCard = ({
   });
 
   const roundedCompletion = Math.round(completionPercentage);
+  const normalizedUnreadCount =
+    typeof unreadCount === "number" && Number.isFinite(unreadCount)
+      ? Math.max(0, Math.floor(unreadCount))
+      : 0;
+  const showUnreadBadge = normalizedUnreadCount > 0;
+  const unreadLabel = normalizedUnreadCount > 9 ? "9+" : normalizedUnreadCount;
 
   const getStatusTagColor = () => {
     switch (status) {
@@ -116,6 +124,21 @@ const TaskCard = ({
           {status}
         </div>
         <div className="flex items-center gap-2">
+          {showUnreadBadge && (
+            <button
+              type="button"
+              className="inline-flex min-w-[2rem] items-center justify-center rounded-full bg-red-500 px-2 py-1 text-[11px] font-semibold text-white shadow-sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (typeof onBadgeClick === "function") {
+                  onBadgeClick();
+                }
+              }}
+              aria-label={`Open ${normalizedUnreadCount} unread task updates`}
+            >
+              {unreadLabel}
+            </button>
+          )}
           <div
             className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${getPriorityTagColor()}`}
           >

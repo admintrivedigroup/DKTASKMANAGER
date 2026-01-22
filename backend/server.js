@@ -1,4 +1,6 @@
-require("dotenv").config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -92,10 +94,15 @@ app.head("/", (req, res) => {
 
 // ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING ⭐⭐⭐
 
+const clientOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : false;
+
 // CORS
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: clientOrigins,
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -137,11 +144,11 @@ app.use(errorHandler);
 
 
 // ⭐⭐⭐ START SERVER ⭐⭐⭐
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 startTaskReminderJob();
 
 const server = http.createServer(app);
-initSocket(server, { corsOrigin: process.env.CLIENT_URL || "*" });
+initSocket(server, { corsOrigin: clientOrigins });
 
 server.listen(PORT, () =>
   console.log(`dYs? Server running on port ${PORT}`)

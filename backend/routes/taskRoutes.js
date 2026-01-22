@@ -29,7 +29,13 @@ const {
   getTaskMessages,
   createTaskMessage,
   createDueDateRequest,
+  updateTaskMessage,
+  deleteTaskMessage,
 } = require("../controllers/taskMessageController");
+const {
+  markTaskNotificationsRead,
+  getUnreadTaskNotificationCount,
+} = require("../controllers/taskNotificationController");
 
 const router = express.Router();
 
@@ -37,6 +43,11 @@ const router = express.Router();
 router.get("/dashboard-data", protect, getDashboardData);
 router.get("/notifications", protect, getNotifications);
 router.delete("/notifications", protect, deleteNotifications);
+router.get(
+  "/channel-notifications/unread-count",
+  protect,
+  getUnreadTaskNotificationCount
+);
 router.get("/user-dashboard-data", protect, getUserDashboardData);
 router.get("/", protect, validateQuery(validateTaskQuery), getTasks); // Get all tasks (Admin: all, User: assigned)
 router.get("/:id", protect, getTaskById); // Get task by ID
@@ -73,6 +84,11 @@ router.put(
   updateTaskChecklist
 ); // Update task checklist
 router.post(
+  "/:id/channel-notifications/read",
+  protect,
+  markTaskNotificationsRead
+);
+router.post(
   "/:id/documents",
   protect,
   documentUpload.single("file"),
@@ -81,5 +97,7 @@ router.post(
 router.get("/:id/messages", protect, getTaskMessages);
 router.post("/:id/messages", protect, createTaskMessage);
 router.post("/:id/due-date-request", protect, createDueDateRequest);
+router.put("/messages/:id", protect, updateTaskMessage);
+router.delete("/messages/:id", protect, deleteTaskMessage);
 
 module.exports = router;

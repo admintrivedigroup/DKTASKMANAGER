@@ -1,14 +1,63 @@
 const jwt = require("jsonwebtoken");
 const { Server } = require("socket.io");
+const mongoose = require("mongoose");
 
 const Task = require("../models/Task");
+const TaskMessage = require("../models/TaskMessage");
 const User = require("../models/User");
 const { getJwtSecret } = require("./jwtSecret");
 const { hasPrivilegedAccess } = require("./roleUtils");
 
 let ioInstance = null;
+const activeTaskUsers = new Map();
 
 const getTaskRoom = (taskId) => `task:${taskId}`;
+const getUserRoom = (userId) => `user:${userId}`;
+
+const addActiveTaskUser = (taskId, userId) => {
+  if (!taskId || !userId) {
+    return;
+  }
+
+  const taskKey = taskId.toString();
+  const userKey = userId.toString();
+  const activeSet = activeTaskUsers.get(taskKey) || new Set();
+  activeSet.add(userKey);
+  activeTaskUsers.set(taskKey, activeSet);
+};
+
+const removeActiveTaskUser = (taskId, userId) => {
+  if (!taskId || !userId) {
+    return;
+  }
+
+  const taskKey = taskId.toString();
+  const userKey = userId.toString();
+  const activeSet = activeTaskUsers.get(taskKey);
+
+  if (!activeSet) {
+    return;
+  }
+
+  activeSet.delete(userKey);
+
+  if (!activeSet.size) {
+    activeTaskUsers.delete(taskKey);
+  }
+};
+
+const isUserActiveInTask = (taskId, userId) => {
+  if (!taskId || !userId) {
+    return false;
+  }
+
+  const activeSet = activeTaskUsers.get(taskId.toString());
+  if (!activeSet) {
+    return false;
+  }
+
+  return activeSet.has(userId.toString());
+};
 
 const resolveToken = (socket) => {
   const authToken = socket?.handshake?.auth?.token;
@@ -66,6 +115,10 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
   });
 
   ioInstance.on("connection", (socket) => {
+    if (socket.user?.id) {
+      socket.join(getUserRoom(socket.user.id));
+    }
+
     socket.on("join-task-room", async ({ taskId } = {}, callback) => {
       try {
         if (!taskId) {
@@ -91,6 +144,9 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
         }
 
         socket.join(getTaskRoom(taskId));
+        addActiveTaskUser(taskId, userId);
+        socket.data.activeTasks = socket.data.activeTasks || new Set();
+        socket.data.activeTasks.add(taskId.toString());
         if (typeof callback === "function") {
           callback({ ok: true });
         }
@@ -108,6 +164,97 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
         return;
       }
       socket.leave(getTaskRoom(taskId));
+      removeActiveTaskUser(taskId, socket.user?.id);
+      if (socket.data?.activeTasks) {
+        socket.data.activeTasks.delete(taskId.toString());
+      }
+    });
+
+    socket.on("mark-task-seen", async ({ taskId, messageId } = {}) => {
+      try {
+        if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+          return;
+        }
+
+        const userId = socket.user?.id;
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+          return;
+        }
+
+        if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+          return;
+        }
+
+        const task = await Task.findById(taskId).select("assignedTo");
+        if (!task) {
+          return;
+        }
+
+        const assignedIds = Array.isArray(task.assignedTo)
+          ? task.assignedTo.map((assignee) => assignee.toString())
+          : [];
+        const isAssigned = assignedIds.includes(userId);
+        const isPrivileged = hasPrivilegedAccess(socket.user?.role);
+
+        if (!isAssigned && !isPrivileged) {
+          return;
+        }
+
+        const seenAt = new Date();
+        const updateResult = await TaskMessage.updateOne(
+          {
+            _id: messageId,
+            task: taskId,
+            messageType: { $ne: "system" },
+            "seenBy.user": { $ne: userId },
+          },
+          {
+            $push: { seenBy: { user: userId, seenAt } },
+          }
+        );
+
+        const updatedCount =
+          updateResult.modifiedCount ?? updateResult.nModified ?? 0;
+
+        if (!updatedCount) {
+          return;
+        }
+
+        const seenUser = await User.findById(userId).select(
+          "name email profileImageUrl role"
+        );
+
+        if (!seenUser) {
+          return;
+        }
+
+        ioInstance.to(getTaskRoom(taskId)).emit("task-seen", {
+          taskId: taskId.toString(),
+          messageId: messageId.toString(),
+          seenAt,
+          user: {
+            _id: seenUser._id,
+            name: seenUser.name,
+            email: seenUser.email,
+            profileImageUrl: seenUser.profileImageUrl,
+            role: seenUser.role,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to mark task as seen:", error.message);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      const activeTasks = socket.data?.activeTasks;
+      if (!activeTasks || !activeTasks.size) {
+        return;
+      }
+
+      activeTasks.forEach((taskId) => {
+        removeActiveTaskUser(taskId, socket.user?.id);
+      });
+      socket.data.activeTasks.clear();
     });
   });
 
@@ -126,4 +273,6 @@ module.exports = {
   initSocket,
   getIo,
   getTaskRoom,
+  getUserRoom,
+  isUserActiveInTask,
 };
