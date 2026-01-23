@@ -1,13 +1,56 @@
+const resolveEnvValue = (key) => {
+  if (typeof import.meta !== "undefined") {
+    const meta = import.meta;
+    if (meta && meta.env && typeof meta.env === "object" && key in meta.env) {
+      return meta.env[key];
+    }
+  }
+
+  if (typeof process !== "undefined" && process && process.env) {
+    return process.env[key];
+  }
+
+  return undefined;
+};
+
+const normalizeApiBaseUrl = (value) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed.replace(/\/+$/, "");
+};
+
 // API base URL must always come from the Vite environment
-export const BASE_URL = import.meta.env.VITE_API_URL;
+export const API_BASE_URL = normalizeApiBaseUrl(resolveEnvValue("VITE_API_URL"));
+// Backwards-compatible alias for existing imports.
+export const BASE_URL = API_BASE_URL;
+
+const withApiBase = (path) => {
+  if (!path || !API_BASE_URL) {
+    return path;
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+};
 
 // utils/apiPaths.js
 export const API_PATHS = {
   AUTH: {
-    REGISTER: "/api/auth/register", // Register a new user (Admin or Member)
-    LOGIN: "/api/auth/login",       // Authenticate user & return JWT token
-    GET_PROFILE: "/api/auth/profile", // Get logged-in user details
-    RESET_WITH_ADMIN_TOKEN: "/api/auth/reset-password/admin-token",    
+    REGISTER: withApiBase("/api/auth/register"), // Register a new user (Admin or Member)
+    LOGIN: withApiBase("/api/auth/login"),       // Authenticate user & return JWT token
+    GET_PROFILE: withApiBase("/api/auth/profile"), // Get logged-in user details
+    RESET_WITH_ADMIN_TOKEN: withApiBase("/api/auth/reset-password/admin-token"),
   },
 
   USERS: {
@@ -23,7 +66,7 @@ export const API_PATHS = {
     UPDATE_PHOTO: "/api/users/profile/photo",
     DELETE_PHOTO: "/api/users/profile/photo",    
     CHANGE_PASSWORD: "/api/users/profile/password",   // Delete a user
-    UPDATE_PROFILE: "/api/auth/profile",
+    UPDATE_PROFILE: withApiBase("/api/auth/profile"),
   },
 
   TASKS: {

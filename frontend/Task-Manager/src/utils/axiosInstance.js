@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_PATHS, BASE_URL } from "./apiPaths";
+import { API_PATHS, API_BASE_URL } from "./apiPaths";
 import { getToken } from "./tokenStorage";
 
 const ABSOLUTE_URL_REGEX = /^https?:\/\//i;
@@ -14,7 +14,7 @@ const normalizeBaseUrl = (url) => {
   return url.trim().replace(/\/?$/, "");
 };
 
-const configuredBaseUrl = normalizeBaseUrl(BASE_URL);
+const configuredBaseUrl = normalizeBaseUrl(API_BASE_URL);
 
 if (!configuredBaseUrl) {
   console.warn("VITE_API_URL is not set; API calls will use relative paths.");

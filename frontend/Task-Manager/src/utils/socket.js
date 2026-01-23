@@ -1,12 +1,12 @@
 import { io } from "socket.io-client";
-import { BASE_URL } from "./apiPaths";
+import { API_BASE_URL } from "./apiPaths";
 import { getToken } from "./tokenStorage";
 
 let socketInstance = null;
 
 const resolveSocketUrl = () => {
-  if (typeof BASE_URL === "string" && BASE_URL.trim().startsWith("http")) {
-    return BASE_URL.trim().replace(/\/+$/, "");
+  if (typeof API_BASE_URL === "string" && API_BASE_URL.trim().startsWith("http")) {
+    return API_BASE_URL.trim().replace(/\/+$/, "");
   }
 
   return undefined;
