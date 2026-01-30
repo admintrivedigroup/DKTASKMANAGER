@@ -6,7 +6,7 @@ const http = require("http");
 const cors = require("cors");
 const path = require("path");
 
-// ⭐ SMTP DEBUG CHECK (safe output)
+// â­ SMTP DEBUG CHECK (safe output)
 console.log("=== SMTP CONFIG CHECK ===");
 console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
 console.log("EMAIL_PORT:", process.env.EMAIL_PORT);
@@ -14,7 +14,7 @@ console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "LOADED" : "MISSING");
 console.log("=========================\n");
 
-// 1️⃣ Connect DB BEFORE importing routes/models
+// 1ï¸âƒ£ Connect DB BEFORE importing routes/models
 const connectDB = require("./config/db");
 connectDB(); // MUST RUN BEFORE ROUTES
 
@@ -50,7 +50,7 @@ const app = express();
 app.disable("x-powered-by");
 
 
-// ⭐⭐⭐ UPTIMEROBOT IP ALLOWLIST ⭐⭐⭐
+// â­â­â­ UPTIMEROBOT IP ALLOWLIST â­â­â­
 const uptimeRobotIPs = [
   "63.143.42.242",
   "69.162.124.226",
@@ -79,7 +79,7 @@ app.use((req, res, next) => {
 });
 
 
-// ⭐⭐⭐ HEALTH CHECK ROUTES ⭐⭐⭐
+// â­â­â­ HEALTH CHECK ROUTES â­â­â­
 
 // Respond to GET /
 app.get("/", (req, res) => {
@@ -92,23 +92,13 @@ app.head("/", (req, res) => {
 });
 
 
-// ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING ⭐⭐⭐
+// â­â­â­ SECURITY, LOGGING, RATE LIMITING â­â­â­
 
-const isProduction = process.env.NODE_ENV === "production";
-const envClientOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : [];
-const devClientOrigins = [
+const clientOrigins = [
+  "https://triveditask.com",
+  "https://www.triveditask.com",
   "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
 ];
-const clientOrigins = envClientOrigins.length
-  ? envClientOrigins
-  : isProduction
-    ? []
-    : devClientOrigins;
 
 // CORS
 const corsOptions = {
@@ -129,6 +119,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 // Security middlewares
 app.use(requestLogger);
@@ -140,7 +131,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 
-// ⭐⭐⭐ ROUTES ⭐⭐⭐
+// â­â­â­ ROUTES â­â­â­
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -165,7 +156,7 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 
-// ⭐⭐⭐ START SERVER ⭐⭐⭐
+// â­â­â­ START SERVER â­â­â­
 const PORT = process.env.PORT || 3000;
 startTaskReminderJob();
 
