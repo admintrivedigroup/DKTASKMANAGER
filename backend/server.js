@@ -20,7 +20,6 @@ connectDB(); // MUST RUN BEFORE ROUTES
 
 // Import middlewares
 const { startTaskReminderJob } = require("./jobs/taskReminderJob");
-require("./cron/weeklySummary.cron");
 require("./cron/weeklySummaryEmail.cron");
 const {
   addSecurityHeaders,
@@ -49,6 +48,16 @@ const { initSocket } = require("./utils/socket");
 const app = express();
 app.disable("x-powered-by");
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
+const cronEnabled = (() => {
+  if (process.env.CRON_ENABLED === undefined) return true;
+  return ["true", "1", "yes"].includes(
+    String(process.env.CRON_ENABLED).toLowerCase()
+  );
+})();
 
 // â­â­â­ UPTIMEROBOT IP ALLOWLIST â­â­â­
 const uptimeRobotIPs = [
@@ -158,7 +167,13 @@ app.use(errorHandler);
 
 // â­â­â­ START SERVER â­â­â­
 const PORT = process.env.PORT || 3000;
-startTaskReminderJob();
+
+if (cronEnabled) {
+  require("./cron/weeklySummary.cron");
+  startTaskReminderJob();
+} else {
+  console.warn("Cron jobs are disabled via CRON_ENABLED.");
+}
 
 const server = http.createServer(app);
 initSocket(server, { corsOrigin: clientOrigins });
