@@ -94,19 +94,41 @@ app.head("/", (req, res) => {
 
 // ⭐⭐⭐ SECURITY, LOGGING, RATE LIMITING ⭐⭐⭐
 
-const clientOrigins = process.env.CLIENT_URL
+const isProduction = process.env.NODE_ENV === "production";
+const envClientOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : false;
+  : [];
+const devClientOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+const clientOrigins = envClientOrigins.length
+  ? envClientOrigins
+  : isProduction
+    ? []
+    : devClientOrigins;
 
 // CORS
-app.use(
-  cors({
-    origin: clientOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (clientOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 
 // Security middlewares
 app.use(requestLogger);
