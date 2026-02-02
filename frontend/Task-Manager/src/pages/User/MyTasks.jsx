@@ -29,12 +29,17 @@ const MyTasks = () => {
     navigate(`/user/task-details/${taskId}`);
   };
 
-  const handleNotificationClick = async (taskId) => {
+  const handleNotificationClick = async (taskId, isPersonalTask) => {
     if (!taskId) {
       return;
     }
 
     await clearTaskNotifications(taskId);
+    if (isPersonalTask) {
+      navigate(`/user/task-details/${taskId}`);
+      return;
+    }
+
     navigate(`/tasks/${taskId}?tab=channel`);
   };
 
@@ -143,7 +148,9 @@ const MyTasks = () => {
                   onClick={() => {
                     handleClick(item._id);
                   }}
-                  onBadgeClick={() => handleNotificationClick(item._id)}
+                  onBadgeClick={() =>
+                    handleNotificationClick(item._id, item?.isPersonal)
+                  }
                 />
               ))}
 

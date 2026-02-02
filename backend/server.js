@@ -23,7 +23,7 @@ const { startTaskReminderJob } = require("./jobs/taskReminderJob");
 require("./cron/weeklySummaryEmail.cron");
 const {
   addSecurityHeaders,
-  createRateLimiter,
+  createRateLimiter, 
   requestLogger,
 } = require("./middlewares/securityMiddleware");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");

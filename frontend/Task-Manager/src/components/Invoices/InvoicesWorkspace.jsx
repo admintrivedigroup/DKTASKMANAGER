@@ -10,7 +10,6 @@ import {
   LuArrowUpRight,
   LuClipboardCheck,
   LuClock3,
-  LuEllipsisVertical,  
   LuFileText,
   LuRefreshCw,
   LuSearch,
@@ -36,8 +35,6 @@ import {
   summarizeInvoices,
 } from "../../utils/invoiceUtils.js";
 import { getPrivilegedBasePath, resolvePrivilegedPath } from "../../utils/roleUtils.js";
-import InvoiceModal from "../modals/InvoiceModal.jsx";
-import { buildInvoiceModalInitialValues } from "../../utils/invoiceEditing.js";
 
 const SummaryCard = ({ icon: Icon, title, value, hint, accent }) => (
   <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition dark:border-slate-700/60 dark:bg-slate-900/60">
@@ -81,10 +78,6 @@ const InvoiceCard = ({
   invoice,
   onViewMatter,
   showClientDetails,
-  onToggleMenu,
-  onUpdate,
-  onDelete,
-  isMenuOpen,  
 }) => {
   const progressPercentage = Math.round(Math.min(Math.max(invoice.progress * 100, 0), 100));
 
@@ -148,45 +141,6 @@ const InvoiceCard = ({
                 Advance balance {formatCurrency(invoice.advanceBalance)}
               </p>
             )}            
-          </div>
-          <div
-            className="relative flex-shrink-0"
-            data-invoice-actions-root="true"
-          >
-            <button
-              type="button"
-              onClick={() => onToggleMenu?.(invoice)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-primary/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:text-slate-300"
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen}
-              aria-label="Invoice options"
-            >
-              <LuEllipsisVertical className="h-5 w-5" />
-            </button>
-            {isMenuOpen && (
-              <div
-                role="menu"
-                data-invoice-actions-menu="true"
-                className="dropdown-panel absolute right-0 z-20 mt-2 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white text-sm shadow-lg dark:border-slate-700 dark:bg-slate-900"
-              >
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => onUpdate?.(invoice)}
-                  className="flex w-full items-center px-4 py-2 text-left text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:text-slate-300"
-                >
-                  Update
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => onDelete?.(invoice)}
-                  className="flex w-full items-center px-4 py-2 text-left text-slate-600 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-500/20 dark:hover:text-red-300"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -268,10 +222,6 @@ const InvoicesWorkspace = ({
   const [invoices, setInvoices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [openInvoiceActionsId, setOpenInvoiceActionsId] = useState(null);
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [invoiceBeingEdited, setInvoiceBeingEdited] = useState(null);
-  const [matterLookup, setMatterLookup] = useState({});  
 
   const navigate = useNavigate();
 
@@ -300,16 +250,6 @@ const InvoicesWorkspace = ({
         viewerRole,
         viewerId: user?._id,
       });
-
-      const lookup = scopedInvoices.reduce((accumulator, invoice) => {
-        if (invoice?.matterId) {
-          accumulator[invoice.matterId] =
-            invoice.rawMatter || accumulator[invoice.matterId] || null;
-        }
-        return accumulator;
-      }, {});
-
-      setMatterLookup(lookup);
       setInvoices(sortInvoicesByDueDate(scopedInvoices));
     } catch (error) {
       console.error("Failed to load invoices", error);
@@ -335,40 +275,6 @@ const InvoicesWorkspace = ({
 
     initialize();
   }, [fetchInvoices]);
-
-  useEffect(() => {
-    if (!openInvoiceActionsId) {
-      return undefined;
-    }
-
-    const handleDocumentClick = (event) => {
-      const { target } = event;
-
-      if (target && typeof target.closest === "function") {
-        const withinMenu = target.closest('[data-invoice-actions-root="true"]');
-
-        if (withinMenu) {
-          return;
-        }
-      }
-
-      setOpenInvoiceActionsId(null);
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        setOpenInvoiceActionsId(null);
-      }
-    };
-
-    document.addEventListener("click", handleDocumentClick);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("click", handleDocumentClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [openInvoiceActionsId]);
 
   const handleRefresh = async () => {
     if (isRefreshing) {
@@ -429,194 +335,6 @@ const InvoicesWorkspace = ({
     );
     navigate(target);
   };
-
-  const handleToggleInvoiceMenu = useCallback((invoice) => {
-    if (!invoice) {
-      setOpenInvoiceActionsId(null);
-      return;
-    }
-
-    setOpenInvoiceActionsId((previous) =>
-      previous === invoice.id ? null : invoice.id
-    );
-  }, []);
-
-  const handleInvoiceUpdate = useCallback((invoice) => {
-    if (!invoice) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Are you sure you want to update this invoice?"
-    );
-
-    if (!confirmed) {
-      setOpenInvoiceActionsId(null);
-      return;
-    }
-
-    setOpenInvoiceActionsId(null);
-    setInvoiceBeingEdited(invoice);
-    setIsInvoiceModalOpen(true);
-  }, []);
-
-  const handleInvoiceDelete = useCallback(
-    async (invoice) => {
-      if (!invoice) {
-        return;
-      }
-
-      const confirmed = window.confirm(
-        "Are you sure you want to delete this invoice?"
-      );
-
-      setOpenInvoiceActionsId(null);
-
-      if (!confirmed) {
-        return;
-      }
-
-      const invoiceId =
-        invoice?.raw?._id ||
-        invoice?._id ||
-        invoice?.id ||
-        invoice?.invoiceId;
-
-      if (!invoiceId) {
-        toast.error("We couldn't determine which invoice to delete.");
-        return;
-      }
-
-      const invoiceEntry = invoice;
-      const wasEditing = invoiceBeingEdited?.id === invoice.id;
-
-      setInvoices((previous) =>
-        previous.filter((entry) => entry.id !== invoice.id)
-      );
-
-      if (wasEditing) {
-        setInvoiceBeingEdited(null);
-        setIsInvoiceModalOpen(false);
-      }
-
-      try {
-        await axiosInstance.delete(API_PATHS.INVOICES.DELETE(invoiceId));
-        toast.success("Invoice deleted successfully.");
-      } catch (error) {
-        console.error("Failed to delete invoice", error);
-        toast.error(
-          error.response?.data?.message ||
-            "We couldn't remove this invoice. Please try again."
-        );
-
-        setInvoices((previous) =>
-          sortInvoicesByDueDate([...previous, invoiceEntry])
-        );
-
-        if (wasEditing) {
-          setInvoiceBeingEdited(invoiceEntry);
-          setIsInvoiceModalOpen(true);
-        }
-      }
-    },
-    [invoiceBeingEdited]
-  );
-
-  const handleInvoiceModalClose = useCallback(() => {
-    setIsInvoiceModalOpen(false);
-    setInvoiceBeingEdited(null);
-  }, []);
-
-  const handleInvoiceDrafted = useCallback(
-    async (invoiceData) => {
-      const isEditing = Boolean(invoiceBeingEdited);
-      const invoiceId =
-        invoiceBeingEdited?.raw?._id ||
-        invoiceBeingEdited?._id ||
-        invoiceBeingEdited?.id ||
-        invoiceData?.invoiceId;
-
-      try {
-        let response;
-
-        if (isEditing && invoiceId) {
-          response = await axiosInstance.put(
-            API_PATHS.INVOICES.UPDATE(invoiceId),
-            invoiceData
-          );
-        } else {
-          response = await axiosInstance.post(
-            API_PATHS.INVOICES.CREATE,
-            invoiceData
-          );
-        }
-
-        const savedInvoice = response.data?.invoice;
-
-        if (!savedInvoice) {
-          throw new Error("Invoice response missing required data");
-        }
-
-        const normalized = normalizeInvoiceRecord(
-          savedInvoice,
-          savedInvoice?.matter || invoiceBeingEdited?.rawMatter || null
-        );
-
-        setInvoices((previous) => {
-          const next = isEditing
-            ? previous.map((entry) =>
-                entry.id === normalized.id || entry.raw?._id === savedInvoice._id
-                  ? normalized
-                  : entry
-              )
-            : [...previous, normalized];
-
-          return sortInvoicesByDueDate(next);
-        });
-
-        if (normalized?.matterId && normalized.rawMatter) {
-          setMatterLookup((prev) => ({
-            ...prev,
-            [normalized.matterId]: normalized.rawMatter,
-          }));
-        }
-
-        toast.success(
-          isEditing
-            ? "Invoice updated successfully."
-            : "Invoice created successfully."
-        );
-      } catch (error) {
-        console.error("Failed to save invoice", error);
-        toast.error(
-          error.response?.data?.message ||
-            "We couldn't save this invoice. Please try again."
-        );
-      } finally {
-        setIsInvoiceModalOpen(false);
-        setInvoiceBeingEdited(null);
-        setOpenInvoiceActionsId(null);
-      }
-    },
-    [invoiceBeingEdited]
-  );
-
-  const invoiceModalInitialValues = useMemo(
-    () => buildInvoiceModalInitialValues(invoiceBeingEdited),
-    [invoiceBeingEdited]
-  );
-
-  const selectedMatterForModal = useMemo(() => {
-    if (!invoiceBeingEdited) {
-      return null;
-    }
-
-    return (
-      matterLookup[invoiceBeingEdited.matterId] ||
-      invoiceBeingEdited.rawMatter ||
-      null
-    );
-  }, [invoiceBeingEdited, matterLookup]);
   
   const renderContent = () => {
     if (isLoading) {
@@ -658,10 +376,6 @@ const InvoicesWorkspace = ({
             invoice={invoice}
             showClientDetails={showClientDetails}
             onViewMatter={handleViewMatter}
-            onToggleMenu={handleToggleInvoiceMenu}
-            onUpdate={handleInvoiceUpdate}
-            onDelete={handleInvoiceDelete}
-            isMenuOpen={openInvoiceActionsId === invoice.id}            
           />
         ))}
       </div>
@@ -767,13 +481,6 @@ const InvoicesWorkspace = ({
       </section>
 
       {renderContent()}
-      <InvoiceModal
-        isOpen={isInvoiceModalOpen}
-        onClose={handleInvoiceModalClose}
-        matter={selectedMatterForModal}
-        invoice={invoiceModalInitialValues}
-        onSubmit={handleInvoiceDrafted}
-      />
     </DashboardLayout>
   );
 };

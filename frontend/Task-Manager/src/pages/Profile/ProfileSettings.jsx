@@ -325,7 +325,7 @@ const ProfileSettings = () => {
             <button
               type="button"
               onClick={openDeleteAccountModal}
-              className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition hover:border-rose-200 hover:bg-rose-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600 dark:border-white/15 dark:bg-white/10 dark:hover:bg-rose-500/20 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-slate-900 sm:mt-0"
+              className="mt-3 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white transition btn-danger sm:mt-0"
             >
               <LuTrash2 className="text-sm" /> Delete Account
             </button>
@@ -445,7 +445,7 @@ const ProfileSettings = () => {
                     type="button"
                     onClick={handleRemovePhoto}
                     disabled={isRemovingPhoto}
-                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-[0_8px_16px_rgba(15,23,42,0.15)] transition hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:text-rose-400"
+                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full shadow-[0_8px_16px_rgba(15,23,42,0.15)] transition disabled:cursor-not-allowed disabled:opacity-70 btn-danger-soft"
                     aria-label="Remove profile photo"
                     title="Remove profile photo"
                   >
@@ -630,7 +630,7 @@ const ProfileSettings = () => {
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100"
+                    className="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition btn-danger-soft"
                     disabled={isDeletingAccount}
                   >
                     Continue
@@ -662,7 +662,7 @@ const ProfileSettings = () => {
                   <button
                     type="button"
                     onClick={handleConfirmDeleteAccount}
-                    className="inline-flex items-center justify-center rounded-2xl border border-rose-300 bg-rose-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-[0_12px_24px_rgba(244,63,94,0.35)] transition hover:bg-rose-600 disabled:opacity-70 dark:border-rose-400/70 dark:bg-rose-600 dark:shadow-[0_12px_24px_rgba(244,63,94,0.4)]"
+                    className="inline-flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] shadow-[0_12px_24px_rgba(244,63,94,0.35)] transition disabled:opacity-70 btn-danger"
                     disabled={isDeletingAccount}
                   >
                     {isDeletingAccount ? (

@@ -333,7 +333,7 @@ const PublishNoticeModal = ({ open, onClose, onSuccess }) => {
                           <button
                             type="button"
                             onClick={() => handleDelete(notice._id)}
-                            className="inline-flex h-9 items-center justify-center rounded-full border border-rose-200 px-4 text-xs font-semibold uppercase tracking-[0.22em] text-rose-500 transition hover:border-rose-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold uppercase tracking-[0.22em] transition btn-danger-soft disabled:cursor-not-allowed disabled:opacity-70"
                             disabled={deletingNoticeId === notice._id || submitting}
                           >
                             {deletingNoticeId === notice._id ? (

@@ -289,7 +289,38 @@
   }
 
   .btn-danger {
-    @apply bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500 shadow-sm hover:shadow-danger active:transform active:scale-95;
+    @apply relative overflow-hidden border border-danger-600/70 text-white shadow-[0_14px_34px_rgba(220,38,38,0.35)] transition-all duration-200 hover:shadow-[0_18px_44px_rgba(220,38,38,0.4)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-300/70 focus-visible:ring-offset-0;
+    background-image: linear-gradient(120deg, #ef4444 0%, #dc2626 55%, #b91c1c 100%);
+  }
+
+  .btn-danger::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.35), transparent 60%);
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+
+  .btn-danger:hover::after {
+    opacity: 0.75;
+  }
+
+  .btn-danger-soft {
+    @apply border border-danger-200 bg-danger-50 text-danger-600 shadow-[0_10px_22px_rgba(248,113,113,0.18)] transition-all duration-200 hover:border-danger-300 hover:bg-danger-100 hover:text-danger-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-200/70 focus-visible:ring-offset-2;
+  }
+
+  .dark .btn-danger-soft {
+    @apply border-danger-500/40 bg-danger-500/15 text-danger-100 hover:bg-danger-500/25 hover:text-danger-50;
+  }
+
+  .btn-danger-ghost {
+    @apply text-danger-600 transition-colors duration-200 hover:bg-danger-50 hover:text-danger-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-200/70 focus-visible:ring-offset-2;
+  }
+
+  .dark .btn-danger-ghost {
+    @apply text-danger-100 hover:bg-danger-500/20 hover:text-danger-50;
   }
 
   .btn-info {

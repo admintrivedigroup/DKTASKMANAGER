@@ -1440,7 +1440,7 @@ const TaskChannel = ({
                 <button
                   type="button"
                   onClick={() => handleDeleteMessage(contextMenu.message)}
-                  className="px-4 py-2 text-left text-rose-600 transition hover:bg-rose-50"
+                  className="px-4 py-2 text-left transition btn-danger-ghost"
                 >
                   Delete message
                 </button>

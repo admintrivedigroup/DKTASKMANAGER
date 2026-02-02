@@ -975,7 +975,7 @@ const ManageEmployees = () => {
                                       }}
                                       title="Delete User"
                                       aria-label="Delete User"
-                                      className="rounded-full border border-rose-200 bg-rose-50/70 p-2 text-rose-500 transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 dark:hover:border-rose-400 dark:hover:bg-rose-500/25 dark:hover:text-rose-50"
+                                      className="rounded-full p-2 transition btn-danger-soft"
                                     >
                                       <LuTrash2 className="h-4 w-4" />
                                     </button>

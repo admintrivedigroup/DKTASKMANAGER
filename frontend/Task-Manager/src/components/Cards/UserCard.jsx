@@ -296,7 +296,7 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
                 <button
                   type="button"
                   onClick={(event) => handleActionClick(event, onDelete)}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm transition hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 dark:hover:border-rose-400 dark:hover:bg-rose-500/25 dark:hover:text-rose-50 dark:focus:ring-rose-900/40 sm:w-auto"
+                  className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 focus:outline-none sm:w-auto btn-danger-soft"
                 >
                   <LuTrash2 className="text-base" />
                   Delete User

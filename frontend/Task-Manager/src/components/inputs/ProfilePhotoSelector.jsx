@@ -56,7 +56,7 @@ const ProfilePhotoSelector = ({ image, setImage }) => {
           />
           <button
             type="button"
-            className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full absolute -bottom-1 -right-1"
+            className="w-8 h-8 flex items-center justify-center rounded-full absolute -bottom-1 -right-1 btn-danger"
             onClick={handleRemoveImage}
           >
             <LuTrash />

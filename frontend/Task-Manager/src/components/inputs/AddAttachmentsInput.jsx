@@ -33,7 +33,7 @@ const AddAttachmentsInput = ({ attachments = [], setAttachments }) => {
             </div>
 
             <button
-              className="rounded-full bg-rose-50 p-2 text-rose-500 transition hover:bg-rose-100"
+              className="rounded-full p-2 transition btn-danger-soft"
               onClick={() => handleDeleteOption(index)}
             >
               <HiOutlineTrash className="text-lg" />

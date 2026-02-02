@@ -716,7 +716,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                   {isEditing && (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition hover:-translate-y-0.5 btn-danger-soft"
                       onClick={() => setOpenDeleteAlert(true)}
                     >
                       <LuTrash2 className="text-base" /> Delete Task

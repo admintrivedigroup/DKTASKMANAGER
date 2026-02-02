@@ -65,7 +65,7 @@ const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
               </div>
               ${
                 taskLink
-                  ? `<a href="https://dktaskmanager.netlify.app" target="_blank" rel="noopener" style="display:inline-block;background-color:#1e90ff;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(30,144,255,0.35);">View Task</a>`
+                  ? `<a href="https://triveditask.com" target="_blank" rel="noopener" style="display:inline-block;background-color:#1e90ff;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(30,144,255,0.35);">View Task</a>`
                   : ""
               }
               <p style="margin:18px 0 0 0;font-size:12px;color:#6b7280;">This is an automated notification from Task Manager.</p>

@@ -24,11 +24,13 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const handleTabChange = useCallback(
     (tabId) => {
-      setActiveTab(tabId);
+      const nextTabId =
+        tabId === "channel" && task?.isPersonal ? "details" : tabId;
+      setActiveTab(nextTabId);
       setSearchParams(
         (previous) => {
           const next = new URLSearchParams(previous);
-          if (tabId === "channel") {
+          if (nextTabId === "channel") {
             next.set("tab", "channel");
           } else {
             next.delete("tab");
@@ -38,7 +40,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
         { replace: true }
       );
     },
-    [setSearchParams]
+    [setSearchParams, task?.isPersonal]
   );
 
   const tasksRoute = useMemo(() => {
@@ -195,13 +197,15 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
   const isPersonalTask = Boolean(task?.isPersonal);
+  const isChannelAvailable = !isPersonalTask;
   const isAssignedToCurrentUser = assignedMembers.some((member) => {
     const memberId =
       member?._id || member?.id || (typeof member === "string" ? member : null);
     return memberId && normalizedUserId && memberId.toString() === normalizedUserId;
   });
-  const canAccessChannel = isPrivilegedUser || isAssignedToCurrentUser;
-  const isChannelOpen = activeTab === "channel";
+  const canAccessChannel =
+    isChannelAvailable && (isPrivilegedUser || isAssignedToCurrentUser);
+  const isChannelOpen = isChannelAvailable && activeTab === "channel";
   const resolvedActiveMenu = useMemo(() => {
     if (activeMenu) {
       return activeMenu;
@@ -253,15 +257,30 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   useEffect(() => {
     const tabParam = searchParams.get("tab");
 
-    if (tabParam === "channel" && activeTab !== "channel") {
-      setActiveTab("channel");
+    if (tabParam === "channel" && isChannelAvailable) {
+      if (activeTab !== "channel") {
+        setActiveTab("channel");
+      }
+      return;
+    }
+
+    if (tabParam === "channel" && !isChannelAvailable) {
+      setActiveTab("details");
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          next.delete("tab");
+          return next;
+        },
+        { replace: true }
+      );
       return;
     }
 
     if (!tabParam && activeTab !== "details") {
       setActiveTab("details");
     }
-  }, [activeTab, searchParams]);
+  }, [activeTab, isChannelAvailable, searchParams, setSearchParams]);
 
   return (
     <DashboardLayout activeMenu={resolvedActiveMenu}>
@@ -321,7 +340,9 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
               <div className="mt-6 flex flex-wrap gap-2">
                 {[
                   { id: "details", label: "Details" },
-                  { id: "channel", label: "Channel" },
+                  ...(isChannelAvailable
+                    ? [{ id: "channel", label: "Channel" }]
+                    : []),
                 ].map((tab) => (
                   <button
                     key={tab.id}

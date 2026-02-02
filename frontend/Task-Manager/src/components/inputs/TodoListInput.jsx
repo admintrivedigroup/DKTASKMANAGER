@@ -125,7 +125,7 @@ const TodoListInput = ({
 
                 <button
                   type="button"
-                  className="self-start rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+                  className="self-start rounded-full p-2 transition disabled:opacity-60 btn-danger-soft"
                   onClick={() => handleDeleteOption(index)}
                   disabled={disabled}
                 >

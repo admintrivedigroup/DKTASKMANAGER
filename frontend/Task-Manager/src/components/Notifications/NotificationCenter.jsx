@@ -414,7 +414,7 @@ const NotificationCenter = () => {
               <button
                 type="button"
                 onClick={handleDeleteSelected}
-                className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100"
+                className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition btn-danger-soft"
               >
                 <LuTrash2 className="h-4 w-4" />
                 Delete selected ({selectedCount})
