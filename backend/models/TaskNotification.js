@@ -30,6 +30,7 @@ const taskNotificationSchema = new mongoose.Schema(
       required: true,
       trim: true,
       enum: [
+        "task_assigned",
         "message",
         "due_date_request",
         "due_date_approved",

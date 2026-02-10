@@ -11,7 +11,6 @@ const TaskListTable = ({
   onTaskClick,
   onEdit,
   getUnreadCount,
-  onNotificationClick,
   className = "",
 }) => {
   const safeTableData = Array.isArray(tableData)
@@ -115,34 +114,24 @@ const TaskListTable = ({
     return task?.unreadCount;
   };
 
-  const renderUnreadBadge = (task, options = {}) => {
+  const renderNewTag = (task, options = {}) => {
     const count = resolveUnreadCount(task);
     const normalized =
       typeof count === "number" && Number.isFinite(count)
         ? Math.max(0, Math.floor(count))
         : 0;
 
-    if (!normalized || typeof onNotificationClick !== "function") {
+    if (!normalized) {
       return null;
     }
 
-    const label = normalized > 9 ? "9+" : normalized;
-
     return (
-      <button
-        type="button"
-        className={`inline-flex min-w-[1.75rem] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm ${options.className || ""}`}
-        onClick={(event) => {
-          event.stopPropagation();
-          if (typeof onNotificationClick === "function") {
-            const taskId = task?._id || task?.id;
-            onNotificationClick(taskId);
-          }
-        }}
-        aria-label={`Open ${normalized} unread task updates`}
+      <span
+        className={`inline-flex items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white shadow-sm ${options.className || ""}`}
+        aria-label="New task assigned"
       >
-        {label}
-      </button>
+        New
+      </span>
     );
   };
 
@@ -217,7 +206,7 @@ const TaskListTable = ({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="line-clamp-1">{task.title}</span>
-                        {renderUnreadBadge(task)}
+                        {renderNewTag(task)}
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -303,7 +292,7 @@ const TaskListTable = ({
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {task.title}
                     </h3>
-                    {renderUnreadBadge(task, { className: "ml-1" })}
+                    {renderNewTag(task, { className: "ml-1" })}
                   </div>
                   <div className="flex items-center gap-2">
                     <span

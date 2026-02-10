@@ -21,26 +21,10 @@ const MyTasks = () => {
     taskType,
     includePrioritySort: false,
   });
-  const { getUnreadCount, clearTaskNotifications } = useTaskNotifications(
-    fetchedTasks
-  );
+  const { getUnreadCount } = useTaskNotifications(fetchedTasks);
 
   const handleClick = (taskId) => {
     navigate(`/user/task-details/${taskId}`);
-  };
-
-  const handleNotificationClick = async (taskId, isPersonalTask) => {
-    if (!taskId) {
-      return;
-    }
-
-    await clearTaskNotifications(taskId);
-    if (isPersonalTask) {
-      navigate(`/user/task-details/${taskId}`);
-      return;
-    }
-
-    navigate(`/tasks/${taskId}?tab=channel`);
   };
 
   const allTasks = useMemo(() => fetchedTasks, [fetchedTasks]);
@@ -148,9 +132,6 @@ const MyTasks = () => {
                   onClick={() => {
                     handleClick(item._id);
                   }}
-                  onBadgeClick={() =>
-                    handleNotificationClick(item._id, item?.isPersonal)
-                  }
                 />
               ))}
 

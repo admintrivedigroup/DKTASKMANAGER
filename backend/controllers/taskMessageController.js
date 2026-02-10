@@ -38,7 +38,9 @@ const getAssignedMemberIds = (task) => {
 
 const ensureTaskChannelAccess = async (taskId, user, { requireAssignee = false } = {}) => {
   ensureValidObjectId(taskId, "Task id");
-  const task = await Task.findById(taskId).select("assignedTo dueDate title");
+  const task = await Task.findById(taskId).select(
+    "assignedTo dueDate title isPersonal createdBy"
+  );
 
   if (!task) {
     throw createHttpError("Task not found", 404);
@@ -48,6 +50,16 @@ const ensureTaskChannelAccess = async (taskId, user, { requireAssignee = false }
   const assignedIds = getAssignedMemberIds(task);
   const isAssigned = requesterId && assignedIds.includes(requesterId);
   const isPrivileged = hasPrivilegedAccess(user?.role);
+
+  if (task?.isPersonal) {
+    const createdById =
+      typeof task.createdBy === "object" && task.createdBy !== null && task.createdBy._id
+        ? task.createdBy._id.toString()
+        : task.createdBy?.toString();
+    if (!requesterId || !createdById || createdById !== requesterId) {
+      throw createHttpError("You do not have access to this task.", 403);
+    }
+  }
 
   if (requireAssignee && !isAssigned) {
     throw createHttpError("Only assignees can perform this action.", 403);
@@ -102,6 +114,11 @@ const getPrivilegedUsers = async () => {
 
 const getNotificationRecipients = async (task) => {
   const assignedIds = getAssignedMemberIds(task);
+
+  if (task?.isPersonal) {
+    return { recipientIds: assignedIds, privilegedUsers: [] };
+  }
+
   const privilegedUsers = await getPrivilegedUsers();
   const privilegedIds = privilegedUsers.map((user) => user._id.toString());
 

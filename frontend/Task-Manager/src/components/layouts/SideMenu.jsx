@@ -14,7 +14,7 @@ import {
 const SideMenu = ({ activeMenu, collapsed = false }) => {
   const { user } = useContext(UserContext);
   const [sideMenuData, setSideMenuData] = useState([]);
-  const [channelUnreadCount, setChannelUnreadCount] = useState(0);
+  const [newTaskCount, setNewTaskCount] = useState(0);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,9 +42,9 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
   const normalizedRole = useMemo(() => normalizeRole(user?.role), [user?.role]);
   const isPrivilegedUser = hasPrivilegedAccess(normalizedRole);
 
-  const fetchChannelUnreadCount = useCallback(async () => {
+  const fetchNewTaskCount = useCallback(async () => {
     if (!user) {
-      setChannelUnreadCount(0);
+      setNewTaskCount(0);
       return;
     }
 
@@ -53,7 +53,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
         API_PATHS.TASKS.GET_CHANNEL_NOTIFICATIONS_UNREAD
       );
       const nextCount = response.data?.unreadCount;
-      setChannelUnreadCount(
+      setNewTaskCount(
         typeof nextCount === "number" && Number.isFinite(nextCount)
           ? Math.max(0, Math.floor(nextCount))
           : 0
@@ -87,8 +87,8 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
   }, [isPrivilegedUser, normalizedRole, user]);
 
   useEffect(() => {
-    fetchChannelUnreadCount();
-  }, [fetchChannelUnreadCount, location.pathname, location.search]);
+    fetchNewTaskCount();
+  }, [fetchNewTaskCount, location.pathname, location.search]);
 
   useEffect(() => {
     if (!user) {
@@ -97,25 +97,16 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
 
     const socket = connectSocket();
 
-    const handleTaskNotification = () => {
-      fetchChannelUnreadCount();
+    const handleTaskAssigned = () => {
+      fetchNewTaskCount();
     };
 
-    const handleNotificationsCleared = () => {
-      fetchChannelUnreadCount();
-    };
-
-    socket.on("task-notification", handleTaskNotification);
-    window.addEventListener("task-notifications-cleared", handleNotificationsCleared);
+    socket.on("task-assigned", handleTaskAssigned);
 
     return () => {
-      socket.off("task-notification", handleTaskNotification);
-      window.removeEventListener(
-        "task-notifications-cleared",
-        handleNotificationsCleared
-      );
+      socket.off("task-assigned", handleTaskAssigned);
     };
-  }, [fetchChannelUnreadCount, user]);
+  }, [fetchNewTaskCount, user]);
 
   return (
     <aside className="w-full h-full rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_18px_48px_rgba(17,25,40,0.08)] backdrop-blur-sm overflow-hidden flex flex-col dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-slate-950/40">
@@ -143,7 +134,7 @@ const SideMenu = ({ activeMenu, collapsed = false }) => {
           const isTaskMenuItem =
             typeof normalizedPath === "string" &&
             normalizedPath.includes("/tasks");
-          const showTaskBadge = isTaskMenuItem && channelUnreadCount > 0;
+          const showTaskBadge = isTaskMenuItem && newTaskCount > 0;
 
           return (
             <button

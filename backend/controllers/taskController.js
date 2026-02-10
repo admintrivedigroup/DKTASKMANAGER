@@ -11,6 +11,7 @@ const Notification = require("../models/Notification");
 const TaskNotification = require("../models/TaskNotification");
 const { sendTaskAssignmentEmail } = require("../utils/emailService");
 const { hasPrivilegedAccess, matchesRole } = require("../utils/roleUtils");
+const { getIo, getUserRoom } = require("../utils/socket");
 const {
   buildFieldChanges,
   logEntityActivity,
@@ -55,6 +56,125 @@ const normalizeObjectId = (value) => {
   }
 
   return undefined;
+};
+
+const normalizeAssigneeIds = (assignees) => {
+  const list = Array.isArray(assignees)
+    ? assignees
+    : assignees
+    ? [assignees]
+    : [];
+
+  return list
+    .map((assignee) => normalizeObjectId(assignee))
+    .filter(Boolean);
+};
+
+const buildActorSnapshot = (user) => {
+  if (!user || typeof user !== "object") {
+    return undefined;
+  }
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+};
+
+const emitTaskAssignmentEvent = ({ recipientId, taskId }) => {
+  if (!recipientId || !taskId) {
+    return;
+  }
+
+  try {
+    const io = getIo();
+    io.to(getUserRoom(recipientId)).emit("task-assigned", {
+      taskId: taskId.toString(),
+      type: "task_assigned",
+    });
+  } catch (error) {
+    // Socket may not be initialized in tests or during startup.
+  }
+};
+
+const createTaskAssignmentNotifications = async ({
+  task,
+  recipientIds = [],
+  actor,
+}) => {
+  if (!task?._id || task?.isPersonal) {
+    return;
+  }
+
+  const normalizedRecipients = [...new Set(normalizeAssigneeIds(recipientIds))];
+  if (!normalizedRecipients.length) {
+    return;
+  }
+
+  const actorId = actor?._id ? actor._id.toString() : "";
+  const actorSnapshot = buildActorSnapshot(actor);
+  const baseText = actor?.name
+    ? `${actor.name} assigned you a task.`
+    : "You have been assigned a task.";
+  const redirectUrl = `/tasks/${task._id}`;
+
+  const notifications = normalizedRecipients
+    .filter((recipientId) => recipientId && recipientId !== actorId)
+    .map((recipientId) => ({
+      task: task._id,
+      recipient: recipientId,
+      actor: actorSnapshot,
+      type: "task_assigned",
+      text: baseText,
+      redirectUrl,
+      meta: { title: task.title },
+    }));
+
+  if (!notifications.length) {
+    return;
+  }
+
+  try {
+    await TaskNotification.insertMany(notifications);
+    notifications.forEach((notification) => {
+      emitTaskAssignmentEvent({
+        recipientId: notification.recipient,
+        taskId: task._id,
+      });
+    });
+  } catch (error) {
+    console.error("Failed to create task assignment notifications:", error);
+  }
+};
+
+const clearTaskAssignmentNotifications = async ({
+  taskId,
+  recipientIds = [],
+}) => {
+  if (!taskId || !Array.isArray(recipientIds) || !recipientIds.length) {
+    return;
+  }
+
+  const normalizedRecipients = normalizeAssigneeIds(recipientIds);
+  if (!normalizedRecipients.length) {
+    return;
+  }
+
+  try {
+    await TaskNotification.updateMany(
+      {
+        task: taskId,
+        recipient: { $in: normalizedRecipients },
+        type: "task_assigned",
+        readAt: null,
+      },
+      { $set: { readAt: new Date() } }
+    );
+  } catch (error) {
+    console.error("Failed to clear assignment notifications:", error);
+  }
 };
 
 
@@ -365,6 +485,7 @@ const getTasks = async (req, res, next) => {
           $match: {
             recipient: req.user._id,
             task: { $in: taskIds },
+            type: "task_assigned",
             readAt: null,
           },
         },
@@ -508,6 +629,20 @@ const getTaskById = async (req, res, next) => {
             throw createHttpError("You do not have access to this task.", 403);
           }
 
+          try {
+            await TaskNotification.updateMany(
+              {
+                task: task._id,
+                recipient: req.user._id,
+                type: "task_assigned",
+                readAt: null,
+              },
+              { $set: { readAt: new Date() } }
+            );
+          } catch (error) {
+            console.error("Failed to clear assignment notifications:", error);
+          }
+
           res.json(task);        
     } catch (error) {
       next(error);
@@ -548,7 +683,7 @@ const createTask = async (req, res, next) => {
           );
 
           const isDraft = status === "Draft";
-          const assignedUserIds = Array.isArray(assignedTo) ? assignedTo : [];
+          const assignedUserIds = normalizeAssigneeIds(assignedTo);
           const sanitizedTodoChecklist = sanitizeTodoChecklist({
             checklistInput: todoChecklist,
             validAssigneeIds: assignedUserIds,
@@ -627,6 +762,15 @@ const createTask = async (req, res, next) => {
             actor: req.user,
             details: buildFieldChanges({}, task.toObject(), TASK_ACTIVITY_FIELDS),
           });       
+
+          if (assignedUserIds.length && task.status !== "Draft") {
+            await createTaskAssignmentNotifications({
+              task,
+              recipientIds: assignedUserIds,
+              actor: req.user,
+            });
+          }
+
           try {
             if (assignedUserIds.length && status !== "Draft") {
               const assignees = await User.find({
@@ -802,6 +946,7 @@ let startDateChanged = false;
 let reminderChanged = false;
 let recurrenceChanged = false;
 let newlyAssignedIds = [];
+let removedAssigneeIds = [];
 let resolvedMatterId = task.matter ? task.matter.toString() : null;
 let resolvedCaseId = task.caseFile ? task.caseFile.toString() : null;
 
@@ -880,12 +1025,15 @@ if (Object.prototype.hasOwnProperty.call(req.body, "relatedDocuments")) {
 }
 
 if (Object.prototype.hasOwnProperty.call(req.body, "assignedTo")) {
-  newlyAssignedIds = req.body.assignedTo.filter(
-    (assigneeId) =>
-      assigneeId && !existingAssigneeIds.includes(assigneeId.toString())
+  const nextAssigneeIds = normalizeAssigneeIds(req.body.assignedTo);
+  newlyAssignedIds = nextAssigneeIds.filter(
+    (assigneeId) => assigneeId && !existingAssigneeIds.includes(assigneeId)
+  );
+  removedAssigneeIds = existingAssigneeIds.filter(
+    (assigneeId) => assigneeId && !nextAssigneeIds.includes(assigneeId)
   );
 
-  task.assignedTo = req.body.assignedTo;
+  task.assignedTo = nextAssigneeIds;
 }
 
 const hasTodoChecklistUpdate = Object.prototype.hasOwnProperty.call(
@@ -1007,6 +1155,47 @@ if (Object.prototype.hasOwnProperty.call(req.body, "relatedDocuments")) {
   }
 }
 
+if (removedAssigneeIds.length) {
+  await clearTaskAssignmentNotifications({
+    taskId: updatedTask._id,
+    recipientIds: removedAssigneeIds,
+  });
+}
+
+const publishedFromDraft =
+  previousStatus === "Draft" && updatedTask.status !== "Draft";
+
+if (newlyAssignedIds.length && updatedTask.status !== "Draft") {
+  await createTaskAssignmentNotifications({
+    task: updatedTask,
+    recipientIds: newlyAssignedIds,
+    actor: req.user,
+  });
+}
+
+if (publishedFromDraft) {
+  const baseRecipients = Array.isArray(updatedTask.assignedTo)
+    ? updatedTask.assignedTo
+    : updatedTask.assignedTo
+    ? [updatedTask.assignedTo]
+    : [];
+
+  const recipientsToNotify = newlyAssignedIds.length
+    ? baseRecipients.filter((assigneeId) => {
+        const normalized = normalizeObjectId(assigneeId);
+        return normalized && !newlyAssignedIds.includes(normalized);
+      })
+    : baseRecipients;
+
+  if (recipientsToNotify.length) {
+    await createTaskAssignmentNotifications({
+      task: updatedTask,
+      recipientIds: recipientsToNotify,
+      actor: req.user,
+    });
+  }
+}
+
 if (newlyAssignedIds.length) {
   try {
     const assignees = await User.find({
@@ -1072,6 +1261,10 @@ const deleteTask = async (req, res, next) => {
 
       const deletedTaskSnapshot = task.toObject();      
       await task.deleteOne();
+      await TaskNotification.deleteMany({
+        task: task._id,
+        type: "task_assigned",
+      });
       await logEntityActivity({
         entityType: "task",
         action: "deleted",
@@ -1149,6 +1342,14 @@ const statusChanges = buildFieldChanges(
   { status: task.status },
   TASK_STATUS_FIELDS
 );
+
+if (previousStatus === "Draft" && task.status !== "Draft") {
+  await createTaskAssignmentNotifications({
+    task,
+    recipientIds: task.assignedTo || [],
+    actor: req.user,
+  });
+}
 
 if (statusChanges.length) {
   await logEntityActivity({

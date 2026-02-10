@@ -29,7 +29,12 @@ const DEFAULT_USER_STATS = Object.freeze({
 
 const buildUserTaskStatsMap = async (range) => {
   const stats = await Task.aggregate([
-    { $match: { assignedTo: { $exists: true, $ne: [] } } },
+    {
+      $match: {
+        isPersonal: { $ne: true },
+        assignedTo: { $exists: true, $ne: [] },
+      },
+    },
     { $unwind: "$assignedTo" },
     {
       $group: {
@@ -168,6 +173,8 @@ const getWeeklyRawSummary = async (rangeOverride) => {
   const range = rangeOverride || getWeekRange();
 
   try {
+    const baseFilter = { isPersonal: { $ne: true } };
+
     const [
       totalTasks,
       createdThisWeek,
@@ -178,17 +185,25 @@ const getWeeklyRawSummary = async (rangeOverride) => {
       overdueTasks,
       highPriorityOpenTasks,
     ] = await Promise.all([
-      Task.countDocuments({}),
-      Task.countDocuments({ createdAt: { $gte: range.start, $lt: range.end } }),
-      Task.countDocuments({ completedAt: { $gte: range.start, $lt: range.end } }),
-      Task.countDocuments({ status: "Draft" }),
-      Task.countDocuments({ status: "Pending" }),
-      Task.countDocuments({ status: "In Progress" }),
+      Task.countDocuments(baseFilter),
       Task.countDocuments({
+        ...baseFilter,
+        createdAt: { $gte: range.start, $lt: range.end },
+      }),
+      Task.countDocuments({
+        ...baseFilter,
+        completedAt: { $gte: range.start, $lt: range.end },
+      }),
+      Task.countDocuments({ ...baseFilter, status: "Draft" }),
+      Task.countDocuments({ ...baseFilter, status: "Pending" }),
+      Task.countDocuments({ ...baseFilter, status: "In Progress" }),
+      Task.countDocuments({
+        ...baseFilter,
         dueDate: { $lt: range.end },
         status: { $ne: "Completed" },
       }),
       Task.countDocuments({
+        ...baseFilter,
         priority: "High",
         status: { $ne: "Completed" },
       }),

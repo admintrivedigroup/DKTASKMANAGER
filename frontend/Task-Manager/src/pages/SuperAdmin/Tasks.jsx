@@ -16,8 +16,41 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import TaskFormModal from "../../components/TaskFormModal";
 import ViewToggle from "../../components/ViewToggle";
 import TaskListTable from "../../components/TaskListTable";
+import SearchableSelect from "../../components/SearchableSelect";
 import useTasks from "../../hooks/useTasks";
 import useTaskNotifications from "../../hooks/useTaskNotifications";
+
+const normalizeAssigneeOption = (assignee) => {
+  if (!assignee) {
+    return null;
+  }
+
+  if (typeof assignee === "string" || typeof assignee === "number") {
+    const value = assignee.toString().trim();
+    return value ? { id: value, label: value } : null;
+  }
+
+  if (typeof assignee === "object") {
+    const idValue =
+      assignee._id || assignee.id || assignee.userId || assignee.email || "";
+    const labelValue =
+      assignee.name ||
+      assignee.fullName ||
+      assignee.email ||
+      assignee.username ||
+      "";
+    const id = idValue ? idValue.toString() : labelValue.toString();
+    const label = labelValue ? labelValue.toString() : idValue.toString();
+
+    if (!id || !label) {
+      return null;
+    }
+
+    return { id, label };
+  }
+
+  return null;
+};
 
 const Tasks = () => {
   const location = useLocation();
@@ -27,6 +60,8 @@ const Tasks = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [selectedDate, setSelectedDate] = useState("");
+  const [assignedFilter, setAssignedFilter] = useState("all");
+  const [assignedSearch, setAssignedSearch] = useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskScope, setTaskScope] = useState("All Tasks");
@@ -46,15 +81,58 @@ const Tasks = () => {
     scope: taskScope === "My Task" ? "my" : "all",
     includePrioritySort: true,
   });
-  const { getUnreadCount, clearTaskNotifications } = useTaskNotifications(tasks);
+  const { getUnreadCount } = useTaskNotifications(tasks);
+
+  const assigneeOptions = useMemo(() => {
+    const optionMap = new Map();
+
+    tasks.forEach((task) => {
+      const assignedMembers = Array.isArray(task.assignedTo)
+        ? task.assignedTo
+        : task.assignedTo
+        ? [task.assignedTo]
+        : [];
+
+      assignedMembers.forEach((assignee) => {
+        const normalized = normalizeAssigneeOption(assignee);
+        if (!normalized) {
+          return;
+        }
+
+        if (!optionMap.has(normalized.id)) {
+          optionMap.set(normalized.id, normalized);
+        }
+      });
+    });
+
+    return Array.from(optionMap.values()).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+  }, [tasks]);
+
+  const filteredAssigneeOptions = useMemo(() => {
+    const normalizedSearch = assignedSearch.trim().toLowerCase();
+    if (!normalizedSearch) {
+      return assigneeOptions;
+    }
+
+    return assigneeOptions.filter((option) =>
+      option.label.toLowerCase().includes(normalizedSearch)
+    );
+  }, [assignedSearch, assigneeOptions]);
 
   const hasActiveFilters =
-    filterStatus !== "All" || searchQuery.trim() || selectedDate.trim();
+    filterStatus !== "All" ||
+    searchQuery.trim() ||
+    selectedDate.trim() ||
+    assignedFilter !== "all";
 
   const handleResetFilters = () => {
     setFilterStatus("All");
     setSearchQuery("");
     setSelectedDate("");
+    setAssignedFilter("all");
+    setAssignedSearch("");
   };
 
   const openTaskForm = (taskId = null) => {
@@ -78,15 +156,6 @@ const Tasks = () => {
     }
 
     navigate(`/super-admin/task-details/${taskId}`);
-  };
-
-  const handleTaskNotificationClick = async (taskId) => {
-    if (!taskId) {
-      return;
-    }
-
-    await clearTaskNotifications(taskId);
-    navigate(`/tasks/${taskId}?tab=channel`);
   };
 
   useEffect(() => {
@@ -140,6 +209,8 @@ const Tasks = () => {
   }, [location.pathname, locationState, navigate]);
 
   const filteredTasks = useMemo(() => {
+    const normalizedAssignedFilter = assignedFilter.trim().toLowerCase();
+
     return tasks.filter((task) => {
       const normalizedQuery = searchQuery.trim().toLowerCase();
       const normalizedSelectedDate = selectedDate.trim();
@@ -153,9 +224,22 @@ const Tasks = () => {
           new Date(task.dueDate).toISOString().split("T")[0] ===
             normalizedSelectedDate);
 
-      return matchesSearch && matchesDate;
+      const assignedMembers = Array.isArray(task.assignedTo)
+        ? task.assignedTo
+        : task.assignedTo
+        ? [task.assignedTo]
+        : [];
+      const matchesAssignee =
+        !normalizedAssignedFilter ||
+        normalizedAssignedFilter === "all" ||
+        assignedMembers.some((assignee) => {
+          const normalized = normalizeAssigneeOption(assignee);
+          return normalized?.id.toLowerCase() === normalizedAssignedFilter;
+        });
+
+      return matchesSearch && matchesDate && matchesAssignee;
     });
-  }, [tasks, searchQuery, selectedDate]);
+  }, [tasks, searchQuery, selectedDate, assignedFilter]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE)),
@@ -164,7 +248,7 @@ const Tasks = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, searchQuery, selectedDate, taskScope, tasks]);
+  }, [filterStatus, searchQuery, selectedDate, taskScope, tasks, assignedFilter]);
 
   useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
@@ -365,29 +449,58 @@ const Tasks = () => {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 lg:grid-cols-[1.2fr_auto] lg:items-center">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="relative">
-                        <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(event) =>
-                            setSearchQuery(event.target.value)
-                          }
-                          placeholder="Search tasks"
-                          className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
-                        />
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400">
+                          Search
+                        </span>
+                        <div className="relative">
+                          <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(event) =>
+                              setSearchQuery(event.target.value)
+                            }
+                            placeholder="Search tasks"
+                            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <LuCalendarRange className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="date"
-                          value={selectedDate}
-                          onChange={(event) =>
-                            setSelectedDate(event.target.value)
-                          }
-                          className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400">
+                          Due Date
+                        </span>
+                        <div className="relative">
+                          <LuCalendarRange className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(event) =>
+                              setSelectedDate(event.target.value)
+                            }
+                            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400">
+                          Assigned
+                        </span>
+                        <SearchableSelect
+                          value={assignedFilter}
+                          onChange={setAssignedFilter}
+                          options={assigneeOptions}
+                          filteredOptions={filteredAssigneeOptions}
+                          getOptionValue={(option) => option.id}
+                          getOptionLabel={(option) => option.label}
+                          placeholder="Select member"
+                          searchTerm={assignedSearch}
+                          onSearchTermChange={setAssignedSearch}
+                          searchPlaceholder="Search members"
+                          noResultsMessage="No members found."
+                          staticOptions={[{ label: "All", value: "all" }]}
                         />
                       </div>
                     </div>
@@ -434,7 +547,6 @@ const Tasks = () => {
                       isHighlighting && highlightTaskId === item._id
                     }
                     onClick={() => handleTaskCardClick(item._id)}
-                    onBadgeClick={() => handleTaskNotificationClick(item._id)}
                     onEdit={() => openTaskForm(item._id)}
                   />
                 ))}
@@ -455,7 +567,6 @@ const Tasks = () => {
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
                     onEdit={(task) => openTaskForm(task?._id)}
                     getUnreadCount={getUnreadCount}
-                    onNotificationClick={handleTaskNotificationClick}
                     className="mt-0"
                   />
                 ) : (

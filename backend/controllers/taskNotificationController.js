@@ -39,7 +39,12 @@ const markTaskNotificationsRead = async (req, res, next) => {
     await ensureTaskAccess(taskId, req.user);
 
     const result = await TaskNotification.updateMany(
-      { task: taskId, recipient: req.user._id, readAt: null },
+      {
+        task: taskId,
+        recipient: req.user._id,
+        type: "task_assigned",
+        readAt: null,
+      },
       { $set: { readAt: new Date() } }
     );
 
@@ -58,6 +63,7 @@ const getUnreadTaskNotificationCount = async (req, res, next) => {
   try {
     const unreadCount = await TaskNotification.countDocuments({
       recipient: req.user._id,
+      type: "task_assigned",
       readAt: null,
     });
 

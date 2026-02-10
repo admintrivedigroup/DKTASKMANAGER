@@ -5,7 +5,7 @@ import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import AvatarGroup from "../../components/AvatarGroup";
-import { LuSquareArrowOutUpRight } from "react-icons/lu";
+import { LuArrowLeft, LuSquareArrowOutUpRight } from "react-icons/lu";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { formatDateTimeLabel } from "../../utils/dateUtils";
 import toast from "react-hot-toast";
@@ -189,6 +189,17 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     : task?.assignedTo
     ? [task.assignedTo]
     : [];
+  const assigneeNames = assignedMembers
+    .map((member) => {
+      if (!member) {
+        return "";
+      }
+      if (typeof member === "string") {
+        return member;
+      }
+      return member.name || member.fullName || member.email || "";
+    })
+    .filter(Boolean);
 
   const todoChecklistItems = Array.isArray(task?.todoChecklist)
     ? task.todoChecklist
@@ -325,19 +336,20 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                     Update Task
                   </button>
                 )}
-                <Link
-                  to={tasksRoute}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-                >
-                  Back to Tasks
-                </Link>
               </div>
             </div>
           </section>
 
           {task ? (
             <>
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <Link
+                  to={tasksRoute}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                  aria-label="Back to tasks"
+                >
+                  <LuArrowLeft className="text-base" />
+                </Link>
                 {[
                   { id: "details", label: "Details" },
                   ...(isChannelAvailable
@@ -386,6 +398,15 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                               )}
                               maxVisible={5}
                             />
+                            {assigneeNames.length > 0 ? (
+                              <p className="mt-2 text-xs text-slate-500">
+                                {assigneeNames.join(", ")}
+                              </p>
+                            ) : (
+                              <p className="mt-2 text-xs text-slate-400">
+                                Unassigned
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -479,12 +500,6 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                     <p className="text-sm text-slate-500">
                       Track status, due dates and collaboration at a glance.
                     </p>
-                    <Link
-                      to={tasksRoute}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:bg-gradient-to-r hover:from-slate-900 hover:to-indigo-600 hover:text-white"
-                    >
-                      Back to Tasks
-                    </Link>
                   </aside>
                 </section>
               ) : null}

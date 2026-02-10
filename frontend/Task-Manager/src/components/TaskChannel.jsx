@@ -13,8 +13,6 @@ import Modal from "./Modal";
 import toast from "react-hot-toast";
 import { LuClock3, LuLink, LuSend } from "react-icons/lu";
 
-const ACTIVE_TASK_STORAGE_KEY = "taskChannel:activeTaskId";
-
 const TaskChannel = ({
   task,
   user,
@@ -87,50 +85,6 @@ const TaskChannel = ({
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
-
-  useEffect(() => {
-    if (!taskId) {
-      return undefined;
-    }
-
-    try {
-      window.localStorage?.setItem(ACTIVE_TASK_STORAGE_KEY, taskId.toString());
-    } catch (error) {
-      // Ignore storage write failures.
-    }
-
-    const markNotificationsRead = async () => {
-      try {
-        await axiosInstance.post(
-          API_PATHS.TASKS.MARK_TASK_NOTIFICATIONS_READ(taskId)
-        );
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("task-notifications-cleared", {
-              detail: { taskId },
-            })
-          );
-        }
-      } catch (error) {
-        console.error("Failed to mark task notifications as read", error);
-      }
-    };
-
-    markNotificationsRead();
-
-    return () => {
-      try {
-        if (
-          window.localStorage?.getItem(ACTIVE_TASK_STORAGE_KEY) ===
-          taskId.toString()
-        ) {
-          window.localStorage.removeItem(ACTIVE_TASK_STORAGE_KEY);
-        }
-      } catch (error) {
-        // Ignore storage cleanup failures.
-      }
-    };
-  }, [taskId]);
 
   useEffect(() => {
     hasScrolledOnLoad.current = false;

@@ -43,8 +43,8 @@ export const API_PATHS = {
     DELETE_TASK_MESSAGE: (messageId) => `/api/tasks/messages/${messageId}`,
     CREATE_DUE_DATE_REQUEST: (taskId) => `/api/tasks/${taskId}/due-date-request`,
     MARK_TASK_NOTIFICATIONS_READ: (taskId) =>
-      `/api/tasks/${taskId}/channel-notifications/read`,
-    GET_CHANNEL_NOTIFICATIONS_UNREAD: "/api/tasks/channel-notifications/unread-count",
+      `/api/tasks/${taskId}/channel-notifications/read`, // Mark task assignment as read
+    GET_CHANNEL_NOTIFICATIONS_UNREAD: "/api/tasks/channel-notifications/unread-count", // Unread task assignment count
   },
   DUE_DATE_REQUESTS: {
     APPROVE: (requestId) => `/api/due-date-requests/${requestId}/approve`,

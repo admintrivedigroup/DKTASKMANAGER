@@ -146,6 +146,17 @@ const ClientViewTaskDetails = () => {
     : task?.assignedTo
     ? [task.assignedTo]
     : [];
+  const assigneeNames = assignedMembers
+    .map((member) => {
+      if (!member) {
+        return "";
+      }
+      if (typeof member === "string") {
+        return member;
+      }
+      return member.name || member.fullName || member.email || "";
+    })
+    .filter(Boolean);
 
   const todoChecklistItems = Array.isArray(task?.todoChecklist)
     ? task.todoChecklist
@@ -222,6 +233,15 @@ const ClientViewTaskDetails = () => {
                           avatars={assignedMembers?.map?.((item) => item?.profileImageUrl)}
                           maxVisible={5}
                         />
+                        {assigneeNames.length > 0 ? (
+                          <p className="mt-2 text-xs text-slate-500">
+                            {assigneeNames.join(", ")}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-xs text-slate-400">
+                            Unassigned
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

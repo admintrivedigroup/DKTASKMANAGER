@@ -125,7 +125,9 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
           throw new Error("Task id is required.");
         }
 
-        const task = await Task.findById(taskId).select("assignedTo");
+        const task = await Task.findById(taskId).select(
+          "assignedTo isPersonal createdBy"
+        );
         if (!task) {
           throw new Error("Task not found.");
         }
@@ -136,8 +138,18 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
           : [];
         const isAssigned = userId && assignedIds.includes(userId);
         const isPrivileged = hasPrivilegedAccess(socket.user?.role);
+        const createdById =
+          typeof task.createdBy === "object" && task.createdBy !== null && task.createdBy._id
+            ? task.createdBy._id.toString()
+            : task.createdBy?.toString();
 
-        if (!isAssigned && !isPrivileged) {
+        if (task.isPersonal) {
+          if (!userId || !createdById || createdById !== userId) {
+            socket.emit("room-error", { message: "Not authorized." });
+            socket.disconnect(true);
+            return;
+          }
+        } else if (!isAssigned && !isPrivileged) {
           socket.emit("room-error", { message: "Not authorized." });
           socket.disconnect(true);
           return;
@@ -185,7 +197,9 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
           return;
         }
 
-        const task = await Task.findById(taskId).select("assignedTo");
+        const task = await Task.findById(taskId).select(
+          "assignedTo isPersonal createdBy"
+        );
         if (!task) {
           return;
         }
@@ -195,8 +209,16 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
           : [];
         const isAssigned = assignedIds.includes(userId);
         const isPrivileged = hasPrivilegedAccess(socket.user?.role);
+        const createdById =
+          typeof task.createdBy === "object" && task.createdBy !== null && task.createdBy._id
+            ? task.createdBy._id.toString()
+            : task.createdBy?.toString();
 
-        if (!isAssigned && !isPrivileged) {
+        if (task.isPersonal) {
+          if (!userId || !createdById || createdById !== userId) {
+            return;
+          }
+        } else if (!isAssigned && !isPrivileged) {
           return;
         }
 

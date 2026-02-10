@@ -31,10 +31,12 @@ const buildTaskCountsForUser = async (userId) => {
     return { pendingTasks: 0, inProgressTasks: 0, completedTasks: 0 };
   }
 
+  const baseFilter = { assignedTo: userId, isPersonal: { $ne: true } };
+
   const [pendingTasks, inProgressTasks, completedTasks] = await Promise.all([
-    Task.countDocuments({ assignedTo: userId, status: "Pending" }),
-    Task.countDocuments({ assignedTo: userId, status: "In Progress" }),
-    Task.countDocuments({ assignedTo: userId, status: "Completed" }),
+    Task.countDocuments({ ...baseFilter, status: "Pending" }),
+    Task.countDocuments({ ...baseFilter, status: "In Progress" }),
+    Task.countDocuments({ ...baseFilter, status: "Completed" }),
   ]);
 
   return { pendingTasks, inProgressTasks, completedTasks };
@@ -247,7 +249,13 @@ const getUserById = async (req, res) => {
         .json({ message: "You are not authorized to view this user" });
     }
 
-    let tasks = await Task.find({ assignedTo: user._id })
+    const taskFilter = { assignedTo: user._id };
+
+    if (!isRequestingSelf) {
+      taskFilter.isPersonal = { $ne: true };
+    }
+
+    let tasks = await Task.find(taskFilter)
       .populate("assignedTo", "name email profileImageUrl")
       .sort({ dueDate: 1, createdAt: -1 });
 
