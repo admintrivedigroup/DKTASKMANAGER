@@ -1239,9 +1239,9 @@ res.json({ message: "Task updated successfully", updatedTask });
     }
 };
 
-// @desc    Delete a task (Admin only)
+// @desc    Delete a task (Admin, or own personal task)
 // @route   DELETE /api/tasks/:id
-// @access  Private (Admin)
+// @access  Private
 const deleteTask = async (req, res, next) => {
     try {
       const task = await Task.findById(req.params.id);
@@ -1255,7 +1255,11 @@ const deleteTask = async (req, res, next) => {
           ? req.user._id.toString()
           : "";
 
-      if (isPersonalTaskForAnotherUser(task, requesterId)) {
+      const canDeleteAnyTask = isPrivileged(req.user?.role);
+      const canDeleteOwnPersonalTask =
+        Boolean(task?.isPersonal) && !isPersonalTaskForAnotherUser(task, requesterId);
+
+      if (!canDeleteAnyTask && !canDeleteOwnPersonalTask) {
         throw createHttpError("You do not have permission to delete this task.", 403);
       }
 

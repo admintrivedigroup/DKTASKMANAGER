@@ -15,7 +15,6 @@ const UserSchema = new mongoose.Schema(
     },
     officeLocation: {
       type: String,
-      enum: ["Ahmedabad", "Gift City"],
       required: true,
       trim: true,
     },

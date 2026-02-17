@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LuKeyRound, LuLoader, LuPencil, LuTrash2, LuUsers } from "react-icons/lu";
 import toast from "react-hot-toast";
@@ -12,6 +12,12 @@ import { API_PATHS } from "../../utils/apiPaths.js";
 import axiosInstance from "../../utils/axiosInstance.js";
 import { DEFAULT_OFFICE_LOCATIONS } from "../../utils/data.js";
 import { normalizeRole, resolvePrivilegedPath } from "../../utils/roleUtils.js";
+
+const normalizeOfficeLocationName = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const sanitizeOfficeLocationName = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
 const ManageEmployees = () => {
   const { user: currentUser } = useContext(UserContext);
@@ -33,6 +39,12 @@ const ManageEmployees = () => {
   const [showRoleCreator, setShowRoleCreator] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [isRoleSubmitting, setIsRoleSubmitting] = useState(false);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [showOfficeCreator, setShowOfficeCreator] = useState(false);
+  const [newOfficeName, setNewOfficeName] = useState("");
+  const [isOfficeDropdownOpen, setIsOfficeDropdownOpen] = useState(false);
+  const [customOfficeLocations, setCustomOfficeLocations] = useState([]);
+  const [hiddenOfficeLocationKeys, setHiddenOfficeLocationKeys] = useState([]);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [resetPasswordData, setResetPasswordData] = useState({
@@ -57,6 +69,8 @@ const ManageEmployees = () => {
   const [selectedOffice, setSelectedOffice] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
+  const employeeRoleDropdownRef = useRef(null);
+  const officeLocationDropdownRef = useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -158,6 +172,7 @@ const ManageEmployees = () => {
       toast.success("Role created successfully.");
       setNewRoleName("");
       setShowRoleCreator(false);
+      setIsRoleDropdownOpen(false);
     } catch (error) {
       console.error("Error creating employee role:", error);
       const message =
@@ -167,6 +182,155 @@ const ManageEmployees = () => {
     } finally {
       setIsRoleSubmitting(false);
     }
+  };
+
+  const handleSelectEmployeeRole = (roleName) => {
+    setFormData((prev) => ({
+      ...prev,
+      employeeRole: roleName,
+    }));
+    setIsRoleDropdownOpen(false);
+  };
+
+  const handleDeleteEmployeeRole = async (role) => {
+    const roleId = typeof role?._id === "string" ? role._id : "";
+    const roleName = typeof role?.name === "string" ? role.name.trim() : "";
+
+    if (!roleId || !roleName || isRoleSubmitting) {
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Delete "${roleName}" from employee roles?`
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      setIsRoleSubmitting(true);
+      await axiosInstance.delete(API_PATHS.ROLES.DELETE(roleId));
+      setEmployeeRoles((prev) =>
+        prev.filter((entry) => String(entry?._id || "") !== roleId)
+      );
+      setFormData((prev) =>
+        prev.employeeRole === roleName ? { ...prev, employeeRole: "" } : prev
+      );
+      toast.success("Role deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting employee role:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Unable to delete the role. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsRoleSubmitting(false);
+    }
+  };
+
+  const handleSelectOfficeLocation = (officeLocation) => {
+    setFormData((prev) => ({
+      ...prev,
+      officeLocation,
+    }));
+    setIsOfficeDropdownOpen(false);
+  };
+
+  const handleCreateOfficeLocation = () => {
+    const officeLocationName = sanitizeOfficeLocationName(newOfficeName);
+    if (!officeLocationName) {
+      return;
+    }
+
+    const normalizedOfficeLocation = normalizeOfficeLocationName(officeLocationName);
+    const existingLocation = officeLocationOptions.find(
+      (location) => normalizeOfficeLocationName(location) === normalizedOfficeLocation
+    );
+
+    if (existingLocation) {
+      setFormData((prev) => ({
+        ...prev,
+        officeLocation: existingLocation,
+      }));
+      setNewOfficeName("");
+      setShowOfficeCreator(false);
+      setIsOfficeDropdownOpen(false);
+      toast.error("That office location already exists.");
+      return;
+    }
+
+    setCustomOfficeLocations((prev) => {
+      const exists = prev.some(
+        (location) => normalizeOfficeLocationName(location) === normalizedOfficeLocation
+      );
+      if (exists) {
+        return [...prev];
+      }
+
+      return [...prev, officeLocationName].sort((first, second) =>
+        first.localeCompare(second)
+      );
+    });
+    setHiddenOfficeLocationKeys((prev) =>
+      prev.filter((locationKey) => locationKey !== normalizedOfficeLocation)
+    );
+    setFormData((prev) => ({
+      ...prev,
+      officeLocation: officeLocationName,
+    }));
+    setNewOfficeName("");
+    setShowOfficeCreator(false);
+    setIsOfficeDropdownOpen(false);
+    toast.success("Office location created successfully.");
+  };
+
+  const handleDeleteOfficeLocation = (officeLocation) => {
+    const officeLocationName = sanitizeOfficeLocationName(officeLocation);
+    const normalizedOfficeLocation = normalizeOfficeLocationName(officeLocationName);
+    if (!officeLocationName || !normalizedOfficeLocation) {
+      return;
+    }
+
+    const assignedUsersCount = allUsers.filter((user) => {
+      const userOfficeLocation =
+        typeof user?.officeLocation === "string" ? user.officeLocation : "";
+      return normalizeOfficeLocationName(userOfficeLocation) === normalizedOfficeLocation;
+    }).length;
+
+    if (assignedUsersCount > 0) {
+      toast.error(
+        `Cannot delete "${officeLocationName}" because it is assigned to ${assignedUsersCount} employee${assignedUsersCount === 1 ? "" : "s"}.`
+      );
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Delete "${officeLocationName}" from office locations?`
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    setCustomOfficeLocations((prev) =>
+      prev.filter(
+        (location) =>
+          normalizeOfficeLocationName(location) !== normalizedOfficeLocation
+      )
+    );
+    setHiddenOfficeLocationKeys((prev) =>
+      prev.includes(normalizedOfficeLocation)
+        ? prev
+        : [...prev, normalizedOfficeLocation]
+    );
+    setFormData((prev) =>
+      normalizeOfficeLocationName(prev.officeLocation) === normalizedOfficeLocation
+        ? { ...prev, officeLocation: "" }
+        : prev
+    );
+    setSelectedOffice((prev) =>
+      normalizeOfficeLocationName(prev) === normalizedOfficeLocation ? "All" : prev
+    );
+    toast.success("Office location deleted successfully.");
   };
 
   const handleCreateUser = async (event) => {
@@ -219,6 +383,8 @@ const ManageEmployees = () => {
         employeeRole: "",
         role: "member",
       });
+      setIsOfficeDropdownOpen(false);
+      setIsRoleDropdownOpen(false);
       await getAllUsers();
     } catch (error) {
       console.error("Error creating user:", error);
@@ -482,10 +648,54 @@ const ManageEmployees = () => {
 
   useEffect(() => {
     if (!showCreateForm) {
+      setShowOfficeCreator(false);
+      setNewOfficeName("");
+      setIsOfficeDropdownOpen(false);
       setShowRoleCreator(false);
       setNewRoleName("");
+      setIsRoleDropdownOpen(false);
     }
   }, [showCreateForm]);
+
+  useEffect(() => {
+    if (!isOfficeDropdownOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (
+        officeLocationDropdownRef.current &&
+        !officeLocationDropdownRef.current.contains(event.target)
+      ) {
+        setIsOfficeDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isOfficeDropdownOpen]);
+
+  useEffect(() => {
+    if (!isRoleDropdownOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (
+        employeeRoleDropdownRef.current &&
+        !employeeRoleDropdownRef.current.contains(event.target)
+      ) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isRoleDropdownOpen]);
 
   const availableRoleOptions = useMemo(() => {
     if (normalizedCurrentUserRole === "super_admin") {
@@ -504,39 +714,49 @@ const ManageEmployees = () => {
 
   const officeLocationOptions = useMemo(() => {
     const locationMap = new Map();
+    const hiddenLocationSet = new Set(hiddenOfficeLocationKeys);
 
     DEFAULT_OFFICE_LOCATIONS.forEach((location) => {
-      const trimmedLocation =
-        typeof location === "string" ? location.trim() : "";
+      const trimmedLocation = sanitizeOfficeLocationName(location);
+      const normalizedLocation = normalizeOfficeLocationName(trimmedLocation);
 
-      if (!trimmedLocation) {
+      if (!trimmedLocation || hiddenLocationSet.has(normalizedLocation)) {
         return;
       }
 
-      locationMap.set(trimmedLocation.toLowerCase(), trimmedLocation);
+      locationMap.set(normalizedLocation, trimmedLocation);
     });
 
     allUsers.forEach((user) => {
-      const rawLocation =
-        typeof user?.officeLocation === "string"
-          ? user.officeLocation.trim()
-          : "";
+      const rawLocation = sanitizeOfficeLocationName(user?.officeLocation);
+      const normalizedLocation = normalizeOfficeLocationName(rawLocation);
 
-      if (!rawLocation) {
+      if (!rawLocation || hiddenLocationSet.has(normalizedLocation)) {
         return;
       }
-
-      const normalizedLocation = rawLocation.toLowerCase();
 
       if (!locationMap.has(normalizedLocation)) {
         locationMap.set(normalizedLocation, rawLocation);
       }
     });
 
+    customOfficeLocations.forEach((location) => {
+      const officeLocationName = sanitizeOfficeLocationName(location);
+      const normalizedLocation = normalizeOfficeLocationName(officeLocationName);
+
+      if (!officeLocationName || hiddenLocationSet.has(normalizedLocation)) {
+        return;
+      }
+
+      if (!locationMap.has(normalizedLocation)) {
+        locationMap.set(normalizedLocation, officeLocationName);
+      }
+    });
+
     return Array.from(locationMap.values()).sort((first, second) =>
       first.localeCompare(second)
     );
-  }, [allUsers]);
+  }, [allUsers, customOfficeLocations, hiddenOfficeLocationKeys]);
 
   useEffect(() => {
     if (
@@ -706,30 +926,124 @@ const ManageEmployees = () => {
             </div>
 
             <div className="md:col-span-1">
-              <label
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
-                htmlFor="officeLocation"
-              >
-                Office Location
-              </label>
-              <div className="custom-select mt-2">
-                <select
-                  id="officeLocation"
-                  name="officeLocation"
-                  value={formData.officeLocation}
-                  onChange={handleInputChange}
-                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+              <div className="flex items-center justify-between gap-3">
+                <label
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300"
+                  htmlFor="officeLocation"
                 >
-                  <option value="" disabled>
-                    Select office location
-                  </option>
-                  {officeLocationOptions.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
+                  Office Location
+                </label>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 dark:text-indigo-200 dark:hover:text-indigo-100"
+                  onClick={() => setShowOfficeCreator((prev) => !prev)}
+                >
+                  + New Office
+                </button>
               </div>
+              <div className="relative mt-2" ref={officeLocationDropdownRef}>
+                <button
+                  id="officeLocation"
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  onClick={() => setIsOfficeDropdownOpen((prev) => !prev)}
+                  aria-expanded={isOfficeDropdownOpen}
+                  aria-haspopup="listbox"
+                >
+                  <span
+                    className={
+                      formData.officeLocation
+                        ? ""
+                        : "text-slate-400 dark:text-slate-500"
+                    }
+                  >
+                    {formData.officeLocation || "Select office location"}
+                  </span>
+                  <span
+                    className={`ml-3 text-xs text-slate-500 transition dark:text-slate-300 ${
+                      isOfficeDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  >
+                    v
+                  </span>
+                </button>
+
+                {isOfficeDropdownOpen && (
+                  <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700/80 dark:bg-slate-900">
+                    {officeLocationOptions.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        No office locations available
+                      </p>
+                    ) : (
+                      officeLocationOptions.map((location) => {
+                        const isSelected = formData.officeLocation === location;
+                        return (
+                          <div
+                            key={location}
+                            className="flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          >
+                            <button
+                              type="button"
+                              className={`flex-1 rounded-lg px-2 py-2 text-left text-sm transition ${
+                                isSelected
+                                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-100"
+                                  : "text-slate-700 dark:text-slate-100"
+                              }`}
+                              onClick={() => handleSelectOfficeLocation(location)}
+                            >
+                              {location}
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 dark:text-rose-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-200"
+                              onClick={() => handleDeleteOfficeLocation(location)}
+                              aria-label={`Delete ${location}`}
+                              title={`Delete ${location}`}
+                            >
+                              <LuTrash2 className="text-sm" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+              {showOfficeCreator && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={newOfficeName}
+                    onChange={(event) => setNewOfficeName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleCreateOfficeLocation();
+                      }
+                    }}
+                    placeholder="Office location"
+                    className="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  />
+                  <button
+                    type="button"
+                    className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300 dark:disabled:bg-indigo-500/30"
+                    onClick={handleCreateOfficeLocation}
+                    disabled={!newOfficeName.trim()}
+                  >
+                    Create
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"
+                    onClick={() => {
+                      setShowOfficeCreator(false);
+                      setNewOfficeName("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-1">
@@ -749,24 +1063,81 @@ const ManageEmployees = () => {
                   + New Role
                 </button>
               </div>
-              <div className="custom-select mt-2">
-                <select
+              <div className="relative mt-2" ref={employeeRoleDropdownRef}>
+                <button
                   id="employeeRole"
-                  name="employeeRole"
-                  value={formData.employeeRole}
-                  onChange={handleInputChange}
-                  className="custom-select__field dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700/80 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/30"
+                  onClick={() => setIsRoleDropdownOpen((prev) => !prev)}
                   disabled={isRoleLoading}
+                  aria-expanded={isRoleDropdownOpen}
+                  aria-haspopup="listbox"
                 >
-                  <option value="" disabled>
-                    Select role
-                  </option>
-                  {employeeRoles.map((role) => (
-                    <option key={role._id || role.slug || role.name} value={role.name}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
+                  <span
+                    className={
+                      formData.employeeRole
+                        ? ""
+                        : "text-slate-400 dark:text-slate-500"
+                    }
+                  >
+                    {isRoleLoading
+                      ? "Loading roles..."
+                      : formData.employeeRole || "Select role"}
+                  </span>
+                  <span
+                    className={`ml-3 text-xs text-slate-500 transition dark:text-slate-300 ${
+                      isRoleDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  >
+                    v
+                  </span>
+                </button>
+
+                {isRoleDropdownOpen && (
+                  <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700/80 dark:bg-slate-900">
+                    {employeeRoles.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        No roles available
+                      </p>
+                    ) : (
+                      employeeRoles.map((role) => {
+                        const roleName =
+                          typeof role?.name === "string" ? role.name : "";
+                        const roleKey = role?._id || role?.slug || roleName;
+                        const isSelected = formData.employeeRole === roleName;
+
+                        return (
+                          <div
+                            key={roleKey}
+                            className="flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-800/70"
+                          >
+                            <button
+                              type="button"
+                              className={`flex-1 rounded-lg px-2 py-2 text-left text-sm transition ${
+                                isSelected
+                                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-100"
+                                  : "text-slate-700 dark:text-slate-100"
+                              }`}
+                              onClick={() => handleSelectEmployeeRole(roleName)}
+                            >
+                              {roleName}
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-200"
+                              onClick={() => handleDeleteEmployeeRole(role)}
+                              disabled={isRoleSubmitting}
+                              aria-label={`Delete ${roleName}`}
+                              title={`Delete ${roleName}`}
+                            >
+                              <LuTrash2 className="text-sm" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
               {showRoleCreator && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -70,7 +70,7 @@ router.put(
   validateBody(validateUpdateTaskPayload),
   updateTask
 ); // Update task details
-router.delete("/:id", protect, adminOnly, deleteTask); // Delete a task (Admin only)
+router.delete("/:id", protect, deleteTask); // Delete a task (Admin, or own personal task)
 router.put(
   "/:id/status",
   protect,

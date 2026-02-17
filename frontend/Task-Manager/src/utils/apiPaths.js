@@ -88,5 +88,6 @@ export const API_PATHS = {
   ROLES: {
     GET_ALL: "/api/roles",
     CREATE: "/api/roles",
+    DELETE: (roleId) => `/api/roles/${roleId}`,
   },
 };
