@@ -16,15 +16,6 @@ if (BREVO_API_KEY) {
 }
 
 const requiredConfig = [BREVO_API_KEY, EMAIL_FROM];
-const TASK_MANAGER_WEB_URL = "https://triveditask.com";
-
-const escapeHtml = (value) =>
-  String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 const formatDate = (value) => {
   const parsed = new Date(value);
@@ -41,14 +32,6 @@ const buildTaskChannelLink = (taskId) => {
   if (!CLIENT_URL || !taskId) return null;
   const base = CLIENT_URL.endsWith("/") ? CLIENT_URL.slice(0, -1) : CLIENT_URL;
   return `${base}/tasks/${taskId}?tab=channel`;
-};
-
-const buildTaskCompletionLink = (taskId) => {
-  if (!taskId) {
-    return TASK_MANAGER_WEB_URL;
-  }
-
-  return `${TASK_MANAGER_WEB_URL}/tasks/${taskId}`;
 };
 
 const buildTaskAssignedEmail = (task, assignedBy, taskLink) => {
@@ -189,81 +172,6 @@ const sendTaskReminderEmail = async ({
   });
 };
 
-const buildTaskCompletedEmail = ({ task, completedBy, taskLink }) => {
-  const title = escapeHtml(task?.title || "Task");
-  const priority = escapeHtml(task?.priority || "Not set");
-  const dueDate = task?.dueDate ? escapeHtml(formatDate(task.dueDate)) : "Not set";
-  const completedAt = task?.completedAt
-    ? escapeHtml(formatDate(task.completedAt))
-    : escapeHtml(formatDate(new Date()));
-  const completedByName = escapeHtml(
-    completedBy?.name || completedBy?.email || "A team member"
-  );
-  const description = escapeHtml(task?.description || "No description provided.");
-
-  return `
-    <div style="background-color:#f5f7fb;padding:24px 0;margin:0;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-        <tr>
-          <td align="center" style="padding:0 16px;">
-            <div style="max-width:580px;width:100%;background:#ffffff;border-radius:14px;border:1px solid #e5e7eb;padding:24px;box-sizing:border-box;">
-              <h2 style="margin:0 0 8px 0;font-size:21px;color:#111827;">Task Completed</h2>
-              <p style="margin:0 0 14px 0;font-size:14px;color:#4b5563;">
-                ${completedByName} marked a task as completed.
-              </p>
-              <div style="margin:0 0 14px 0;">
-                <div style="font-size:19px;font-weight:700;color:#1d4ed8;line-height:1.35;margin:0 0 8px 0;">${title}</div>
-                <p style="margin:0;font-size:14px;line-height:1.6;color:#374151;">${description}</p>
-              </div>
-              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin:0 0 16px 0;">
-                <p style="margin:0;font-size:13px;color:#111827;"><strong>Priority:</strong> ${priority}</p>
-                <p style="margin:6px 0 0 0;font-size:13px;color:#111827;"><strong>Due date:</strong> ${dueDate}</p>
-                <p style="margin:6px 0 0 0;font-size:13px;color:#111827;"><strong>Completed at:</strong> ${completedAt}</p>
-              </div>
-              <a href="${taskLink}" target="_blank" rel="noopener" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:11px 17px;border-radius:10px;font-size:14px;font-weight:700;">
-                Open Task Manager
-              </a>
-              <p style="margin:16px 0 0 0;font-size:12px;color:#6b7280;">This is an automated notification from Task Manager.</p>
-            </div>
-          </td>
-        </tr>
-      </table>
-    </div>
-  `;
-};
-
-const sendTaskCompletionEmail = async ({
-  task,
-  completedBy,
-  recipients = [],
-}) => {
-  const recipientEmails = [
-    ...new Set(
-      recipients
-        .map((recipient) => recipient?.email)
-        .filter(Boolean)
-    ),
-  ];
-
-  if (!recipientEmails.length) {
-    return;
-  }
-
-  const subject = `Task Completed: ${task?.title || "Task"}`;
-  const taskLink = buildTaskCompletionLink(task?._id);
-  const html = buildTaskCompletedEmail({
-    task,
-    completedBy,
-    taskLink,
-  });
-
-  await sendEmail({
-    to: recipientEmails,
-    subject,
-    html,
-  });
-};
-
 const buildDueDateRequestEmail = ({
   task,
   requestor,
@@ -357,7 +265,6 @@ module.exports = {
   sendTaskAssignmentEmail,
   sendTaskReminder,
   sendTaskReminderEmail,
-  sendTaskCompletionEmail,
   sendDueDateRequestEmail,
   sendTestEmail,
 };

@@ -1,7 +1,6 @@
 const {
   sendEmail,
   sendTaskAssignmentEmail,
-  sendTaskCompletionEmail,
   sendTaskReminder,
   sendTaskReminderEmail,
   sendTestEmail,
@@ -10,7 +9,6 @@ const {
 module.exports = {
   sendEmail,
   sendTaskAssignmentEmail,
-  sendTaskCompletionEmail,
   sendTaskReminder,
   sendTaskReminderEmail,
   sendTestEmail,

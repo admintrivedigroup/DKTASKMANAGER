@@ -9,10 +9,7 @@ const CaseFile = require("../models/CaseFile");
 const Document = require("../models/Document");
 const Notification = require("../models/Notification");
 const TaskNotification = require("../models/TaskNotification");
-const {
-  sendTaskAssignmentEmail,
-  sendTaskCompletionEmail,
-} = require("../utils/emailService");
+const { sendTaskAssignmentEmail } = require("../utils/emailService");
 const { hasPrivilegedAccess, matchesRole } = require("../utils/roleUtils");
 const { getIo, getUserRoom } = require("../utils/socket");
 const {
@@ -179,54 +176,6 @@ const clearTaskAssignmentNotifications = async ({
     console.error("Failed to clear assignment notifications:", error);
   }
 };
-
-const notifyPrivilegedUsersTaskCompleted = async ({ task, completedBy }) => {
-  if (!task?._id || task?.isPersonal) {
-    return;
-  }
-
-  if (!matchesRole(completedBy?.role, "member")) {
-    return;
-  }
-
-  const completedById = normalizeObjectId(completedBy?._id);
-
-  try {
-    const privilegedUsers = await User.find({
-      role: { $in: ["admin", "super_admin"] },
-    }).select("_id name email role");
-
-    const recipients = privilegedUsers
-      .filter((user) => user?.email && hasPrivilegedAccess(user?.role))
-      .filter((user) => normalizeObjectId(user?._id) !== completedById)
-      .map((user) => ({
-        name: user.name,
-        email: user.email,
-      }));
-
-    if (!recipients.length) {
-      return;
-    }
-
-    // Fire and forget to avoid delaying API responses on email send.
-    sendTaskCompletionEmail({
-      task,
-      completedBy,
-      recipients,
-    }).catch((notificationError) =>
-      console.error(
-        "Failed to send task completion notification:",
-        notificationError
-      )
-    );
-  } catch (error) {
-    console.error(
-      "Failed to prepare task completion notifications:",
-      error
-    );
-  }
-};
-
 
 const resolveMatterAndCase = async ({ matterId, caseFileId }) => {
   const matterProvided = matterId !== undefined;
@@ -1188,13 +1137,6 @@ const taskChangeDetails = buildFieldChanges(
   TASK_ACTIVITY_FIELDS
 );
 
-if (previousStatus !== "Completed" && updatedTask.status === "Completed") {
-  await notifyPrivilegedUsersTaskCompleted({
-    task: updatedTask,
-    completedBy: req.user,
-  });
-}
-
 if (Object.prototype.hasOwnProperty.call(req.body, "relatedDocuments")) {
   await Document.updateMany(
     { relatedTasks: updatedTask._id, _id: { $nin: updatedTask.relatedDocuments } },
@@ -1404,13 +1346,6 @@ const statusChanges = buildFieldChanges(
   TASK_STATUS_FIELDS
 );
 
-if (previousStatus !== "Completed" && task.status === "Completed") {
-  await notifyPrivilegedUsersTaskCompleted({
-    task,
-    completedBy: req.user,
-  });
-}
-
 if (previousStatus === "Draft" && task.status !== "Draft") {
   await createTaskAssignmentNotifications({
     task,
@@ -1529,13 +1464,6 @@ if (task.progress === 100) {
 }
 
 await task.save();
-
-if (previousStatus !== "Completed" && task.status === "Completed") {
-  await notifyPrivilegedUsersTaskCompleted({
-    task,
-    completedBy: req.user,
-  });
-}
 
 const updatedTask = await Task.findById(req.params.id)
   .populate("assignedTo", "name email profileImageUrl")

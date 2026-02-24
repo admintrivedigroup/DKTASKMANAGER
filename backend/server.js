@@ -172,6 +172,7 @@ const PORT = process.env.PORT || 3000;
 
 if (cronEnabled) {
   require("./cron/weeklySummary.cron");
+  require("./cron/dailyCompletedSummary.cron");
   startTaskReminderJob();
 } else {
   console.warn("Cron jobs are disabled via CRON_ENABLED.");
