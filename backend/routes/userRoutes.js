@@ -8,6 +8,7 @@ const {
   deleteUser,
   updateProfileImage,
   removeProfileImage,
+  updateProfileStatus,
   changePassword,
   resetUserPassword,
 } = require("../controllers/userController");
@@ -26,6 +27,7 @@ router.put(
   updateProfileImage
 );
 router.delete("/profile/photo", protect, removeProfileImage);
+router.put("/profile/status", protect, updateProfileStatus);
 router.put("/profile/password", protect, changePassword);
 
 router.get("/:id", protect, getUserById); // Get a specific user

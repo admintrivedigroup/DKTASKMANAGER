@@ -30,6 +30,9 @@ const buildUserPayload = (user, { includeToken = false } = {}) => {
         ? formattedUser.officeLocation.trim()
         : formattedUser.officeLocation,
     employeeRole: formattedUser.employeeRole,
+    profileStatusMode: formattedUser.profileStatusMode || "automatic",
+    profileStatusText: formattedUser.profileStatusText || "",
+    profileStatusUpdatedAt: formattedUser.profileStatusUpdatedAt || null,
     mustChangePassword: formattedUser.mustChangePassword,
   };
 

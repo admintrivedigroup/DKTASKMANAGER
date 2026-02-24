@@ -52,6 +52,27 @@ const STATUS_STYLES = {
   },
 };
 
+const PROFILE_STATUS_STYLES = {
+  automatic: {
+    label: "Active",
+    dotClass: "bg-emerald-500",
+    badgeClass:
+      "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-100 dark:ring-emerald-400/40",
+  },
+  dnd: {
+    label: "Do Not Disturb",
+    dotClass: "bg-rose-500",
+    badgeClass:
+      "bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-400/40",
+  },
+  away: {
+    label: "On Leave",
+    dotClass: "bg-slate-400",
+    badgeClass:
+      "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/60 dark:text-slate-100 dark:ring-slate-500/50",
+  },
+};
+
 const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
@@ -82,6 +103,16 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
 
     return userInfo.employeeRole.trim();
   }, [userInfo?.employeeRole]);
+
+  const profileStatus = useMemo(() => {
+    const mode =
+      typeof userInfo?.profileStatusMode === "string"
+        ? userInfo.profileStatusMode.trim().toLowerCase()
+        : "automatic";
+    const resolvedMode = PROFILE_STATUS_STYLES[mode] ? mode : "automatic";
+
+    return PROFILE_STATUS_STYLES[resolvedMode];
+  }, [userInfo?.profileStatusMode]);
 
   const stats = useMemo(() => {
     if (normalizedRole === "client") {
@@ -230,6 +261,14 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
                 <span className="truncate">Employee Role: {employeeRole}</span>
               </p>
             )}
+            <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
+              <span className={`h-2.5 w-2.5 rounded-full ${profileStatus.dotClass}`} />
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${profileStatus.badgeClass}`}
+              >
+                {profileStatus.label}
+              </span>
+            </p>
           </div>
         </div>
 

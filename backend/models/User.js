@@ -30,6 +30,20 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     }, // Role-based access
+    profileStatusMode: {
+      type: String,
+      enum: ["automatic", "dnd", "away"],
+      default: "automatic",
+      lowercase: true,
+      trim: true,
+    },
+    profileStatusText: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 100,
+    },
+    profileStatusUpdatedAt: { type: Date, default: Date.now },
     mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }

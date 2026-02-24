@@ -26,6 +26,8 @@ const USER_ACTIVITY_FIELDS = [
   { path: "employeeRole", label: "Employee Role" },
 ];
 
+const PROFILE_STATUS_MODES = new Set(["automatic", "dnd", "away"]);
+
 const buildTaskCountsForUser = async (userId) => {
   if (!userId) {
     return { pendingTasks: 0, inProgressTasks: 0, completedTasks: 0 };
@@ -678,6 +680,59 @@ const removeProfileImage = async (req, res) => {
   }
 };
 
+// @desc    Update current user profile status
+// @route   PUT /api/users/profile/status
+// @access  Private
+const updateProfileStatus = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const hasStatusMode = Object.prototype.hasOwnProperty.call(
+      req.body || {},
+      "profileStatusMode"
+    );
+
+    if (!hasStatusMode) {
+      return res
+        .status(400)
+        .json({ message: "profileStatusMode is required" });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const incomingMode =
+      typeof req.body.profileStatusMode === "string"
+        ? req.body.profileStatusMode.trim().toLowerCase()
+        : "";
+
+    if (!PROFILE_STATUS_MODES.has(incomingMode)) {
+      return res.status(400).json({
+        message: "Invalid profile status mode",
+      });
+    }
+
+    user.profileStatusMode = incomingMode;
+    // Custom text statuses are disabled; keep this cleared.
+    user.profileStatusText = "";
+
+    user.profileStatusUpdatedAt = new Date();
+    const updatedUser = await user.save();
+    const formattedUser = formatUserRole(updatedUser);
+
+    return res.json({
+      message: "Profile status updated successfully",
+      profileStatusMode: formattedUser.profileStatusMode || "automatic",
+      profileStatusText: formattedUser.profileStatusText || "",
+      profileStatusUpdatedAt: formattedUser.profileStatusUpdatedAt || null,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // @desc    Change account password
 // @route   PUT /api/users/profile/password
 // @access  Private
@@ -755,6 +810,7 @@ module.exports = {
   deleteUser,
   updateProfileImage,
   removeProfileImage,  
+  updateProfileStatus,
   changePassword,
   resetUserPassword,
 };
