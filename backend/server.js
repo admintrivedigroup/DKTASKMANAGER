@@ -43,6 +43,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const weeklySummaryRoutes = require("./routes/weeklySummary.routes");
 const dueDateRequestRoutes = require("./routes/dueDateRequestRoutes");
+const leaveRoutes = require("./routes/leaveRoutes");
 const { initSocket } = require("./utils/socket");
 
 const app = express();
@@ -155,6 +156,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/weekly-summary", weeklySummaryRoutes);
 app.use("/api/due-date-requests", dueDateRequestRoutes);
+app.use("/api/leaves", leaveRoutes);
 
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

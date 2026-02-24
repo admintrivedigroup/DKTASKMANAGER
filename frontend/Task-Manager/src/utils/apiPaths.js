@@ -50,6 +50,13 @@ export const API_PATHS = {
     APPROVE: (requestId) => `/api/due-date-requests/${requestId}/approve`,
     REJECT: (requestId) => `/api/due-date-requests/${requestId}/reject`,
   },
+  LEAVES: {
+    CREATE: "/api/leaves",
+    GET_MY: "/api/leaves/me",
+    GET_PENDING: "/api/leaves/pending",
+    UPDATE_STATUS: (leaveId) => `/api/leaves/${leaveId}/status`,
+    DELETE: (leaveId) => `/api/leaves/${leaveId}`,
+  },
   NOTICES: {
     PUBLISH: "/api/notices",
     GET_ACTIVE: "/api/notices/active",

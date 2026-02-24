@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   LuTriangleAlert,
   LuCamera,
@@ -14,7 +14,29 @@ import { API_PATHS } from "../../utils/apiPaths";
 import { getToken } from "../../utils/tokenStorage";
 import { FaUser } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import { normalizeRole } from "../../utils/roleUtils";
+import { hasPrivilegedAccess, normalizeRole } from "../../utils/roleUtils";
+
+const formatDateLabel = (value) => {
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "--";
+  }
+
+  return parsedDate.toISOString().split("T")[0];
+};
+
+const getLeaveStatusClassName = (status) => {
+  if (status === "Approved") {
+    return "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200";
+  }
+
+  if (status === "Rejected") {
+    return "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200";
+  }
+
+  return "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200";
+};
 
 const ProfileSettings = () => {
   const { user, updateUser, clearUser } = useContext(UserContext);
@@ -35,6 +57,14 @@ const ProfileSettings = () => {
   const [deleteAccountStep, setDeleteAccountStep] = useState("token");
   const [inviteToken, setInviteToken] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [leaveStartDate, setLeaveStartDate] = useState("");
+  const [leaveEndDate, setLeaveEndDate] = useState("");
+  const [leaveReason, setLeaveReason] = useState("");
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
+  const [myLeaveRequests, setMyLeaveRequests] = useState([]);
+  const [pendingLeaveRequests, setPendingLeaveRequests] = useState([]);
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
+  const [processingLeaveId, setProcessingLeaveId] = useState("");
 
   const navigate = useNavigate();
 
@@ -57,6 +87,7 @@ const ProfileSettings = () => {
     [user?.role]
   );
   const isSuperAdmin = normalizedRole === "super_admin";
+  const isPrivilegedUser = hasPrivilegedAccess(normalizedRole);
 
   useEffect(() => {
     setDisplayName(user?.name || "");
@@ -70,6 +101,46 @@ const ProfileSettings = () => {
       }
     };
   }, [previewUrl]);
+
+  const fetchLeaveData = useCallback(async () => {
+    if (!user?._id) {
+      setMyLeaveRequests([]);
+      setPendingLeaveRequests([]);
+      return;
+    }
+
+    try {
+      setIsLoadingLeaves(true);
+
+      const pendingPromise = isPrivilegedUser
+        ? axiosInstance.get(API_PATHS.LEAVES.GET_PENDING, {
+            params: { includeReviewed: true },
+          })
+        : Promise.resolve({ data: [] });
+
+      const [myLeavesResponse, pendingLeavesResponse] = await Promise.all([
+        axiosInstance.get(API_PATHS.LEAVES.GET_MY),
+        pendingPromise,
+      ]);
+
+      setMyLeaveRequests(
+        Array.isArray(myLeavesResponse?.data) ? myLeavesResponse.data : []
+      );
+      setPendingLeaveRequests(
+        Array.isArray(pendingLeavesResponse?.data) ? pendingLeavesResponse.data : []
+      );
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Failed to fetch leave requests";
+      toast.error(message);
+    } finally {
+      setIsLoadingLeaves(false);
+    }
+  }, [isPrivilegedUser, user?._id]);
+
+  useEffect(() => {
+    fetchLeaveData();
+  }, [fetchLeaveData]);
 
   const handleProfileSubmit = async (event) => {
     event.preventDefault();
@@ -305,6 +376,98 @@ const ProfileSettings = () => {
       toast.error(message);
     } finally {
       setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleLeaveSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!leaveStartDate || !leaveEndDate) {
+      toast.error("Start date and end date are required");
+      return;
+    }
+
+    const startDate = new Date(leaveStartDate);
+    const endDate = new Date(leaveEndDate);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      toast.error("Please select valid leave dates");
+      return;
+    }
+
+    if (endDate < startDate) {
+      toast.error("End date cannot be before start date");
+      return;
+    }
+
+    try {
+      setIsSubmittingLeave(true);
+      const response = await axiosInstance.post(API_PATHS.LEAVES.CREATE, {
+        startDate: leaveStartDate,
+        endDate: leaveEndDate,
+        reason: leaveReason.trim(),
+      });
+
+      toast.success(response.data?.message || "Leave request submitted");
+      setLeaveStartDate("");
+      setLeaveEndDate("");
+      setLeaveReason("");
+      await fetchLeaveData();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Failed to submit leave request";
+      toast.error(message);
+    } finally {
+      setIsSubmittingLeave(false);
+    }
+  };
+
+  const handleLeaveStatusUpdate = async (leaveId, status) => {
+    if (!leaveId) {
+      return;
+    }
+
+    try {
+      setProcessingLeaveId(leaveId);
+      const response = await axiosInstance.patch(
+        API_PATHS.LEAVES.UPDATE_STATUS(leaveId),
+        { status }
+      );
+      toast.success(response.data?.message || `Leave ${status.toLowerCase()}`);
+      await fetchLeaveData();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Failed to update leave status";
+      toast.error(message);
+    } finally {
+      setProcessingLeaveId("");
+    }
+  };
+
+  const handleDeleteLeaveRequest = async (leaveId) => {
+    if (!leaveId) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      "Delete this leave request permanently?"
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setProcessingLeaveId(leaveId);
+      const response = await axiosInstance.delete(API_PATHS.LEAVES.DELETE(leaveId));
+      toast.success(response.data?.message || "Leave request deleted");
+      await fetchLeaveData();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Failed to delete leave request";
+      toast.error(message);
+    } finally {
+      setProcessingLeaveId("");
     }
   };
 
@@ -572,6 +735,235 @@ const ProfileSettings = () => {
             </div>
           </form>
         </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <form
+            onSubmit={handleLeaveSubmit}
+            className="flex h-full flex-col gap-5 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-7"
+          >
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Apply for Leave
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Submit your leave dates so KPI can exclude tasks during approved leave.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="leaveStartDate" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Start Date
+                </label>
+                <input
+                  id="leaveStartDate"
+                  type="date"
+                  value={leaveStartDate}
+                  onChange={(event) => setLeaveStartDate(event.target.value)}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="leaveEndDate" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  End Date
+                </label>
+                <input
+                  id="leaveEndDate"
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(event) => setLeaveEndDate(event.target.value)}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="leaveReason" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Reason
+                </label>
+                <textarea
+                  id="leaveReason"
+                  rows={3}
+                  value={leaveReason}
+                  onChange={(event) => setLeaveReason(event.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                  placeholder="Optional details for approver"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmittingLeave}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-indigo-700 via-primary to-sky-500 px-5 text-sm font-semibold text-white shadow-[0_10px_22px_rgba(30,64,175,0.28)] transition hover:shadow-[0_12px_26px_rgba(30,64,175,0.32)] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmittingLeave ? (
+                  <>
+                    <LuLoader className="mr-2 animate-spin" /> Submitting...
+                  </>
+                ) : (
+                  "Submit Leave Request"
+                )}
+              </button>
+            </div>
+          </form>
+
+          <section className="flex h-full flex-col gap-4 rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-7">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                My Leave Requests
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Track approval status for your submitted requests.
+              </p>
+            </div>
+
+            {isLoadingLeaves ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Loading leave requests...</p>
+            ) : myLeaveRequests.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No leave requests submitted yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {myLeaveRequests.map((leave) => {
+                  const leaveId = leave?._id || "";
+                  const isProcessing = processingLeaveId === leaveId;
+
+                  return (
+                    <div
+                      key={leaveId}
+                      className="rounded-lg border border-slate-200 px-3.5 py-3 dark:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          {formatDateLabel(leave.startDate)} to {formatDateLabel(leave.endDate)}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getLeaveStatusClassName(
+                              leave.status
+                            )}`}
+                          >
+                            {leave.status || "Pending"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLeaveRequest(leaveId)}
+                            disabled={isProcessing}
+                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20"
+                            title="Delete leave request"
+                          >
+                            <LuTrash2 className="text-sm" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {leave.type || "Casual"}
+                      </p>
+                      {leave.reason ? (
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{leave.reason}</p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {isPrivilegedUser && (
+          <section className="rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-slate-950/40 md:px-7">
+            <div className="mb-4 space-y-1">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Leave Requests
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Review and change leave request status from this profile page.
+              </p>
+            </div>
+
+            {isLoadingLeaves ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Loading leave requests...</p>
+            ) : pendingLeaveRequests.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No leave requests available.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingLeaveRequests.map((leave) => {
+                  const leaveId = leave?._id || "";
+                  const isProcessing = processingLeaveId === leaveId;
+
+                  return (
+                    <div
+                      key={leaveId}
+                      className="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700"
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                              {leave?.employee?.name || "Unknown Employee"} ({leave?.employee?.email || "No email"})
+                            </p>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getLeaveStatusClassName(
+                                leave.status
+                              )}`}
+                            >
+                              {leave.status || "Pending"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                            {formatDateLabel(leave.startDate)} to {formatDateLabel(leave.endDate)} | {leave.type || "Casual"}
+                          </p>
+                          {leave.reason ? (
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                              Reason: {leave.reason}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleLeaveStatusUpdate(leaveId, "Approved")}
+                            disabled={isProcessing || leave.status === "Approved"}
+                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20"
+                          >
+                            {isProcessing ? "Processing..." : "Approve"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleLeaveStatusUpdate(leaveId, "Rejected")}
+                            disabled={isProcessing || leave.status === "Rejected"}
+                            className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20"
+                          >
+                            {isProcessing ? "Processing..." : "Reject"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLeaveRequest(leaveId)}
+                            disabled={isProcessing}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                          >
+                            <LuTrash2 className="mr-1 text-sm" />
+                            {isProcessing ? "Processing..." : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       {showDeleteAccountModal && (
