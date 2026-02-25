@@ -53,19 +53,19 @@ const STATUS_STYLES = {
 };
 
 const PROFILE_STATUS_STYLES = {
-  automatic: {
+  active: {
     label: "Active",
     dotClass: "bg-emerald-500",
     badgeClass:
       "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-100 dark:ring-emerald-400/40",
   },
-  dnd: {
-    label: "Do Not Disturb",
-    dotClass: "bg-rose-500",
-    badgeClass:
-      "bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-400/40",
-  },
   away: {
+    label: "Away",
+    dotClass: "bg-amber-400",
+    badgeClass:
+      "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-100 dark:ring-amber-400/40",
+  },
+  leave: {
     label: "On Leave",
     dotClass: "bg-slate-400",
     badgeClass:
@@ -106,13 +106,13 @@ const UserCard = ({ userInfo, onDelete, onResetPassword, onEdit }) => {
 
   const profileStatus = useMemo(() => {
     const mode =
-      typeof userInfo?.profileStatusMode === "string"
-        ? userInfo.profileStatusMode.trim().toLowerCase()
-        : "automatic";
-    const resolvedMode = PROFILE_STATUS_STYLES[mode] ? mode : "automatic";
+      typeof userInfo?.effectiveStatus === "string"
+        ? userInfo.effectiveStatus.trim().toLowerCase()
+        : "";
+    const resolvedMode = PROFILE_STATUS_STYLES[mode] ? mode : "away";
 
     return PROFILE_STATUS_STYLES[resolvedMode];
-  }, [userInfo?.profileStatusMode]);
+  }, [userInfo?.effectiveStatus]);
 
   const stats = useMemo(() => {
     if (normalizedRole === "client") {

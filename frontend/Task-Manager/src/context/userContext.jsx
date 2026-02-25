@@ -3,6 +3,7 @@ import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { clearToken, getToken, setToken } from "../utils/tokenStorage";
 import { normalizeRole } from "../utils/roleUtils";
+import { disconnectSocket } from "../utils/socket";
 
 const isDevelopment = () => {
   try {
@@ -64,6 +65,7 @@ const UserProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("User not authenticated", error);
+        disconnectSocket();
         clearToken();        
       } finally {
         if (isMounted) {
@@ -90,6 +92,7 @@ const UserProvider = ({ children }) => {
   };
   
   const clearUser = () => {
+    disconnectSocket();
     setUser(null);
     clearToken();
   };

@@ -3,13 +3,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { formatUserRole, normalizeRole } = require("../utils/roleUtils");
 const { getJwtSecret } = require("../utils/jwtSecret");
+const { resolveCurrentSessionStatus } = require("../utils/presenceStatus");
 
 // Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, getJwtSecret(), { expiresIn: "7d" });
 };
 
-const buildUserPayload = (user, { includeToken = false } = {}) => {
+const buildUserPayload = (
+  user,
+  { includeToken = false, effectiveStatus = "away" } = {}
+) => {
   const formattedUser = formatUserRole(user);
 
   if (!formattedUser) {
@@ -30,6 +34,7 @@ const buildUserPayload = (user, { includeToken = false } = {}) => {
         ? formattedUser.officeLocation.trim()
         : formattedUser.officeLocation,
     employeeRole: formattedUser.employeeRole,
+    effectiveStatus,
     profileStatusMode: formattedUser.profileStatusMode || "automatic",
     profileStatusText: formattedUser.profileStatusText || "",
     profileStatusUpdatedAt: formattedUser.profileStatusUpdatedAt || null,
@@ -126,8 +131,12 @@ const registerUser = async (req, res) => {
       mustChangePassword: false,
     });
 
+    const effectiveStatus = await resolveCurrentSessionStatus(user._id);
+
     // Return user data with JWT
-    res.status(201).json(buildUserPayload(user, { includeToken: true }));
+    res.status(201).json(
+      buildUserPayload(user, { includeToken: true, effectiveStatus })
+    );
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -169,8 +178,10 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    const effectiveStatus = await resolveCurrentSessionStatus(user._id);
+
     // Return user data with JWT
-    res.json(buildUserPayload(user, { includeToken: true }));
+    res.json(buildUserPayload(user, { includeToken: true, effectiveStatus }));
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -185,7 +196,8 @@ const getUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(buildUserPayload(user));
+    const effectiveStatus = await resolveCurrentSessionStatus(user._id);
+    res.json(buildUserPayload(user, { effectiveStatus }));
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -243,9 +255,11 @@ const updateUserProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
+    const effectiveStatus = await resolveCurrentSessionStatus(updatedUser._id);
+
     res.json({
       message: "Profile updated successfully",
-      ...buildUserPayload(updatedUser, { includeToken: true }),
+      ...buildUserPayload(updatedUser, { includeToken: true, effectiveStatus }),
     });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });

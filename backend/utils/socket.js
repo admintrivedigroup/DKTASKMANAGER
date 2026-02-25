@@ -10,9 +10,53 @@ const { hasPrivilegedAccess } = require("./roleUtils");
 
 let ioInstance = null;
 const activeTaskUsers = new Map();
+const connectedUserCounts = new Map();
+const userLastHeartbeatAt = new Map();
+const PRESENCE_MAX_IDLE_MS = 2 * 60 * 1000;
 
 const getTaskRoom = (taskId) => `task:${taskId}`;
 const getUserRoom = (userId) => `user:${userId}`;
+
+const incrementConnectedUser = (userId) => {
+  if (!userId) {
+    return;
+  }
+
+  const key = userId.toString();
+  const currentCount = connectedUserCounts.get(key) || 0;
+  connectedUserCounts.set(key, currentCount + 1);
+  userLastHeartbeatAt.set(key, Date.now());
+};
+
+const decrementConnectedUser = (userId) => {
+  if (!userId) {
+    return;
+  }
+
+  const key = userId.toString();
+  const currentCount = connectedUserCounts.get(key) || 0;
+
+  if (currentCount <= 1) {
+    connectedUserCounts.delete(key);
+    userLastHeartbeatAt.delete(key);
+    return;
+  }
+
+  connectedUserCounts.set(key, currentCount - 1);
+};
+
+const markUserHeartbeat = (userId) => {
+  if (!userId) {
+    return;
+  }
+
+  const key = userId.toString();
+  if (!connectedUserCounts.has(key)) {
+    return;
+  }
+
+  userLastHeartbeatAt.set(key, Date.now());
+};
 
 const addActiveTaskUser = (taskId, userId) => {
   if (!taskId || !userId) {
@@ -117,7 +161,12 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
   ioInstance.on("connection", (socket) => {
     if (socket.user?.id) {
       socket.join(getUserRoom(socket.user.id));
+      incrementConnectedUser(socket.user.id);
     }
+
+    socket.on("presence-heartbeat", () => {
+      markUserHeartbeat(socket.user?.id);
+    });
 
     socket.on("join-task-room", async ({ taskId } = {}, callback) => {
       try {
@@ -268,6 +317,8 @@ const initSocket = (httpServer, { corsOrigin } = {}) => {
     });
 
     socket.on("disconnect", () => {
+      decrementConnectedUser(socket.user?.id);
+
       const activeTasks = socket.data?.activeTasks;
       if (!activeTasks || !activeTasks.size) {
         return;
@@ -291,10 +342,31 @@ const getIo = () => {
   return ioInstance;
 };
 
+const isUserActive = (
+  userId,
+  { maxIdleMs = PRESENCE_MAX_IDLE_MS, referenceTime = Date.now() } = {}
+) => {
+  if (!userId) {
+    return false;
+  }
+
+  const key = userId.toString();
+  const currentCount = connectedUserCounts.get(key) || 0;
+
+  if (currentCount <= 0) {
+    return false;
+  }
+
+  const lastHeartbeatAt = userLastHeartbeatAt.get(key) || 0;
+  return referenceTime - lastHeartbeatAt <= Math.max(maxIdleMs, 0);
+};
+
 module.exports = {
   initSocket,
   getIo,
   getTaskRoom,
   getUserRoom,
   isUserActiveInTask,
+  isUserActive,
+  PRESENCE_MAX_IDLE_MS,
 };

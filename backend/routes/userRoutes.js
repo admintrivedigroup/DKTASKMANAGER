@@ -4,11 +4,11 @@ const upload = require("../config/cloudinaryStorage");
 const {
   getUsers,
   getUserById,
+  updateUser,
   createUser,
   deleteUser,
   updateProfileImage,
   removeProfileImage,
-  updateProfileStatus,
   changePassword,
   resetUserPassword,
 } = require("../controllers/userController");
@@ -27,10 +27,10 @@ router.put(
   updateProfileImage
 );
 router.delete("/profile/photo", protect, removeProfileImage);
-router.put("/profile/status", protect, updateProfileStatus);
 router.put("/profile/password", protect, changePassword);
 
 router.get("/:id", protect, getUserById); // Get a specific user
+router.put("/:id", protect, adminOnly, updateUser); // Update a user (Admin only)
 router.delete("/:id", protect, adminOnly, deleteUser); // Delete a user (Admin only)
 router.put("/:id/password", protect, adminOnly, resetUserPassword); // Reset a user's password
 

@@ -17,6 +17,11 @@ import CommandPalette from "../CommandPalette";
 import FloatingActionButton from "../FloatingActionButton";
 import { LuPlus, LuUsers } from "react-icons/lu";
 import { hasPrivilegedAccess, resolvePrivilegedPath } from "../../utils/roleUtils.js";
+import { connectSocket } from "../../utils/socket.js";
+
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 60 * 1000;
+const PRESENCE_ACTIVITY_THROTTLE_MS = 15 * 1000;
+const PRESENCE_IDLE_TIMEOUT_MS = 2 * 60 * 1000;
 
 const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
   const { user, loading } = useContext(UserContext);
@@ -78,6 +83,72 @@ const DashboardLayout = ({ children, activeMenu, breadcrumbs }) => {
   useEffect(() => {
     closeMobileNav();
   }, [closeMobileNav]);
+
+  useEffect(() => {
+    if (!user?._id) {
+      return undefined;
+    }
+
+    const socket = connectSocket();
+    let lastHeartbeatAt = 0;
+    let lastActivityAt = Date.now();
+
+    const sendHeartbeat = ({ force = false } = {}) => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      if (!socket.connected) {
+        return;
+      }
+
+      const now = Date.now();
+      if (!force && now - lastActivityAt > PRESENCE_IDLE_TIMEOUT_MS) {
+        return;
+      }
+
+      if (!force && now - lastHeartbeatAt < PRESENCE_ACTIVITY_THROTTLE_MS) {
+        return;
+      }
+
+      socket.emit("presence-heartbeat");
+      lastHeartbeatAt = now;
+    };
+
+    const activityEvents = ["mousedown", "keydown", "touchstart", "scroll", "mousemove"];
+    const handleActivity = () => {
+      lastActivityAt = Date.now();
+      sendHeartbeat();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        lastActivityAt = Date.now();
+        sendHeartbeat({ force: true });
+      }
+    };
+    const handleSocketConnect = () => sendHeartbeat({ force: true });
+
+    sendHeartbeat({ force: true });
+    const heartbeatTimer = window.setInterval(
+      () => sendHeartbeat({ force: true }),
+      PRESENCE_HEARTBEAT_INTERVAL_MS
+    );
+
+    activityEvents.forEach((eventName) => {
+      document.addEventListener(eventName, handleActivity);
+    });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    socket.on("connect", handleSocketConnect);
+
+    return () => {
+      window.clearInterval(heartbeatTimer);
+      activityEvents.forEach((eventName) => {
+        document.removeEventListener(eventName, handleActivity);
+      });
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      socket.off("connect", handleSocketConnect);
+    };
+  }, [user?._id]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({

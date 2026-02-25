@@ -28,6 +28,25 @@ const normalizeOfficeLocationName = (value) =>
 const sanitizeOfficeLocationName = (value) =>
   typeof value === "string" ? value.trim() : "";
 
+const CUSTOM_OFFICE_LOCATIONS_STORAGE_KEY =
+  "dktaskmanager.customOfficeLocations";
+const HIDDEN_OFFICE_LOCATION_KEYS_STORAGE_KEY =
+  "dktaskmanager.hiddenOfficeLocationKeys";
+
+const readStringArrayFromStorage = (storageKey) => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(storageKey);
+    const parsedValue = rawValue ? JSON.parse(rawValue) : [];
+    return Array.isArray(parsedValue) ? parsedValue : [];
+  } catch {
+    return [];
+  }
+};
+
 const ManageEmployees = () => {
   const { user: currentUser } = useContext(UserContext);
   const [allUsers, setAllUsers] = useState([]);
@@ -49,11 +68,48 @@ const ManageEmployees = () => {
   const [newRoleName, setNewRoleName] = useState("");
   const [isRoleSubmitting, setIsRoleSubmitting] = useState(false);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [showEditRoleCreator, setShowEditRoleCreator] = useState(false);
+  const [newEditRoleName, setNewEditRoleName] = useState("");
+  const [isEditRoleDropdownOpen, setIsEditRoleDropdownOpen] = useState(false);
   const [showOfficeCreator, setShowOfficeCreator] = useState(false);
   const [newOfficeName, setNewOfficeName] = useState("");
   const [isOfficeDropdownOpen, setIsOfficeDropdownOpen] = useState(false);
-  const [customOfficeLocations, setCustomOfficeLocations] = useState([]);
-  const [hiddenOfficeLocationKeys, setHiddenOfficeLocationKeys] = useState([]);
+  const [showEditOfficeCreator, setShowEditOfficeCreator] = useState(false);
+  const [newEditOfficeName, setNewEditOfficeName] = useState("");
+  const [isEditOfficeDropdownOpen, setIsEditOfficeDropdownOpen] = useState(false);
+  const [customOfficeLocations, setCustomOfficeLocations] = useState(() => {
+    const storedLocations = readStringArrayFromStorage(
+      CUSTOM_OFFICE_LOCATIONS_STORAGE_KEY
+    );
+    const locationMap = new Map();
+
+    storedLocations.forEach((location) => {
+      const officeLocationName = sanitizeOfficeLocationName(location);
+      const normalizedLocation = normalizeOfficeLocationName(officeLocationName);
+      if (!officeLocationName || !normalizedLocation || locationMap.has(normalizedLocation)) {
+        return;
+      }
+
+      locationMap.set(normalizedLocation, officeLocationName);
+    });
+
+    return Array.from(locationMap.values()).sort((first, second) =>
+      first.localeCompare(second)
+    );
+  });
+  const [hiddenOfficeLocationKeys, setHiddenOfficeLocationKeys] = useState(() => {
+    const storedKeys = readStringArrayFromStorage(
+      HIDDEN_OFFICE_LOCATION_KEYS_STORAGE_KEY
+    );
+
+    return Array.from(
+      new Set(
+        storedKeys
+          .map((locationKey) => normalizeOfficeLocationName(locationKey))
+          .filter(Boolean)
+      )
+    );
+  });
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [resetPasswordData, setResetPasswordData] = useState({
@@ -68,7 +124,7 @@ const ManageEmployees = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    birthdate: "",
+    employeeRole: "",
     gender: "",
     officeLocation: "",
     role: "member",
@@ -80,6 +136,8 @@ const ManageEmployees = () => {
   const [viewMode, setViewMode] = useState("grid");
   const employeeRoleDropdownRef = useRef(null);
   const officeLocationDropdownRef = useRef(null);
+  const editEmployeeRoleDropdownRef = useRef(null);
+  const editOfficeLocationDropdownRef = useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -193,12 +251,64 @@ const ManageEmployees = () => {
     }
   };
 
+  const handleCreateEditEmployeeRole = async () => {
+    const trimmedRoleName = newEditRoleName.trim();
+    if (!trimmedRoleName || isRoleSubmitting) {
+      return;
+    }
+
+    try {
+      setIsRoleSubmitting(true);
+      const response = await axiosInstance.post(API_PATHS.ROLES.CREATE, {
+        name: trimmedRoleName,
+      });
+      const createdRole = response.data;
+      if (createdRole?.name) {
+        setEmployeeRoles((prev) => {
+          const exists = prev.some(
+            (role) =>
+              role?.slug === createdRole.slug ||
+              role?.name?.toLowerCase() === createdRole.name.toLowerCase()
+          );
+          const nextRoles = exists ? [...prev] : [...prev, createdRole];
+          return nextRoles.sort((first, second) =>
+            (first?.name || "").localeCompare(second?.name || "")
+          );
+        });
+        setEditFormData((prev) => ({
+          ...prev,
+          employeeRole: createdRole.name,
+        }));
+      }
+      toast.success("Role created successfully.");
+      setNewEditRoleName("");
+      setShowEditRoleCreator(false);
+      setIsEditRoleDropdownOpen(false);
+    } catch (error) {
+      console.error("Error creating employee role:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Unable to create the role. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsRoleSubmitting(false);
+    }
+  };
+
   const handleSelectEmployeeRole = (roleName) => {
     setFormData((prev) => ({
       ...prev,
       employeeRole: roleName,
     }));
     setIsRoleDropdownOpen(false);
+  };
+
+  const handleSelectEditEmployeeRole = (roleName) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      employeeRole: roleName,
+    }));
+    setIsEditRoleDropdownOpen(false);
   };
 
   const handleDeleteEmployeeRole = async (role) => {
@@ -225,6 +335,9 @@ const ManageEmployees = () => {
       setFormData((prev) =>
         prev.employeeRole === roleName ? { ...prev, employeeRole: "" } : prev
       );
+      setEditFormData((prev) =>
+        prev.employeeRole === roleName ? { ...prev, employeeRole: "" } : prev
+      );
       toast.success("Role deleted successfully.");
     } catch (error) {
       console.error("Error deleting employee role:", error);
@@ -243,6 +356,14 @@ const ManageEmployees = () => {
       officeLocation,
     }));
     setIsOfficeDropdownOpen(false);
+  };
+
+  const handleSelectEditOfficeLocation = (officeLocation) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      officeLocation,
+    }));
+    setIsEditOfficeDropdownOpen(false);
   };
 
   const handleCreateOfficeLocation = () => {
@@ -293,6 +414,54 @@ const ManageEmployees = () => {
     toast.success("Office location created successfully.");
   };
 
+  const handleCreateEditOfficeLocation = () => {
+    const officeLocationName = sanitizeOfficeLocationName(newEditOfficeName);
+    if (!officeLocationName) {
+      return;
+    }
+
+    const normalizedOfficeLocation = normalizeOfficeLocationName(officeLocationName);
+    const existingLocation = officeLocationOptions.find(
+      (location) => normalizeOfficeLocationName(location) === normalizedOfficeLocation
+    );
+
+    if (existingLocation) {
+      setEditFormData((prev) => ({
+        ...prev,
+        officeLocation: existingLocation,
+      }));
+      setNewEditOfficeName("");
+      setShowEditOfficeCreator(false);
+      setIsEditOfficeDropdownOpen(false);
+      toast.error("That office location already exists.");
+      return;
+    }
+
+    setCustomOfficeLocations((prev) => {
+      const exists = prev.some(
+        (location) => normalizeOfficeLocationName(location) === normalizedOfficeLocation
+      );
+      if (exists) {
+        return [...prev];
+      }
+
+      return [...prev, officeLocationName].sort((first, second) =>
+        first.localeCompare(second)
+      );
+    });
+    setHiddenOfficeLocationKeys((prev) =>
+      prev.filter((locationKey) => locationKey !== normalizedOfficeLocation)
+    );
+    setEditFormData((prev) => ({
+      ...prev,
+      officeLocation: officeLocationName,
+    }));
+    setNewEditOfficeName("");
+    setShowEditOfficeCreator(false);
+    setIsEditOfficeDropdownOpen(false);
+    toast.success("Office location created successfully.");
+  };
+
   const handleDeleteOfficeLocation = (officeLocation) => {
     const officeLocationName = sanitizeOfficeLocationName(officeLocation);
     const normalizedOfficeLocation = normalizeOfficeLocationName(officeLocationName);
@@ -332,6 +501,11 @@ const ManageEmployees = () => {
         : [...prev, normalizedOfficeLocation]
     );
     setFormData((prev) =>
+      normalizeOfficeLocationName(prev.officeLocation) === normalizedOfficeLocation
+        ? { ...prev, officeLocation: "" }
+        : prev
+    );
+    setEditFormData((prev) =>
       normalizeOfficeLocationName(prev.officeLocation) === normalizedOfficeLocation
         ? { ...prev, officeLocation: "" }
         : prev
@@ -537,8 +711,11 @@ const ManageEmployees = () => {
   useEffect(() => {
     getAllUsers();
     loadEmployeeRoles();
+    const refreshTimer = window.setInterval(getAllUsers, 60 * 1000);
 
-    return () => {};
+    return () => {
+      window.clearInterval(refreshTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -585,6 +762,58 @@ const ManageEmployees = () => {
   }, [showCreateForm]);
 
   useEffect(() => {
+    if (!showEditModal) {
+      setShowEditOfficeCreator(false);
+      setNewEditOfficeName("");
+      setIsEditOfficeDropdownOpen(false);
+      setShowEditRoleCreator(false);
+      setNewEditRoleName("");
+      setIsEditRoleDropdownOpen(false);
+    }
+  }, [showEditModal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      CUSTOM_OFFICE_LOCATIONS_STORAGE_KEY,
+      JSON.stringify(customOfficeLocations)
+    );
+  }, [customOfficeLocations]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(
+      HIDDEN_OFFICE_LOCATION_KEYS_STORAGE_KEY,
+      JSON.stringify(hiddenOfficeLocationKeys)
+    );
+  }, [hiddenOfficeLocationKeys]);
+
+  useEffect(() => {
+    setHiddenOfficeLocationKeys((prev) => {
+      if (!Array.isArray(prev) || prev.length === 0) {
+        return prev;
+      }
+
+      const assignedLocationKeys = new Set(
+        allUsers
+          .map((user) => normalizeOfficeLocationName(user?.officeLocation))
+          .filter(Boolean)
+      );
+      const nextKeys = prev.filter(
+        (locationKey) => !assignedLocationKeys.has(locationKey)
+      );
+
+      return nextKeys.length === prev.length ? prev : nextKeys;
+    });
+  }, [allUsers]);
+
+  useEffect(() => {
     if (!isOfficeDropdownOpen) {
       return;
     }
@@ -623,6 +852,46 @@ const ManageEmployees = () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [isRoleDropdownOpen]);
+
+  useEffect(() => {
+    if (!isEditOfficeDropdownOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (
+        editOfficeLocationDropdownRef.current &&
+        !editOfficeLocationDropdownRef.current.contains(event.target)
+      ) {
+        setIsEditOfficeDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isEditOfficeDropdownOpen]);
+
+  useEffect(() => {
+    if (!isEditRoleDropdownOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (
+        editEmployeeRoleDropdownRef.current &&
+        !editEmployeeRoleDropdownRef.current.contains(event.target)
+      ) {
+        setIsEditRoleDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isEditRoleDropdownOpen]);
 
   const availableRoleOptions = useMemo(() => {
     if (normalizedCurrentUserRole === "super_admin") {
@@ -751,12 +1020,19 @@ const ManageEmployees = () => {
 
   const openEditModal = (user) => {
     setEditUser(user);
+    setShowEditRoleCreator(false);
+    setNewEditRoleName("");
+    setIsEditRoleDropdownOpen(false);
+    setShowEditOfficeCreator(false);
+    setNewEditOfficeName("");
+    setIsEditOfficeDropdownOpen(false);
     setEditFormData({
       name: user?.name || "",
       email: user?.email || "",
       password: "",
       confirmPassword: "",
-      birthdate: typeof user?.birthdate === "string" ? user.birthdate.slice(0, 10) : "",
+      employeeRole:
+        typeof user?.employeeRole === "string" ? user.employeeRole.trim() : "",
       gender: user?.gender || "",
       officeLocation: user?.officeLocation || "",
       role: normalizeRole(user?.role) || "member",
@@ -793,7 +1069,10 @@ const ManageEmployees = () => {
     const payload = {
       name: editFormData.name.trim(),
       email: editFormData.email.trim(),
-      birthdate: editFormData.birthdate || null,
+      employeeRole:
+        typeof editFormData.employeeRole === "string"
+          ? editFormData.employeeRole.trim()
+          : "",
       gender: editFormData.gender,
       officeLocation: typeof editFormData.officeLocation === "string" ? editFormData.officeLocation.trim() : "",
       role: requestedRole,
@@ -1622,18 +1901,124 @@ const ManageEmployees = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="editBirthdate" className="text-sm font-medium text-slate-700">
-                    Date of Birth
-                  </label>
-                  <input
-                    id="editBirthdate"
-                    name="birthdate"
-                    type="date"
-                    value={editFormData.birthdate}
-                    onChange={handleEditInputChange}
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                    max={new Date().toISOString().slice(0, 10)}
-                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="editEmployeeRole" className="text-sm font-medium text-slate-700">
+                      Employee Role
+                    </label>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => setShowEditRoleCreator((prev) => !prev)}
+                      disabled={isRoleSubmitting}
+                    >
+                      + New Role
+                    </button>
+                  </div>
+                  <div className="relative" ref={editEmployeeRoleDropdownRef}>
+                    <button
+                      id="editEmployeeRole"
+                      type="button"
+                      className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 text-left text-sm text-slate-800 shadow-inner transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      onClick={() => setIsEditRoleDropdownOpen((prev) => !prev)}
+                      disabled={isRoleLoading}
+                      aria-expanded={isEditRoleDropdownOpen}
+                      aria-haspopup="listbox"
+                    >
+                      <span className={editFormData.employeeRole ? "" : "text-slate-400"}>
+                        {isRoleLoading
+                          ? "Loading roles..."
+                          : editFormData.employeeRole || "Select employee role"}
+                      </span>
+                      <span
+                        className={`ml-3 text-xs text-slate-500 transition ${
+                          isEditRoleDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      >
+                        v
+                      </span>
+                    </button>
+
+                    {isEditRoleDropdownOpen && (
+                      <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                        {employeeRoles.length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-slate-500">
+                            No roles available
+                          </p>
+                        ) : (
+                          employeeRoles.map((role) => {
+                            const roleName =
+                              typeof role?.name === "string" ? role.name.trim() : "";
+                            const roleKey = role?._id || role?.slug || roleName;
+                            const isSelected = editFormData.employeeRole === roleName;
+
+                            return (
+                              <div
+                                key={roleKey}
+                                className="flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-slate-100"
+                              >
+                                <button
+                                  type="button"
+                                  className={`flex-1 rounded-lg px-2 py-2 text-left text-sm transition ${
+                                    isSelected
+                                      ? "bg-indigo-50 text-indigo-700"
+                                      : "text-slate-700"
+                                  }`}
+                                  onClick={() => handleSelectEditEmployeeRole(roleName)}
+                                >
+                                  {roleName}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                  onClick={() => handleDeleteEmployeeRole(role)}
+                                  disabled={isRoleSubmitting}
+                                  aria-label={`Delete ${roleName}`}
+                                  title={`Delete ${roleName}`}
+                                >
+                                  <LuTrash2 className="text-sm" />
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {showEditRoleCreator && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={newEditRoleName}
+                        onChange={(event) => setNewEditRoleName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleCreateEditEmployeeRole();
+                          }
+                        }}
+                        placeholder="Role name"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      />
+                      <button
+                        type="button"
+                        className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                        onClick={handleCreateEditEmployeeRole}
+                        disabled={!newEditRoleName.trim() || isRoleSubmitting}
+                      >
+                        {isRoleSubmitting ? "Creating..." : "Create"}
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                        onClick={() => {
+                          setShowEditRoleCreator(false);
+                          setNewEditRoleName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="editGender" className="text-sm font-medium text-slate-700">
@@ -1654,23 +2039,115 @@ const ManageEmployees = () => {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="editOfficeLocation" className="text-sm font-medium text-slate-700">
-                    Office Location
-                  </label>
-                  <select
-                    id="editOfficeLocation"
-                    name="officeLocation"
-                    value={editFormData.officeLocation}
-                    onChange={handleEditInputChange}
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 shadow-inner focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                  >
-                    <option value="">Select office location</option>
-                    {officeLocationOptions.map((location) => (
-                      <option key={location} value={location}>
-                        {location}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="editOfficeLocation" className="text-sm font-medium text-slate-700">
+                      Office Location
+                    </label>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => setShowEditOfficeCreator((prev) => !prev)}
+                    >
+                      + New Office
+                    </button>
+                  </div>
+                  <div className="relative" ref={editOfficeLocationDropdownRef}>
+                    <button
+                      id="editOfficeLocation"
+                      type="button"
+                      className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 text-left text-sm text-slate-800 shadow-inner transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                      onClick={() => setIsEditOfficeDropdownOpen((prev) => !prev)}
+                      aria-expanded={isEditOfficeDropdownOpen}
+                      aria-haspopup="listbox"
+                    >
+                      <span className={editFormData.officeLocation ? "" : "text-slate-400"}>
+                        {editFormData.officeLocation || "Select office location"}
+                      </span>
+                      <span
+                        className={`ml-3 text-xs text-slate-500 transition ${
+                          isEditOfficeDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      >
+                        v
+                      </span>
+                    </button>
+
+                    {isEditOfficeDropdownOpen && (
+                      <div className="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                        {officeLocationOptions.length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-slate-500">
+                            No office locations available
+                          </p>
+                        ) : (
+                          officeLocationOptions.map((location) => {
+                            const isSelected = editFormData.officeLocation === location;
+                            return (
+                              <div
+                                key={location}
+                                className="flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-slate-100"
+                              >
+                                <button
+                                  type="button"
+                                  className={`flex-1 rounded-lg px-2 py-2 text-left text-sm transition ${
+                                    isSelected
+                                      ? "bg-indigo-50 text-indigo-700"
+                                      : "text-slate-700"
+                                  }`}
+                                  onClick={() => handleSelectEditOfficeLocation(location)}
+                                >
+                                  {location}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                                  onClick={() => handleDeleteOfficeLocation(location)}
+                                  aria-label={`Delete ${location}`}
+                                  title={`Delete ${location}`}
+                                >
+                                  <LuTrash2 className="text-sm" />
+                                </button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {showEditOfficeCreator && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={newEditOfficeName}
+                        onChange={(event) => setNewEditOfficeName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            handleCreateEditOfficeLocation();
+                          }
+                        }}
+                        placeholder="Office location"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      />
+                      <button
+                        type="button"
+                        className="rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                        onClick={handleCreateEditOfficeLocation}
+                        disabled={!newEditOfficeName.trim()}
+                      >
+                        Create
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                        onClick={() => {
+                          setShowEditOfficeCreator(false);
+                          setNewEditOfficeName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="editRole" className="text-sm font-medium text-slate-700">

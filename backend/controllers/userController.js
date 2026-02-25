@@ -16,6 +16,10 @@ const {
   buildFieldChanges,
   logEntityActivity,
 } = require("../utils/activityLogger");
+const {
+  buildUsersOnLeaveSet,
+  resolveEffectiveStatusForUser,
+} = require("../utils/presenceStatus");
 
 const USER_ACTIVITY_FIELDS = [
   { path: "name", label: "Name" },
@@ -25,8 +29,6 @@ const USER_ACTIVITY_FIELDS = [
   { path: "officeLocation", label: "Office Location" },
   { path: "employeeRole", label: "Employee Role" },
 ];
-
-const PROFILE_STATUS_MODES = new Set(["automatic", "dnd", "away"]);
 
 const buildTaskCountsForUser = async (userId) => {
   if (!userId) {
@@ -188,11 +190,17 @@ const getUsers = async (req, res) => {
     const users = await User.find({})
       .select("-password")
       .sort({ name: 1, email: 1 });
+    const userIds = users.map((user) => user?._id).filter(Boolean);
+    const usersOnLeaveSet = await buildUsersOnLeaveSet(userIds);
 
     // Add task counts to each user
     const usersWithTaskCounts = await Promise.all(
       users.map(async (user) => {
         const formattedUser = formatUserRole(user);
+        const effectiveStatus = resolveEffectiveStatusForUser({
+          userId: formattedUser?._id,
+          usersOnLeaveSet,
+        });
 
         const [taskCounts, matterCounts] = await Promise.all([
           buildTaskCountsForUser(formattedUser._id),
@@ -212,6 +220,7 @@ const getUsers = async (req, res) => {
 
         return {
           ...formattedUser,
+          effectiveStatus,
           officeLocation: normalizedOfficeLocation,          
           ...taskCounts,
           ...matterCounts,          
@@ -303,8 +312,15 @@ const getUserById = async (req, res) => {
       }
     })();
 
+    const usersOnLeaveSet = await buildUsersOnLeaveSet([formattedUser._id]);
+    const effectiveStatus = resolveEffectiveStatusForUser({
+      userId: formattedUser._id,
+      usersOnLeaveSet,
+    });
+
     const userData = {
       ...formattedUser,
+      effectiveStatus,
       pendingTasks: taskSummary.pending,
       inProgressTasks: taskSummary.inProgress,
       completedTasks: taskSummary.completed,
@@ -321,6 +337,156 @@ const getUserById = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Update a user (Admin only)
+// @route   PUT /api/users/:id
+// @access  Private (Admin)
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params || {};
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const requesterRole = normalizeRole(req.user?.role);
+    const targetRole = normalizeRole(user.role);
+    const requesterId = req.user?._id
+      ? req.user._id.toString()
+      : req.user?.id
+      ? req.user.id.toString()
+      : "";
+    const isSelfUpdate = requesterId && requesterId === user._id.toString();
+    const previousUserSnapshot = user.toObject();
+
+    if (targetRole === "super_admin" && requesterRole !== "super_admin") {
+      return res.status(403).json({
+        message: "Only Super Admins can modify Super Admin accounts",
+      });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "role")) {
+      const requestedRole = normalizeRole(req.body.role) || "member";
+      const allowedRoles =
+        requesterRole === "super_admin"
+          ? new Set(["member", "admin", "super_admin", "client"])
+          : new Set(["member", "admin", "client"]);
+
+      if (!allowedRoles.has(requestedRole)) {
+        return res.status(403).json({ message: "You cannot assign this role." });
+      }
+
+      if (isSelfUpdate && requesterRole === "super_admin" && requestedRole !== "super_admin") {
+        return res.status(400).json({
+          message: "Super Admin accounts cannot downgrade their own access level.",
+        });
+      }
+
+      user.role = requestedRole;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "name")) {
+      const nextName =
+        typeof req.body.name === "string" ? req.body.name.trim() : "";
+      if (!nextName) {
+        return res.status(400).json({ message: "Name is required." });
+      }
+      user.name = nextName;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "email")) {
+      const nextEmail =
+        typeof req.body.email === "string" ? req.body.email.trim() : "";
+      if (!nextEmail) {
+        return res.status(400).json({ message: "Email is required." });
+      }
+
+      const existingUser = await User.findOne({
+        email: nextEmail,
+        _id: { $ne: user._id },
+      }).lean();
+      if (existingUser) {
+        return res
+          .status(400)
+          .json({ message: "A user with this email already exists" });
+      }
+
+      user.email = nextEmail;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "gender")) {
+      user.gender = req.body.gender;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "officeLocation")) {
+      const nextOfficeLocation =
+        typeof req.body.officeLocation === "string"
+          ? req.body.officeLocation.trim()
+          : "";
+      if (!nextOfficeLocation) {
+        return res.status(400).json({ message: "Office location is required." });
+      }
+      user.officeLocation = nextOfficeLocation;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "employeeRole")) {
+      const nextEmployeeRole =
+        typeof req.body.employeeRole === "string"
+          ? req.body.employeeRole.trim()
+          : "";
+      user.employeeRole = nextEmployeeRole;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "birthdate")) {
+      const providedBirthdate = req.body.birthdate;
+      if (!providedBirthdate) {
+        user.birthdate = null;
+      } else {
+        const parsedBirthdate = new Date(providedBirthdate);
+        if (isNaN(parsedBirthdate)) {
+          return res.status(400).json({ message: "Invalid birthdate provided." });
+        }
+        user.birthdate = parsedBirthdate;
+      }
+    }
+
+    if (req.body?.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+      user.mustChangePassword = true;
+    }
+
+    const updatedUser = await user.save();
+    const formattedUpdatedUser = formatUserRole(updatedUser);
+    const normalizedUpdatedRole = normalizeRole(formattedUpdatedUser.role);
+    const userEntityType = normalizedUpdatedRole === "client" ? "client" : "member";
+
+    await logEntityActivity({
+      entityType: userEntityType,
+      action: "updated",
+      entityId: updatedUser._id,
+      entityName: formattedUpdatedUser.name,
+      actor: req.user,
+      details: buildFieldChanges(
+        previousUserSnapshot,
+        updatedUser.toObject(),
+        USER_ACTIVITY_FIELDS
+      ),
+    });
+
+    return res.json({
+      message: "User updated successfully",
+      user: formattedUpdatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -680,59 +846,6 @@ const removeProfileImage = async (req, res) => {
   }
 };
 
-// @desc    Update current user profile status
-// @route   PUT /api/users/profile/status
-// @access  Private
-const updateProfileStatus = async (req, res) => {
-  try {
-    const userId = req.user?._id || req.user?.id;
-    const hasStatusMode = Object.prototype.hasOwnProperty.call(
-      req.body || {},
-      "profileStatusMode"
-    );
-
-    if (!hasStatusMode) {
-      return res
-        .status(400)
-        .json({ message: "profileStatusMode is required" });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const incomingMode =
-      typeof req.body.profileStatusMode === "string"
-        ? req.body.profileStatusMode.trim().toLowerCase()
-        : "";
-
-    if (!PROFILE_STATUS_MODES.has(incomingMode)) {
-      return res.status(400).json({
-        message: "Invalid profile status mode",
-      });
-    }
-
-    user.profileStatusMode = incomingMode;
-    // Custom text statuses are disabled; keep this cleared.
-    user.profileStatusText = "";
-
-    user.profileStatusUpdatedAt = new Date();
-    const updatedUser = await user.save();
-    const formattedUser = formatUserRole(updatedUser);
-
-    return res.json({
-      message: "Profile status updated successfully",
-      profileStatusMode: formattedUser.profileStatusMode || "automatic",
-      profileStatusText: formattedUser.profileStatusText || "",
-      profileStatusUpdatedAt: formattedUser.profileStatusUpdatedAt || null,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
 // @desc    Change account password
 // @route   PUT /api/users/profile/password
 // @access  Private
@@ -806,11 +919,11 @@ const resetUserPassword = async (req, res) => {
 module.exports = {
   getUsers,
   getUserById,
+  updateUser,
   createUser,
   deleteUser,
   updateProfileImage,
   removeProfileImage,  
-  updateProfileStatus,
   changePassword,
   resetUserPassword,
 };

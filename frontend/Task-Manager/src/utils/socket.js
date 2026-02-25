@@ -36,3 +36,11 @@ export const connectSocket = () => {
 
   return socket;
 };
+
+export const disconnectSocket = () => {
+  if (!socketInstance) {
+    return;
+  }
+
+  socketInstance.disconnect();
+};

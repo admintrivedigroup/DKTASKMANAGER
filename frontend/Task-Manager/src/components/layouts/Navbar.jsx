@@ -1,66 +1,86 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { LuLogOut, LuBell, LuCheck, LuChevronDown } from "react-icons/lu";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { LuLogOut, LuBell } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import NotificationBell from "../Notifications/NotificationBell";
 import logo from "../../assets/images/logo.png";
 import { UserContext } from "../../context/userContext.jsx";
 import { useLayoutContext } from "../../context/layoutContext.jsx";
 import ThemeToggle from "../ThemeToggle.jsx";
 import { hasPrivilegedAccess, normalizeRole, resolvePrivilegedPath } from "../../utils/roleUtils.js";
-import axiosInstance from "../../utils/axiosInstance.js";
-import { API_PATHS } from "../../utils/apiPaths.js";
 
-const STATUS_OPTIONS = [
-  {
-    value: "automatic",
-    label: "Active",
-    subtitle: "",
+const STATUS_OPTIONS = {
+  active: {
     chipLabel: "Active",
     indicatorClass: "bg-emerald-500",
   },
-  {
-    value: "dnd",
-    label: "DND",
-    subtitle: "",
-    chipLabel: "Do Not Disturb",
-    indicatorClass: "bg-rose-500",
+  away: {
+    chipLabel: "Away",
+    indicatorClass: "bg-amber-400",
   },
-  {
-    value: "away",
-    label: "Leave",
-    subtitle: "",
+  leave: {
     chipLabel: "On Leave",
     indicatorClass: "bg-slate-400",
   },
-];
+};
 
-const resolveStatusOption = (statusMode) =>
-  STATUS_OPTIONS.find((option) => option.value === statusMode) || STATUS_OPTIONS[0];
+const NAVBAR_IDLE_TIMEOUT_MS = 2 * 60 * 1000;
+const NAVBAR_ACTIVITY_CHECK_MS = 15 * 1000;
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { clearUser, user, updateUser } = useContext(UserContext);
+  const { clearUser, user } = useContext(UserContext);
   const { resetThemePreference } = useLayoutContext();
-  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
-  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
-  const statusMenuRef = useRef(null);
+  const [isLocallyActive, setIsLocallyActive] = useState(true);
   const normalizedRole = useMemo(() => normalizeRole(user?.role), [user?.role]);
   const isPrivileged = hasPrivilegedAccess(normalizedRole);
-  const normalizedStatusMode = useMemo(() => {
-    if (typeof user?.profileStatusMode !== "string") {
-      return "automatic";
+
+  useEffect(() => {
+    let lastActivityAt = Date.now();
+
+    const evaluatePresence = () => {
+      const isVisible = document.visibilityState === "visible";
+      const isActive = isVisible && Date.now() - lastActivityAt <= NAVBAR_IDLE_TIMEOUT_MS;
+      setIsLocallyActive(isActive);
+    };
+
+    const handleActivity = () => {
+      lastActivityAt = Date.now();
+      evaluatePresence();
+    };
+
+    const activityEvents = ["mousedown", "keydown", "touchstart", "scroll", "mousemove"];
+    activityEvents.forEach((eventName) => {
+      document.addEventListener(eventName, handleActivity);
+    });
+
+    document.addEventListener("visibilitychange", evaluatePresence);
+
+    const intervalId = window.setInterval(evaluatePresence, NAVBAR_ACTIVITY_CHECK_MS);
+    evaluatePresence();
+
+    return () => {
+      window.clearInterval(intervalId);
+      activityEvents.forEach((eventName) => {
+        document.removeEventListener(eventName, handleActivity);
+      });
+      document.removeEventListener("visibilitychange", evaluatePresence);
+    };
+  }, []);
+
+  const normalizedEffectiveStatus = useMemo(() => {
+    const incomingStatus =
+      typeof user?.effectiveStatus === "string"
+        ? user.effectiveStatus.trim().toLowerCase()
+        : "";
+
+    if (incomingStatus === "leave") {
+      return "leave";
     }
 
-    const nextMode = user.profileStatusMode.trim().toLowerCase();
-    return STATUS_OPTIONS.some((option) => option.value === nextMode)
-      ? nextMode
-      : "automatic";
-  }, [user?.profileStatusMode]);
-  const statusOption = useMemo(
-    () => resolveStatusOption(normalizedStatusMode),
-    [normalizedStatusMode]
-  );
+    return isLocallyActive ? "active" : "away";
+  }, [isLocallyActive, user?.effectiveStatus]);
+
+  const statusOption = STATUS_OPTIONS[normalizedEffectiveStatus] || STATUS_OPTIONS.away;
 
   const profileSettingsPath = useMemo(() => {
     if (!user) {
@@ -98,74 +118,6 @@ const Navbar = () => {
     }
     navigate(profileSettingsPath);
   }, [navigate, profileSettingsPath]);
-
-  useEffect(() => {
-    if (!isStatusMenuOpen) {
-      return undefined;
-    }
-
-    const handleClickOutside = (event) => {
-      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target)) {
-        setIsStatusMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        setIsStatusMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isStatusMenuOpen]);
-
-  const applyProfileStatus = useCallback(
-    async ({ nextMode }) => {
-      if (isStatusUpdating) {
-        return;
-      }
-
-      if (typeof nextMode !== "string" || !nextMode.trim()) {
-        return;
-      }
-
-      try {
-        setIsStatusUpdating(true);
-        const response = await axiosInstance.put(API_PATHS.PROFILE.UPDATE_STATUS, {
-          profileStatusMode: nextMode,
-        });
-        const { message, ...statusData } = response.data || {};
-        updateUser({
-          ...(user || {}),
-          ...statusData,
-        });
-        if (message) {
-          toast.success(message);
-        }
-      } catch (error) {
-        const message =
-          error?.response?.data?.message || "Failed to update profile status";
-        toast.error(message);
-      } finally {
-        setIsStatusUpdating(false);
-      }
-    },
-    [isStatusUpdating, updateUser, user]
-  );
-
-  const handleStatusModeSelect = useCallback(
-    async (mode) => {
-      setIsStatusMenuOpen(false);
-      await applyProfileStatus({ nextMode: mode });
-    },
-    [applyProfileStatus]
-  );
 
   const initials =
     typeof user?.name === "string" && user.name.trim()
@@ -208,53 +160,9 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            <div className="relative" ref={statusMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsStatusMenuOpen((prev) => !prev)}
-                disabled={isStatusUpdating}
-                className="flex h-9 items-center gap-2 rounded-full border border-slate-200/80 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100 dark:hover:border-indigo-400/50 dark:hover:bg-indigo-500/10 sm:h-10 sm:px-3 sm:text-sm"
-              >
-                <span className={`h-2.5 w-2.5 rounded-full ${statusOption.indicatorClass}`} />
-                <span className="hidden max-w-[110px] truncate sm:block">{statusOption.chipLabel}</span>
-                <LuChevronDown
-                  className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-300 ${
-                    isStatusMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {isStatusMenuOpen && (
-                <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.2)] dark:border-slate-700 dark:bg-slate-900">
-                  <div className="py-1.5">
-                    {STATUS_OPTIONS.map((option) => {
-                      const isSelected = option.value === normalizedStatusMode;
-
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleStatusModeSelect(option.value)}
-                          className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
-                        >
-                          <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${option.indicatorClass}`} />
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">
-                              {option.label}
-                            </span>
-                            <span className="block text-xs text-slate-500 dark:text-slate-400">
-                              {option.subtitle}
-                            </span>
-                          </span>
-                          {isSelected && (
-                            <LuCheck className="mt-1 h-4 w-4 text-slate-700 dark:text-slate-200" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className="flex h-9 items-center gap-2 rounded-full border border-slate-200/80 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100 sm:h-10 sm:px-3 sm:text-sm">
+              <span className={`h-2.5 w-2.5 rounded-full ${statusOption.indicatorClass}`} />
+              <span className="hidden max-w-[110px] truncate sm:block">{statusOption.chipLabel}</span>
             </div>
 
             <ThemeToggle />
