@@ -46,6 +46,16 @@ const normalizeRecipientsByRole = (users = []) => {
   return { admins, superadmins };
 };
 
+const taskHasAssigneeWithRole = (task, roles = []) => {
+  if (!Array.isArray(task?.assignedTo) || !roles.length) {
+    return false;
+  }
+
+  return task.assignedTo.some((assignee) =>
+    roles.some((role) => matchesRole(assignee?.role, role))
+  );
+};
+
 const buildCompletedTaskItems = (tasks = []) =>
   tasks.map((task) => {
     const assigneeNames = Array.isArray(task.assignedTo)
@@ -106,6 +116,8 @@ const sendDailyCompletedTaskSummaryEmails = async ({
   const result = {
     dateLabel: formatDateLabel(referenceDate),
     completedTaskCount: 0,
+    memberCompletedTaskCount: 0,
+    teamCompletedTaskCount: 0,
     adminRecipients: 0,
     superadminRecipients: 0,
     adminSentCount: 0,
@@ -130,39 +142,53 @@ const sendDailyCompletedTaskSummaryEmails = async ({
   ]);
 
   const completedMemberTasks = completedTasks.filter((task) =>
-    Array.isArray(task.assignedTo)
-      ? task.assignedTo.some((assignee) => matchesRole(assignee?.role, "member"))
-      : false
+    taskHasAssigneeWithRole(task, ["member"])
+  );
+  const completedTeamTasks = completedTasks.filter((task) =>
+    taskHasAssigneeWithRole(task, ["admin", "member"])
   );
 
-  result.completedTaskCount = completedMemberTasks.length;
+  result.memberCompletedTaskCount = completedMemberTasks.length;
+  result.teamCompletedTaskCount = completedTeamTasks.length;
+  result.completedTaskCount = completedTeamTasks.length;
 
   const { admins, superadmins } = normalizeRecipientsByRole(privilegedUsers);
   result.adminRecipients = admins.length;
   result.superadminRecipients = superadmins.length;
 
-  const taskItems = buildCompletedTaskItems(completedMemberTasks);
-  const subject = `Daily Completed Task Summary - ${formatDateLabel(referenceDate)}`;
-
-  const templateData = {
+  const adminTemplateData = {
+    heading: "Daily Member Completed Task Summary",
+    introLine:
+      "This report includes tasks completed today by member accounts only.",
+    emptyMessage: "No member tasks were completed today.",
     dateLabel: result.dateLabel,
     completedCount: completedMemberTasks.length,
-    tasks: taskItems,
+    tasks: buildCompletedTaskItems(completedMemberTasks),
+  };
+
+  const superadminTemplateData = {
+    heading: "Daily Team Completed Task Summary",
+    introLine:
+      "This report includes tasks completed today by admin and member accounts.",
+    emptyMessage: "No admin/member tasks were completed today.",
+    dateLabel: result.dateLabel,
+    completedCount: completedTeamTasks.length,
+    tasks: buildCompletedTaskItems(completedTeamTasks),
   };
 
   if (admins.length) {
     result.adminSentCount = await sendDailySummaryToRecipients({
       recipients: admins,
-      subject,
-      templateData,
+      subject: `Daily Member Task Summary - ${formatDateLabel(referenceDate)}`,
+      templateData: adminTemplateData,
     });
   }
 
   if (superadmins.length) {
     result.superadminSentCount = await sendDailySummaryToRecipients({
       recipients: superadmins,
-      subject,
-      templateData,
+      subject: `Daily Team Task Summary - ${formatDateLabel(referenceDate)}`,
+      templateData: superadminTemplateData,
     });
   }
 

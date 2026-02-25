@@ -19,9 +19,9 @@ const formatDateTime = (value) => {
   return parsed.toLocaleString();
 };
 
-const renderCompletedTasksTable = (tasks = []) => {
+const renderCompletedTasksTable = (tasks = [], emptyMessage = "No tasks were completed today.") => {
   if (!tasks.length) {
-    return `<p style="margin:0 0 16px 0;font-size:14px;color:#374151;">No tasks were completed today.</p>`;
+    return `<p style="margin:0 0 16px 0;font-size:14px;color:#374151;">${escapeHtml(emptyMessage)}</p>`;
   }
 
   const rows = tasks
@@ -67,14 +67,23 @@ const renderCompletedTasksTable = (tasks = []) => {
 
 const buildDailyCompletedTasksSummaryTemplate = ({
   recipientName,
+  heading,
+  introLine,
+  emptyMessage,
   dateLabel,
   completedCount,
   tasks = [],
   appLink,
 }) => {
   const greeting = recipientName ? `Hello ${escapeHtml(recipientName)},` : "Hello,";
+  const safeHeading = escapeHtml(heading || "Daily Completed Task Summary");
   const safeDate = escapeHtml(dateLabel || "Today");
   const totalCompleted = Number.isFinite(completedCount) ? completedCount : 0;
+  const introHtml = introLine
+    ? `<p style="margin:0 0 12px 0;font-size:14px;color:#374151;">${escapeHtml(
+        introLine
+      )}</p>`
+    : "";
 
   return `
     <div style="background-color:#f5f7fb;padding:24px 0;font-family:Arial,Helvetica,sans-serif;color:#111827;">
@@ -82,13 +91,14 @@ const buildDailyCompletedTasksSummaryTemplate = ({
         <tr>
           <td align="center" style="padding:0 16px;">
             <div style="max-width:760px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;box-sizing:border-box;">
-              <h1 style="margin:0 0 8px 0;font-size:22px;color:#111827;">Daily Completed Task Summary</h1>
+              <h1 style="margin:0 0 8px 0;font-size:22px;color:#111827;">${safeHeading}</h1>
               <p style="margin:0 0 16px 0;font-size:14px;color:#6b7280;">Date: ${safeDate}</p>
               <p style="margin:0 0 8px 0;font-size:14px;color:#374151;">${greeting}</p>
+              ${introHtml}
               <p style="margin:0 0 16px 0;font-size:14px;color:#374151;">
                 Total completed tasks today: <strong>${totalCompleted}</strong>
               </p>
-              ${renderCompletedTasksTable(tasks)}
+              ${renderCompletedTasksTable(tasks, emptyMessage)}
               ${
                 appLink
                   ? `<p style="margin:16px 0 0 0;"><a href="${escapeHtml(

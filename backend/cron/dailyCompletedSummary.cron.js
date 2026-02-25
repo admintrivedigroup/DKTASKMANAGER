@@ -18,7 +18,7 @@ const runDailyCompletedSummaryJob = async () => {
   }
 
   console.log(
-    `Daily completed task summary prepared for ${result?.dateLabel || "today"} (${result?.completedTaskCount || 0} completed task(s)).`
+    `Daily completed task summary prepared for ${result?.dateLabel || "today"} (members: ${result?.memberCompletedTaskCount || 0}, admin+member: ${result?.teamCompletedTaskCount || 0}).`
   );
 
   if (result?.adminRecipients) {
