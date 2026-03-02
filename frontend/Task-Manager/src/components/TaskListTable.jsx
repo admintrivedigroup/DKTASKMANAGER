@@ -74,6 +74,21 @@ const TaskListTable = ({
   const formatDate = (value, fallback = "N/A") =>
     formatDateTimeLabel(value, fallback);
 
+  const formatPoints = (task) => {
+    if (task?.status !== "Completed") {
+      return "—";
+    }
+
+    const normalizedPoints = Number(task?.earnedPoints);
+    if (!Number.isFinite(normalizedPoints)) {
+      return "—";
+    }
+
+    return Number.isInteger(normalizedPoints)
+      ? normalizedPoints.toString()
+      : normalizedPoints.toFixed(2).replace(/\.?0+$/, "");
+  };
+
  const handleTaskActivation = (task) => {
     if (typeof onTaskClick === "function" && task) {
       onTaskClick(task);
@@ -182,6 +197,7 @@ const TaskListTable = ({
               <th className="hidden px-6 py-3 md:table-cell">Due Date</th>
               <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
               <th className="hidden px-6 py-3 md:table-cell">Start Date</th>
+              <th className="hidden px-6 py-3 md:table-cell">Points</th>
               {hasEditAction && (
                 <th className="px-6 py-3 text-right">Actions</th>
               )}
@@ -249,6 +265,9 @@ const TaskListTable = ({
                   </td>
                   <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                     {formatDate(task.startDate || task.createdAt)}
+                  </td>
+                  <td className="hidden px-6 py-4 text-sm font-medium text-slate-700 md:table-cell dark:text-slate-200">
+                    {formatPoints(task)}
                   </td>
                   {hasEditAction && (
                     <td className="px-6 py-4 text-right">
@@ -359,6 +378,14 @@ const TaskListTable = ({
                     </dt>
                     <dd className="text-slate-700 dark:text-slate-200">
                       {formatDate(task.startDate || task.createdAt)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <dt className="font-medium text-slate-500 dark:text-slate-400">
+                      Points
+                    </dt>
+                    <dd className="text-slate-700 dark:text-slate-200">
+                      {formatPoints(task)}
                     </dd>
                   </div>
                 </dl>

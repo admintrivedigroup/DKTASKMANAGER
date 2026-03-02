@@ -7,6 +7,7 @@ const User = require("../models/User");
 const Matter = require("../models/Matter");
 const CaseFile = require("../models/CaseFile");
 const Document = require("../models/Document");
+const KraCategory = require("../models/KraCategory");
 const Notification = require("../models/Notification");
 const TaskNotification = require("../models/TaskNotification");
 const { sendTaskAssignmentEmail } = require("../utils/emailService");
@@ -285,6 +286,51 @@ const validateRelatedDocuments = async (documentIds, matterId, caseFileId) => {
   return filteredDocuments.map((document) => document._id);
 };
 
+const resolveKraCategoryForAssignees = async ({
+  kraCategoryId,
+  assigneeIds = [],
+}) => {
+  if (kraCategoryId === undefined) {
+    return undefined;
+  }
+
+  const normalizedCategoryId = normalizeObjectId(kraCategoryId);
+
+  if (normalizedCategoryId === null) {
+    return null;
+  }
+
+  if (!normalizedCategoryId || !mongoose.Types.ObjectId.isValid(normalizedCategoryId)) {
+    throw createHttpError("Selected KRA category is invalid.");
+  }
+
+  const category = await KraCategory.findOne({
+    _id: normalizedCategoryId,
+    isActive: true,
+  })
+    .select("employeeId")
+    .lean();
+
+  if (!category) {
+    throw createHttpError("Selected KRA category could not be found.");
+  }
+
+  const normalizedAssigneeIds = normalizeAssigneeIds(assigneeIds);
+  const categoryEmployeeId = category.employeeId?.toString();
+
+  if (
+    normalizedAssigneeIds.length &&
+    categoryEmployeeId &&
+    !normalizedAssigneeIds.includes(categoryEmployeeId)
+  ) {
+    throw createHttpError(
+      "Selected KRA category does not belong to an assigned member."
+    );
+  }
+
+  return normalizedCategoryId;
+};
+
 const deleteFileQuietly = (filePath) => {
   if (!filePath) {
     return;
@@ -467,6 +513,7 @@ const getTasks = async (req, res, next) => {
       queryFilters.length > 1 ? { $and: queryFilters } : queryFilters[0] || {}
     )
       .populate("assignedTo", "name email profileImageUrl")
+      .populate("kraCategoryId", "name basePoints employeeId")
       .populate({
         path: "matter",
         select: "title clientName matterNumber status client",
@@ -607,6 +654,7 @@ const getTaskById = async (req, res, next) => {
         const task = await Task.findById(req.params.id)
           .populate("assignedTo", "name email profileImageUrl")
           .populate("todoChecklist.assignedTo", "name email profileImageUrl")
+          .populate("kraCategoryId", "name basePoints employeeId")
           .populate({                      
             path: "matter",
             select: "title clientName matterNumber status client",
@@ -670,6 +718,7 @@ const createTask = async (req, res, next) => {
             recurrence,
             recurrenceEndDate,
             estimatedHours,
+            kraCategoryId,
           } = req.body;
 
           const { matterId: resolvedMatterId, caseFileId: resolvedCaseId } =
@@ -683,6 +732,10 @@ const createTask = async (req, res, next) => {
 
           const isDraft = status === "Draft";
           const assignedUserIds = normalizeAssigneeIds(assignedTo);
+          const resolvedKraCategoryId = await resolveKraCategoryForAssignees({
+            kraCategoryId,
+            assigneeIds: assignedUserIds,
+          });
           const sanitizedTodoChecklist = sanitizeTodoChecklist({
             checklistInput: todoChecklist,
             validAssigneeIds: assignedUserIds,
@@ -730,6 +783,10 @@ const createTask = async (req, res, next) => {
 
           if (estimatedHours !== undefined) {
             taskPayload.estimatedHours = estimatedHours;
+          }
+
+          if (resolvedKraCategoryId !== undefined) {
+            taskPayload.kraCategoryId = resolvedKraCategoryId;
           }
 
           if (resolvedMatterId !== undefined) {
@@ -946,6 +1003,7 @@ let reminderChanged = false;
 let recurrenceChanged = false;
 let newlyAssignedIds = [];
 let removedAssigneeIds = [];
+let assigneesUpdated = false;
 let resolvedMatterId = task.matter ? task.matter.toString() : null;
 let resolvedCaseId = task.caseFile ? task.caseFile.toString() : null;
 
@@ -1033,6 +1091,43 @@ if (Object.prototype.hasOwnProperty.call(req.body, "assignedTo")) {
   );
 
   task.assignedTo = nextAssigneeIds;
+  assigneesUpdated = true;
+}
+
+const hasKraCategoryUpdate = Object.prototype.hasOwnProperty.call(
+  req.body,
+  "kraCategoryId"
+);
+
+if (hasKraCategoryUpdate || assigneesUpdated) {
+  const assigneeIdsForKra = Array.isArray(task.assignedTo)
+    ? task.assignedTo.map((assignee) => normalizeObjectId(assignee)).filter(Boolean)
+    : [];
+
+  if (hasKraCategoryUpdate) {
+    task.kraCategoryId = await resolveKraCategoryForAssignees({
+      kraCategoryId: req.body.kraCategoryId,
+      assigneeIds: assigneeIdsForKra,
+    });
+  } else if (task.kraCategoryId) {
+    const existingCategory = await KraCategory.findOne({
+      _id: task.kraCategoryId,
+      isActive: true,
+    })
+      .select("employeeId")
+      .lean();
+
+    const existingCategoryEmployeeId = existingCategory?.employeeId?.toString();
+    const shouldClearKraCategory =
+      !existingCategory ||
+      (assigneeIdsForKra.length &&
+        existingCategoryEmployeeId &&
+        !assigneeIdsForKra.includes(existingCategoryEmployeeId));
+
+    if (shouldClearKraCategory) {
+      task.kraCategoryId = null;
+    }
+  }
 }
 
 const hasTodoChecklistUpdate = Object.prototype.hasOwnProperty.call(
@@ -1997,7 +2092,7 @@ const getDashboardData = async (req, res, next) => {
       const recentTasks = await Task.find()
         .sort({ createdAt: -1 })
         .limit(10)
-        .select("title status priority dueDate createdAt assignedTo")
+        .select("title status priority dueDate createdAt assignedTo earnedPoints")
         .populate("assignedTo", "name email");
 
       res.status(200).json({
@@ -2069,7 +2164,7 @@ const taskPriorityLevels = taskPriorities.reduce((acc, priority) => {
 const recentTasks = await Task.find({ assignedTo: userId })
   .sort({ createdAt: -1 })
   .limit(10)
-  .select("title status priority dueDate createdAt");
+  .select("title status priority dueDate createdAt earnedPoints");
 
 res.status(200).json({
   statistics: {

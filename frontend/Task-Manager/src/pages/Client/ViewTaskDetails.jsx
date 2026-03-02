@@ -28,6 +28,17 @@ const ClientViewTaskDetails = () => {
     }
   };
 
+  const formatSnapshotValue = (value) => {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) {
+      return "—";
+    }
+
+    return Number.isInteger(parsedValue)
+      ? parsedValue.toString()
+      : parsedValue.toFixed(2).replace(/\.?0+$/, "");
+  };
+
   const getTaskDetailsByID = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -161,6 +172,10 @@ const ClientViewTaskDetails = () => {
   const todoChecklistItems = Array.isArray(task?.todoChecklist)
     ? task.todoChecklist
     : [];
+  const kraCategoryName =
+    task?.kraCategoryId?.name && typeof task.kraCategoryId.name === "string"
+      ? task.kraCategoryId.name
+      : "—";
 
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
@@ -244,6 +259,26 @@ const ClientViewTaskDetails = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <InfoBox label="KRA Category" value={kraCategoryName} />
+                    <InfoBox
+                      label="Base Points Snapshot"
+                      value={formatSnapshotValue(task?.basePointsSnapshot)}
+                    />
+                    <InfoBox
+                      label="Priority Multiplier Snapshot"
+                      value={formatSnapshotValue(task?.priorityMultiplierSnapshot)}
+                    />
+                    <InfoBox
+                      label="Timeliness Multiplier Snapshot"
+                      value={formatSnapshotValue(task?.timelinessMultiplierSnapshot)}
+                    />
+                    <InfoBox
+                      label="Earned Points"
+                      value={formatSnapshotValue(task?.earnedPoints)}
+                    />
                   </div>
 
                   <div>

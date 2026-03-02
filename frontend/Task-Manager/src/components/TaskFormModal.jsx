@@ -14,6 +14,7 @@ import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 import { formatDateTimeLocal } from "../utils/dateUtils";
 import { UserContext } from "../context/userContext.jsx";
+import { hasPrivilegedAccess } from "../utils/roleUtils";
 
 const createDefaultTaskData = () => ({
   title: "",
@@ -22,6 +23,7 @@ const createDefaultTaskData = () => ({
   startDate: formatDateTimeLocal(new Date()),
   dueDate: "",
   assignedTo: [],
+  kraCategoryId: "",
   todoChecklist: [],
 });
 
@@ -33,10 +35,13 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
   const [isFetchingTask, setIsFetchingTask] = useState(false);
   const [assignedUserDetails, setAssignedUserDetails] = useState([]);
+  const [kraCategories, setKraCategories] = useState([]);
+  const [isLoadingKraCategories, setIsLoadingKraCategories] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const { user } = useContext(UserContext);
 
   const isPersonalMode = mode === "personal";
+  const canUseKraCategory = !isPersonalMode && hasPrivilegedAccess(user?.role);
   const isEditing = useMemo(() => Boolean(taskId), [taskId]);
   const assigneeCount = taskData.assignedTo?.length || 0;
   const checklistCount = useMemo(() => {
@@ -79,6 +84,26 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         : [],
     [personalAssigneeId, user?.email, user?.name, user?.profileImageUrl]
   );
+  const selectedAssigneeId = useMemo(() => {
+    if (!Array.isArray(taskData.assignedTo) || !taskData.assignedTo.length) {
+      return "";
+    }
+
+    const firstAssignee = taskData.assignedTo[0];
+    return firstAssignee ? firstAssignee.toString() : "";
+  }, [taskData.assignedTo]);
+  const selectedAssigneeName = useMemo(() => {
+    if (!selectedAssigneeId) {
+      return "";
+    }
+
+    const selectedAssignee = assignedUserDetails.find((member) => {
+      const memberId = member?._id || member?.id || "";
+      return memberId && memberId.toString() === selectedAssigneeId;
+    });
+
+    return selectedAssignee?.name || "";
+  }, [assignedUserDetails, selectedAssigneeId]);
 
   const resetState = useCallback(() => {
     setTaskData(createDefaultTaskData());
@@ -88,6 +113,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setOpenDeleteAlert(false);
     setIsFetchingTask(false);
     setAssignedUserDetails([]);
+    setKraCategories([]);
+    setIsLoadingKraCategories(false);
     setShowMoreOptions(false);
   }, []);
 
@@ -252,6 +279,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setTaskData(createDefaultTaskData());
     setError("");
     setAssignedUserDetails([]);
+    setKraCategories([]);
+    setIsLoadingKraCategories(false);
   }, []);
 
   const handleCreateTask = async ({
@@ -291,6 +320,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         dueDate: dueDateValue ? dueDateValue.toISOString() : null,
         todoChecklist,
       };
+      if (canUseKraCategory) {
+        payload.kraCategoryId = taskData.kraCategoryId || null;
+      } else {
+        delete payload.kraCategoryId;
+      }
 
       if (statusOverride) {
         payload.status = statusOverride;
@@ -344,6 +378,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         dueDate: dueDateValue.toISOString(),
         todoChecklist,
       };
+      if (canUseKraCategory) {
+        payload.kraCategoryId = taskData.kraCategoryId || null;
+      } else {
+        delete payload.kraCategoryId;
+      }
 
       await axiosInstance.put(
         API_PATHS.TASKS.UPDATE_TASK(taskId),
@@ -523,6 +562,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         const todoChecklist = Array.isArray(taskInfo?.todoChecklist)
           ? taskInfo.todoChecklist
           : [];
+        const resolvedKraCategoryId =
+          taskInfo?.kraCategoryId?._id ||
+          taskInfo?.kraCategoryId?.id ||
+          taskInfo?.kraCategoryId ||
+          "";
 
         const normalizedChecklist = todoChecklist
           .map((item) => {
@@ -557,6 +601,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
             .map((item) => item?._id || item)
             .filter(Boolean)
             .map((value) => value.toString()),
+          kraCategoryId: resolvedKraCategoryId
+            ? resolvedKraCategoryId.toString()
+            : "",
           todoChecklist: normalizedChecklist,
         });
       } catch (requestError) {
@@ -583,6 +630,89 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     personalAssigneeDetails,
     personalAssigneeId,
   ]);
+
+  useEffect(() => {
+    if (!isOpen || !canUseKraCategory) {
+      setKraCategories([]);
+      setIsLoadingKraCategories(false);
+      return;
+    }
+
+    if (!selectedAssigneeId) {
+      setKraCategories([]);
+      setIsLoadingKraCategories(false);
+      setTaskData((previous) =>
+        previous.kraCategoryId
+          ? { ...previous, kraCategoryId: "" }
+          : previous
+      );
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchKraCategories = async () => {
+      try {
+        setIsLoadingKraCategories(true);
+
+        const response = await axiosInstance.get(API_PATHS.KRA_KPI.GET_CATEGORIES, {
+          params: {
+            employeeId: selectedAssigneeId,
+            activeOnly: true,
+          },
+        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        const fetchedCategories = Array.isArray(response.data?.categories)
+          ? response.data.categories.filter((category) => category?._id)
+          : [];
+
+        setKraCategories(fetchedCategories);
+        setTaskData((previous) => {
+          if (!previous.kraCategoryId) {
+            return previous;
+          }
+
+          const categoryExists = fetchedCategories.some(
+            (category) => category._id === previous.kraCategoryId
+          );
+
+          return categoryExists
+            ? previous
+            : { ...previous, kraCategoryId: "" };
+        });
+      } catch (requestError) {
+        if (isCancelled) {
+          return;
+        }
+
+        setKraCategories([]);
+        setTaskData((previous) =>
+          previous.kraCategoryId
+            ? { ...previous, kraCategoryId: "" }
+            : previous
+        );
+
+        const message =
+          requestError.response?.data?.message ||
+          "Failed to load KRA categories for the selected assignee.";
+        toast.error(message);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingKraCategories(false);
+        }
+      }
+    };
+
+    fetchKraCategories();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [canUseKraCategory, isOpen, selectedAssigneeId]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -863,6 +993,49 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                               </div>
                             )}
                           </div>
+
+                          {canUseKraCategory && (
+                            <div className="space-y-2.5">
+                              <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                                KRA Category
+                              </label>
+                              <select
+                                className="form-input mt-0 h-12 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 shadow-sm transition duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                                value={taskData.kraCategoryId || ""}
+                                onChange={({ target }) =>
+                                  handleValueChange("kraCategoryId", target.value)
+                                }
+                                disabled={
+                                  loading ||
+                                  !selectedAssigneeId ||
+                                  isLoadingKraCategories
+                                }
+                              >
+                                <option value="">
+                                  {!selectedAssigneeId
+                                    ? "Select assignee first"
+                                    : isLoadingKraCategories
+                                    ? "Loading categories..."
+                                    : kraCategories.length
+                                    ? "Select KRA category"
+                                    : "No active KRA categories"}
+                                </option>
+                                {kraCategories.map((category) => (
+                                  <option key={category._id} value={category._id}>
+                                    {category.name}
+                                    {Number.isFinite(Number(category.basePoints))
+                                      ? ` (${Number(category.basePoints)} pts)`
+                                      : ""}
+                                  </option>
+                                ))}
+                              </select>
+                              <p className="text-xs text-slate-400 dark:text-slate-500">
+                                {selectedAssigneeName
+                                  ? `Categories for ${selectedAssigneeName}.`
+                                  : "Categories are loaded for the first selected assignee."}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </aside>

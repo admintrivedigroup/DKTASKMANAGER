@@ -44,6 +44,8 @@ const roleRoutes = require("./routes/roleRoutes");
 const weeklySummaryRoutes = require("./routes/weeklySummary.routes");
 const dueDateRequestRoutes = require("./routes/dueDateRequestRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
+const kraRoutes = require("./routes/kraRoutes");
+const kraKpiRoutes = require("./routes/kraKpiRoutes");
 const { initSocket } = require("./utils/socket");
 
 const app = express();
@@ -157,6 +159,8 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/weekly-summary", weeklySummaryRoutes);
 app.use("/api/due-date-requests", dueDateRequestRoutes);
 app.use("/api/leaves", leaveRoutes);
+app.use("/api/kra", kraRoutes);
+app.use("/api/kra-kpi", kraKpiRoutes);
 
 // Static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

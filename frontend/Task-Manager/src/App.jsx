@@ -22,6 +22,7 @@ const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdmin/Dashboar
 const SuperAdminTasks = React.lazy(() => import("./pages/SuperAdmin/Tasks.jsx"));
 const SuperAdminManageEmployees = React.lazy(() => import("./pages/SuperAdmin/ManageEmployees.jsx"));
 const SuperAdminUserDetails = React.lazy(() => import("./pages/SuperAdmin/UserDetails.jsx"));
+const KraKpiPage = React.lazy(() => import("./pages/KraKpiPage.jsx"));
 const NotificationCenter = React.lazy(() =>
   import("./pages/Notifications/NotificationCenter.jsx")
 );
@@ -55,6 +56,7 @@ const App = () => {
                 />
                 <Route path="/admin/calendar" element={<TaskCalendar />} />
                 <Route path="/admin/employees" element={<AdminManageEmployees />} />
+                <Route path="/admin/kra-kpi" element={<KraKpiPage />} />
                 <Route path="/admin/users/:userId" element={<AdminUserDetails />} />
                 <Route path="/admin/profile-settings" element={<ProfileSettings />} />
               </Route>
@@ -79,6 +81,10 @@ const App = () => {
                   element={<SuperAdminManageEmployees />}
                 />
                 <Route
+                  path="/super-admin/kra-kpi"
+                  element={<KraKpiPage />}
+                />
+                <Route
                   path="/super-admin/users/:userId"
                   element={<SuperAdminUserDetails />}
                 />
@@ -94,6 +100,7 @@ const App = () => {
                 <Route path="/user/tasks" element={<MyTasks />} />
                 <Route path="/user/task-details/:id" element={<ViewTaskDetails />} />
                 <Route path="/user/calendar" element={<TaskCalendar />} />
+                <Route path="/user/kra-kpi" element={<KraKpiPage />} />
                 <Route path="/user/profile-settings" element={<ProfileSettings />} />
               </Route>
 

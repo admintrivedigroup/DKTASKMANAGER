@@ -97,4 +97,16 @@ export const API_PATHS = {
     CREATE: "/api/roles",
     DELETE: (roleId) => `/api/roles/${roleId}`,
   },
+  KRA_KPI: {
+    GET_CATEGORIES: "/api/kra/categories",
+    CREATE_CATEGORY: "/api/kra/categories",
+    UPDATE_CATEGORY: (categoryId) => `/api/kra/categories/${categoryId}`,
+    DELETE_CATEGORY: (categoryId) => `/api/kra/categories/${categoryId}`,
+    GET_MULTIPLIERS: "/api/kra/multipliers",
+    UPDATE_MULTIPLIERS: "/api/kra/multipliers",
+    GET_WEIGHTAGE_STATUS: "/api/kra/weightage-status",
+    GET_SUMMARY: "/api/kra-kpi/summary",
+    GET_PERFORMANCE_SUMMARY: "/api/kra/performance/summary",
+    GET_PERFORMANCE_TASKS: "/api/kra/performance/tasks",
+  },
 };

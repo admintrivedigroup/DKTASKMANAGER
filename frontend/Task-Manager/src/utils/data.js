@@ -4,6 +4,7 @@ import {
   LuFolderTree,
   LuLayoutDashboard,
   LuReceipt,
+  LuTarget,
   LuUsers,
 } from "react-icons/lu";
 
@@ -32,6 +33,12 @@ export const SIDE_MENU_DATA = [
     icon: LuUsers,
     path: "/admin/employees",
   },
+  {
+    id: "05",
+    label: "KRA / KPI",
+    icon: LuTarget,
+    path: "/admin/kra-kpi",
+  },
 ];
 
 export const SIDE_MENU_USER_DATA = [
@@ -52,6 +59,12 @@ export const SIDE_MENU_USER_DATA = [
     label: "Calendar",
     icon: LuCalendarDays,
     path: "/user/calendar",
+  },
+  {
+    id: "04",
+    label: "KRA / KPI",
+    icon: LuTarget,
+    path: "/user/kra-kpi",
   },
 ];
 
