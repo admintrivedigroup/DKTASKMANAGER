@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const { hasPrivilegedAccess } = require("./roleUtils");
+const User = require("../models/User");
+const { hasPrivilegedAccess, matchesRole } = require("./roleUtils");
 
 const normalizeEmployeeId = (value) =>
   typeof value === "string" ? value.trim() : "";
@@ -24,7 +25,38 @@ const buildInvalidEmployeeIdResult = () => ({
   message: "A valid employeeId is required",
 });
 
-const resolveEmployeeIdForRead = (req, rawEmployeeId) => {
+const buildSuperAdminExcludedResult = () => ({
+  valid: false,
+  statusCode: 400,
+  message: "Super Admin accounts are excluded from KRA and KPI.",
+});
+
+const ensureEmployeeEligibleForKraKpi = async (employeeId) => {
+  if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId)) {
+    return buildInvalidEmployeeIdResult();
+  }
+
+  const user = await User.findById(employeeId).select("role").lean();
+
+  if (!user) {
+    return {
+      valid: false,
+      statusCode: 404,
+      message: "User not found",
+    };
+  }
+
+  if (matchesRole(user.role, "super_admin")) {
+    return buildSuperAdminExcludedResult();
+  }
+
+  return {
+    valid: true,
+    value: employeeId,
+  };
+};
+
+const resolveEmployeeIdForRead = async (req, rawEmployeeId) => {
   const requesterId = getRequesterId(req);
 
   if (!requesterId || !mongoose.Types.ObjectId.isValid(requesterId)) {
@@ -47,26 +79,21 @@ const resolveEmployeeIdForRead = (req, rawEmployeeId) => {
     return buildInvalidEmployeeIdResult();
   }
 
-  return {
-    valid: true,
-    value: employeeId,
-  };
+  return ensureEmployeeEligibleForKraKpi(employeeId);
 };
 
-const resolveEmployeeIdFromRequest = (rawEmployeeId) => {
+const resolveEmployeeIdFromRequest = async (rawEmployeeId) => {
   const employeeId = normalizeEmployeeId(rawEmployeeId);
 
   if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId)) {
     return buildInvalidEmployeeIdResult();
   }
 
-  return {
-    valid: true,
-    value: employeeId,
-  };
+  return ensureEmployeeEligibleForKraKpi(employeeId);
 };
 
 module.exports = {
+  ensureEmployeeEligibleForKraKpi,
   normalizeEmployeeId,
   resolveEmployeeIdForRead,
   resolveEmployeeIdFromRequest,

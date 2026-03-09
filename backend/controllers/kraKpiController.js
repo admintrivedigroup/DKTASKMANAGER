@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const KraMultiplierProfile = require("../models/KraMultiplierProfile");
 const { hasPrivilegedAccess } = require("../utils/roleUtils");
+const { ensureEmployeeEligibleForKraKpi } = require("../utils/kraAccessUtils");
 const {
   STRICT_WEIGHTAGE_TARGET,
   getActiveWeightageTotal,
@@ -137,7 +138,7 @@ const getRequesterId = (req) => {
   return "";
 };
 
-const resolveEmployeeId = (req) => {
+const resolveEmployeeId = async (req) => {
   const requesterId = getRequesterId(req);
   if (!requesterId || !mongoose.Types.ObjectId.isValid(requesterId)) {
     return {
@@ -154,7 +155,7 @@ const resolveEmployeeId = (req) => {
   const rawEmployeeId =
     typeof req.query?.employeeId === "string" ? req.query.employeeId.trim() : "";
   if (!rawEmployeeId) {
-    return { valid: true, value: requesterId };
+    return ensureEmployeeEligibleForKraKpi(requesterId);
   }
 
   if (!mongoose.Types.ObjectId.isValid(rawEmployeeId)) {
@@ -165,7 +166,7 @@ const resolveEmployeeId = (req) => {
     };
   }
 
-  return { valid: true, value: rawEmployeeId };
+  return ensureEmployeeEligibleForKraKpi(rawEmployeeId);
 };
 
 const fetchScoringConfigForEmployee = async (employeeId) => {
@@ -230,7 +231,7 @@ const buildStrictWeightageInvalidResponse = (totalActiveWeightage) => {
 
 const getKraKpiSummary = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeId(req);
+    const resolvedEmployeeId = await resolveEmployeeId(req);
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)

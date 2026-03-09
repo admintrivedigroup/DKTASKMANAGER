@@ -821,6 +821,20 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
   }, [loadEmployees]);
 
   useEffect(() => {
+    if (!selectedEmployeeId || loadingEmployees) {
+      return;
+    }
+
+    const hasSelectedEmployee = employees.some(
+      (employee) => employee?._id === selectedEmployeeId
+    );
+
+    if (!hasSelectedEmployee) {
+      setSelectedEmployeeId("");
+    }
+  }, [employees, loadingEmployees, selectedEmployeeId, setSelectedEmployeeId]);
+
+  useEffect(() => {
     if (!selectedEmployeeId) {
       setCategories([]);
       return;

@@ -222,6 +222,7 @@ const UserDetails = () => {
     [userData?.role]
   );
   const isClientProfile = normalizedProfileRole === "client";
+  const isSuperAdminProfile = normalizedProfileRole === "super_admin";
   const backNavigationLabel = isClientProfile ? "Clients" : "Employees";
   const fallbackBackPath = useMemo(
     () =>
@@ -597,7 +598,8 @@ const UserDetails = () => {
           })}
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">
+        {!isSuperAdminProfile && (
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">KPI Performance</h3>
@@ -701,6 +703,7 @@ const UserDetails = () => {
             </div>
           </div>
         </section>
+        )}
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -824,7 +827,8 @@ const UserDetails = () => {
               </div>
             </div>
           )}
-        </section>
+          </section>
+        )}
       </div>
     );
   };

@@ -80,7 +80,12 @@ const normalizeEmployeeList = (payload) => {
     : [];
 
   return source
-    .filter((employee) => employee?._id && !matchesRole(employee?.role, "client"))
+    .filter(
+      (employee) =>
+        employee?._id &&
+        !matchesRole(employee?.role, "client") &&
+        !matchesRole(employee?.role, "super_admin")
+    )
     .map((employee) => ({
       _id: employee._id,
       name:

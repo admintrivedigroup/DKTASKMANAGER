@@ -150,7 +150,10 @@ const getWeightageLimitErrorPayload = ({
 
 const getKraCategories = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeIdForRead(req, req.query?.employeeId);
+    const resolvedEmployeeId = await resolveEmployeeIdForRead(
+      req,
+      req.query?.employeeId
+    );
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)
@@ -183,7 +186,9 @@ const getKraCategories = async (req, res) => {
 
 const createKraCategory = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeIdFromRequest(req.body?.employeeId);
+    const resolvedEmployeeId = await resolveEmployeeIdFromRequest(
+      req.body?.employeeId
+    );
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)

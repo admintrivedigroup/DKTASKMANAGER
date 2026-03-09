@@ -79,13 +79,13 @@ const parseDateQueryValue = (value, fieldName) => {
   return { valid: true, value: parsed };
 };
 
-const resolveEmployeeId = (req) => {
+const resolveEmployeeId = async (req) => {
   return resolveEmployeeIdForRead(req, req.query?.employeeId);
 };
 
 const getWeightageStatus = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeId(req);
+    const resolvedEmployeeId = await resolveEmployeeId(req);
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)
@@ -378,7 +378,7 @@ const fetchPerformanceTasks = async ({
 
 const getPerformanceSummary = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeId(req);
+    const resolvedEmployeeId = await resolveEmployeeId(req);
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)
@@ -467,7 +467,7 @@ const getPerformanceSummary = async (req, res) => {
 
 const getPerformanceTasks = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeId(req);
+    const resolvedEmployeeId = await resolveEmployeeId(req);
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)

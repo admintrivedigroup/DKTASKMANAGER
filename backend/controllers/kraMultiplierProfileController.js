@@ -113,7 +113,10 @@ const validateTimelinessMultipliers = (timelinessMultipliers) => {
 
 const getMultiplierProfile = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeIdForRead(req, req.query?.employeeId);
+    const resolvedEmployeeId = await resolveEmployeeIdForRead(
+      req,
+      req.query?.employeeId
+    );
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)
@@ -136,7 +139,9 @@ const getMultiplierProfile = async (req, res) => {
 
 const upsertMultiplierProfile = async (req, res) => {
   try {
-    const resolvedEmployeeId = resolveEmployeeIdFromRequest(req.query?.employeeId);
+    const resolvedEmployeeId = await resolveEmployeeIdFromRequest(
+      req.query?.employeeId
+    );
     if (!resolvedEmployeeId.valid) {
       return res
         .status(resolvedEmployeeId.statusCode)
