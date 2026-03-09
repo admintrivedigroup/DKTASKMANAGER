@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useContext, useMemo, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LuTriangleAlert,
   LuCalendarDays,
@@ -13,9 +13,11 @@ import {
 
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import useTasks from "../../hooks/useTasks";
 import { UserContext } from "../../context/userContext.jsx";
 import { formatDateInputValue, formatDateLabel } from "../../utils/dateUtils";
+import { createFromNavigationState } from "../../utils/routeNavigation";
 import { getPrivilegedBasePath, hasPrivilegedAccess } from "../../utils/roleUtils";
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -96,11 +98,22 @@ const normalizeDate = (value) => {
 const TaskCalendar = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const tasksSectionRef = useRef(null);
 
   const todayKey = formatDateInputValue(new Date());
-  const [monthCursor, setMonthCursor] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState(() => todayKey);
+  const [monthCursorValue, setMonthCursorValue] = useQueryParamState("month", {
+    defaultValue: formatDateInputValue(new Date())?.slice(0, 7) || "",
+  });
+  const [selectedDate, setSelectedDate] = useQueryParamState("date", {
+    defaultValue: todayKey,
+  });
+  const monthCursor = useMemo(() => {
+    const parsedValue = monthCursorValue
+      ? new Date(`${monthCursorValue}-01T00:00:00`)
+      : new Date();
+    return Number.isNaN(parsedValue.getTime()) ? new Date() : parsedValue;
+  }, [monthCursorValue]);
 
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
   const detailBasePath = isPrivilegedUser
@@ -136,23 +149,35 @@ const TaskCalendar = () => {
         return;
       }
 
-      navigate(`${detailBasePath}/task-details/${taskId}`);
+      navigate(`${detailBasePath}/task-details/${taskId}`, {
+        state: createFromNavigationState(location),
+      });
     },
-    [detailBasePath, navigate]
+    [detailBasePath, location, navigate]
   );
 
   const handleMonthChange = useCallback((offset) => {
-    setMonthCursor((previous) => {
-      const reference = previous || new Date();
-      return new Date(reference.getFullYear(), reference.getMonth() + offset, 1);
+    setMonthCursorValue((previous) => {
+      const reference = previous
+        ? new Date(`${previous}-01T00:00:00`)
+        : new Date();
+      const safeReference = Number.isNaN(reference.getTime())
+        ? new Date()
+        : reference;
+      const nextDate = new Date(
+        safeReference.getFullYear(),
+        safeReference.getMonth() + offset,
+        1
+      );
+      return formatDateInputValue(nextDate).slice(0, 7);
     });
-  }, []);
+  }, [setMonthCursorValue]);
 
   const jumpToToday = useCallback(() => {
     const today = new Date();
-    setMonthCursor(new Date(today.getFullYear(), today.getMonth(), 1));
+    setMonthCursorValue(formatDateInputValue(today).slice(0, 7));
     setSelectedDate(formatDateInputValue(today));
-  }, []);
+  }, [setMonthCursorValue, setSelectedDate]);
 
   const calendarDays = useMemo(() => {
     const startOfMonth = new Date(

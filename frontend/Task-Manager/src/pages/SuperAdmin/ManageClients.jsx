@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LuKeyRound, LuTrash2, LuUsers } from "react-icons/lu";
 import toast from "react-hot-toast";
 
@@ -8,9 +8,11 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import ViewToggle from "../../components/ViewToggle.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import { UserContext } from "../../context/userContext.jsx";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import { API_PATHS } from "../../utils/apiPaths";
 import axiosInstance from "../../utils/axiosInstance";
 import { DEFAULT_OFFICE_LOCATIONS } from "../../utils/data";
+import { createFromNavigationState } from "../../utils/routeNavigation";
 import { normalizeRole, resolvePrivilegedPath } from "../../utils/roleUtils";
 
 const ManageClients = () => {
@@ -34,12 +36,19 @@ const ManageClients = () => {
     confirmPassword: "",
   });
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedOffice, setSelectedOffice] = useState("All");
+  const [searchTerm, setSearchTerm] = useQueryParamState("search", {
+    defaultValue: "",
+  });
+  const [selectedOffice, setSelectedOffice] = useQueryParamState("office", {
+    defaultValue: "All",
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useQueryParamState("view", {
+    defaultValue: "grid",
+  });
 
   const navigate = useNavigate();  
+  const location = useLocation();
 
   const getAllUsers = async () => {
     try {
@@ -715,11 +724,17 @@ const ManageClients = () => {
                           <tr
                             key={user._id}
                             className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
-                            onClick={() => navigate(userDetailsPath)}
+                            onClick={() =>
+                              navigate(userDetailsPath, {
+                                state: createFromNavigationState(location),
+                              })
+                            }
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                navigate(userDetailsPath);
+                                navigate(userDetailsPath, {
+                                  state: createFromNavigationState(location),
+                                });
                               }
                             }}
                             role="button"

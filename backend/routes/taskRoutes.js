@@ -22,6 +22,9 @@ const {
   updateTask,
   deleteTask,
   updateTaskStatus,
+  requestTaskCompletionAction,
+  approveTaskCompletion,
+  rejectTaskCompletion,
   updateTaskChecklist,
   uploadTaskDocument,
 } = require("../controllers/taskController");
@@ -77,6 +80,9 @@ router.put(
   validateBody(validateStatusPayload),
   updateTaskStatus
 ); // Update task status
+router.post("/:id/request-complete", protect, requestTaskCompletionAction);
+router.post("/:id/approve-completion", protect, approveTaskCompletion);
+router.post("/:id/reject-completion", protect, rejectTaskCompletion);
 router.put(
   "/:id/todo",
   protect,

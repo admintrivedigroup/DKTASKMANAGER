@@ -8,9 +8,11 @@ import LoadingOverlay from "../../components/LoadingOverlay.jsx";
 import ViewToggle from "../../components/ViewToggle.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout.jsx";
 import { UserContext } from "../../context/userContext.jsx";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import { API_PATHS } from "../../utils/apiPaths.js";
 import axiosInstance from "../../utils/axiosInstance.js";
 import { DEFAULT_OFFICE_LOCATIONS } from "../../utils/data.js";
+import { createFromNavigationState } from "../../utils/routeNavigation.js";
 import { normalizeRole, resolvePrivilegedPath } from "../../utils/roleUtils.js";
 
 const normalizeOfficeLocationName = (value) =>
@@ -121,10 +123,16 @@ const ManageEmployees = () => {
     role: "member",
   });
   const [isUpdatingUser, setIsUpdatingUser] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedOffice, setSelectedOffice] = useState("All");
+  const [searchTerm, setSearchTerm] = useQueryParamState("search", {
+    defaultValue: "",
+  });
+  const [selectedOffice, setSelectedOffice] = useQueryParamState("office", {
+    defaultValue: "All",
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useQueryParamState("view", {
+    defaultValue: "grid",
+  });
   const employeeRoleDropdownRef = useRef(null);
   const officeLocationDropdownRef = useRef(null);
   const editEmployeeRoleDropdownRef = useRef(null);
@@ -1649,11 +1657,17 @@ const ManageEmployees = () => {
                           <tr
                             key={user._id}
                             className="cursor-pointer hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 dark:hover:bg-slate-800/80"
-                            onClick={() => navigate(userDetailsPath)}
+                            onClick={() =>
+                              navigate(userDetailsPath, {
+                                state: createFromNavigationState(location),
+                              })
+                            }
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                navigate(userDetailsPath);
+                                navigate(userDetailsPath, {
+                                  state: createFromNavigationState(location),
+                                });
                               }
                             }}
                             role="button"

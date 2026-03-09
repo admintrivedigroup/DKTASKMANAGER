@@ -1,7 +1,13 @@
 const { createHttpError } = require("../utils/httpError");
 
 const TASK_PRIORITIES = new Set(["High", "Medium", "Low"]);
-const TASK_STATUSES = new Set(["Draft", "Pending", "In Progress", "Completed"]);
+const TASK_STATUSES = new Set([
+  "Draft",
+  "Pending",
+  "In Progress",
+  "Pending Approval",
+  "Completed",
+]);
 const TASK_RECURRENCE = new Set(["None", "Daily", "Weekly", "Monthly"]);
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -39,6 +45,14 @@ const normalizeOptionalId = (value, fieldName) => {
   }
 
   return normalizeRequiredId(value, fieldName);
+};
+
+const normalizeRequiredKraCategoryId = (value) => {
+  try {
+    return normalizeRequiredId(value, "kraCategoryId");
+  } catch (error) {
+    throw createHttpError("KRA category is required for every task.", 400);
+  }
 };
 
 const normalizeAssigneeIds = (assignedTo) => {
@@ -293,7 +307,7 @@ const validateStatus = (value, { required = false } = {}) => {
   const normalized = value.trim();
   if (!TASK_STATUSES.has(normalized)) {
     throw createHttpError(
-      "status must be one of Draft, Pending, In Progress or Completed",
+      "status must be one of Draft, Pending, In Progress, Pending Approval or Completed",
       400
     );
   }
@@ -405,10 +419,7 @@ const validateCreateTaskPayload = (payload) => {
     sanitized.caseFile = caseFile;
   }
 
-  const kraCategoryId = normalizeOptionalId(payload.kraCategoryId, "kraCategoryId");
-  if (kraCategoryId !== undefined) {
-    sanitized.kraCategoryId = kraCategoryId;
-  }
+  sanitized.kraCategoryId = normalizeRequiredKraCategoryId(payload.kraCategoryId);
 
   const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);
   if (relatedDocuments && relatedDocuments.length) {
@@ -533,12 +544,7 @@ const validateUpdateTaskPayload = (payload) => {
     sanitized.caseFile = normalizeOptionalId(payload.caseFile, "caseFile");
   }
 
-  if (hasOwn(payload, "kraCategoryId")) {
-    sanitized.kraCategoryId = normalizeOptionalId(
-      payload.kraCategoryId,
-      "kraCategoryId"
-    );
-  }
+  sanitized.kraCategoryId = normalizeRequiredKraCategoryId(payload.kraCategoryId);
 
   if (hasOwn(payload, "relatedDocuments")) {
     const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);

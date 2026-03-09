@@ -513,7 +513,9 @@ const getTasks = async (req, res, next) => {
       queryFilters.length > 1 ? { $and: queryFilters } : queryFilters[0] || {}
     )
       .populate("assignedTo", "name email profileImageUrl")
-      .populate("kraCategoryId", "name basePoints employeeId")
+      .populate("completionRequestedBy", "name email role")
+      .populate("approvedBy", "name email role")
+      .populate("kraCategoryId", "name basePoints employeeId requiresApproval")
       .populate({
         path: "matter",
         select: "title clientName matterNumber status client",
@@ -611,6 +613,11 @@ const getTasks = async (req, res, next) => {
       status: "In Progress",
     });
 
+    const pendingApprovalTasks = await Task.countDocuments({
+      ...summaryBaseFilter,
+      status: "Pending Approval",
+    });
+
     const completedTasks = await Task.countDocuments({
       ...summaryBaseFilter,
       status: "Completed",
@@ -623,6 +630,7 @@ const getTasks = async (req, res, next) => {
         draftTasks,
         pendingTasks,
         inProgressTasks,
+        pendingApprovalTasks,
         completedTasks,
       },
     });
@@ -645,6 +653,108 @@ const TASK_ACTIVITY_FIELDS = [
 ];
 
 const TASK_STATUS_FIELDS = [{ path: "status", label: "Status" }];
+const PENDING_APPROVAL_STATUS = "Pending Approval";
+
+const clearCompletionApprovalFields = (task, { keepApprovalStatus = false } = {}) => {
+  task.completionRequestedAt = null;
+  task.completionRequestedBy = null;
+  task.approvedAt = null;
+  task.approvedBy = null;
+
+  if (!keepApprovalStatus) {
+    task.approvalStatus = null;
+  }
+};
+
+const getTaskApprovalRequirement = async (task) => {
+  const categoryId = normalizeObjectId(task?.kraCategoryId);
+
+  if (!categoryId || !mongoose.Types.ObjectId.isValid(categoryId)) {
+    return false;
+  }
+
+  const category = await KraCategory.findById(categoryId)
+    .select("requiresApproval")
+    .lean();
+
+  return Boolean(category?.requiresApproval);
+};
+
+const markTaskCompleted = (task, actor) => {
+  task.status = "Completed";
+  task.completedAt = actor?._id ? new Date() : task.completedAt || new Date();
+  clearCompletionApprovalFields(task);
+
+  if (actor?._id) {
+    task.approvalStatus = "approved";
+    task.approvedAt = new Date();
+    task.approvedBy = actor._id;
+  }
+};
+
+const requestTaskCompletion = (task, actor) => {
+  task.status = PENDING_APPROVAL_STATUS;
+  task.completedAt = null;
+  task.completionRequestedAt = new Date();
+  task.completionRequestedBy = actor?._id || null;
+  task.approvalStatus = "pending";
+  task.approvedAt = null;
+  task.approvedBy = null;
+};
+
+const rejectTaskCompletionRequest = (task) => {
+  task.status = "In Progress";
+  task.completedAt = null;
+  clearCompletionApprovalFields(task, { keepApprovalStatus: true });
+  task.approvalStatus = "rejected";
+};
+
+const resetCompletionStateForOpenTask = (task) => {
+  task.completedAt = null;
+  clearCompletionApprovalFields(task);
+};
+
+const isUserAssignedToTask = (task, userId) =>
+  normalizeAssigneeIds(task?.assignedTo).includes(userId);
+
+const applyTaskCompletionState = async ({
+  task,
+  actor,
+  shouldComplete,
+  autoCompleteChecklist = false,
+}) => {
+  if (!task) {
+    return;
+  }
+
+  if (shouldComplete) {
+    if (autoCompleteChecklist && Array.isArray(task.todoChecklist)) {
+      task.todoChecklist.forEach((item) => {
+        item.completed = true;
+      });
+    }
+
+    task.progress = 100;
+
+    if (task.status === "Completed" && task.completedAt) {
+      return;
+    }
+
+    if (await getTaskApprovalRequirement(task)) {
+      requestTaskCompletion(task, actor);
+      return;
+    }
+
+    markTaskCompleted(task);
+    return;
+  }
+
+  if (task.status === PENDING_APPROVAL_STATUS || task.status === "Completed") {
+    resetCompletionStateForOpenTask(task);
+  }
+
+  task.status = task.progress > 0 ? "In Progress" : "Pending";
+};
 
 // @desc    Get task by ID
 // @route   GET /api/tasks/:id
@@ -653,8 +763,10 @@ const getTaskById = async (req, res, next) => {
     try {
         const task = await Task.findById(req.params.id)
           .populate("assignedTo", "name email profileImageUrl")
+          .populate("completionRequestedBy", "name email role")
+          .populate("approvedBy", "name email role")
           .populate("todoChecklist.assignedTo", "name email profileImageUrl")
-          .populate("kraCategoryId", "name basePoints employeeId")
+          .populate("kraCategoryId", "name basePoints employeeId requiresApproval")
           .populate({                      
             path: "matter",
             select: "title clientName matterNumber status client",
@@ -1154,18 +1266,11 @@ if (hasTodoChecklistUpdate) {
   const completedCount = task.todoChecklist.filter((item) => item.completed).length;
   const totalItems = task.todoChecklist.length;
   task.progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
-
-  if (task.progress === 100) {
-    task.status = "Completed";
-    if (previousStatus !== "Completed" || !task.completedAt) {
-      task.completedAt = new Date();
-    }
-  } else {
-    task.status = task.progress > 0 ? "In Progress" : "Pending";
-    if (previousStatus === "Completed") {
-      task.completedAt = null;
-    }
-  }
+  await applyTaskCompletionState({
+    task,
+    actor: req.user,
+    shouldComplete: task.progress === 100,
+  });
 }
 
 if (Object.prototype.hasOwnProperty.call(req.body, "reminderMinutesBefore")) {
@@ -1421,17 +1526,30 @@ if (!isAssigned && !isPrivileged(req.user.role)) {
 
 const previousStatus = task.status;
 if (req.body.status) {
+  if (req.body.status === PENDING_APPROVAL_STATUS) {
+    throw createHttpError(
+      "Use the completion request endpoint for approval-based completion.",
+      400
+    );
+  }
   task.status = req.body.status;
 }
 
 if (task.status === "Completed") {
-  task.todoChecklist.forEach((item) => (item.completed = true));
-  task.progress = 100;
-  if (previousStatus !== "Completed" || !task.completedAt) {
-    task.completedAt = new Date();
+  await applyTaskCompletionState({
+    task,
+    actor: req.user,
+    shouldComplete: true,
+    autoCompleteChecklist: true,
+  });
+} else {
+  if (
+    task.status === "Pending" ||
+    task.status === "In Progress" ||
+    task.status === "Draft"
+  ) {
+    resetCompletionStateForOpenTask(task);
   }
-} else if (previousStatus === "Completed" && task.status !== "Completed") {
-  task.completedAt = null;
 }
 
 await task.save();
@@ -1464,6 +1582,177 @@ res.json({ message: "Task status updated", task });
     } catch (error) {
       next(error);
     }
+};
+
+// @desc    Request task completion
+// @route   POST /api/tasks/:id/request-complete
+// @access  Private
+const requestTaskCompletionAction = async (req, res, next) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      throw createHttpError("Task not found", 404);
+    }
+
+    const requesterId = req.user?._id ? req.user._id.toString() : "";
+
+    if (isPersonalTaskForAnotherUser(task, requesterId)) {
+      throw createHttpError("You do not have permission to update this task.", 403);
+    }
+
+    const isAssigned = isUserAssignedToTask(task, requesterId);
+    if (!isAssigned && !isPrivileged(req.user?.role)) {
+      throw createHttpError("Not authorized", 403);
+    }
+
+    const previousStatus = task.status;
+
+    await applyTaskCompletionState({
+      task,
+      actor: req.user,
+      shouldComplete: true,
+      autoCompleteChecklist: true,
+    });
+
+    await task.save();
+
+    const statusChanges = buildFieldChanges(
+      { status: previousStatus },
+      { status: task.status },
+      TASK_STATUS_FIELDS
+    );
+
+    if (statusChanges.length) {
+      await logEntityActivity({
+        entityType: "task",
+        action: "updated",
+        entityId: task._id,
+        entityName: task.title,
+        actor: req.user,
+        details: statusChanges,
+        meta: { scope: "status" },
+      });
+    }
+
+    res.json({
+      message:
+        task.status === PENDING_APPROVAL_STATUS
+          ? "Task completion requested successfully"
+          : "Task completed successfully",
+      task,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Approve task completion
+// @route   POST /api/tasks/:id/approve-completion
+// @access  Private (Admin/Super Admin)
+const approveTaskCompletion = async (req, res, next) => {
+  try {
+    if (!isPrivileged(req.user?.role)) {
+      throw createHttpError("Only admin or super admin can approve completion.", 403);
+    }
+
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      throw createHttpError("Task not found", 404);
+    }
+
+    if (task.status !== PENDING_APPROVAL_STATUS || task.approvalStatus !== "pending") {
+      throw createHttpError("Task is not awaiting approval.", 400);
+    }
+
+    const requesterId = normalizeObjectId(task.completionRequestedBy);
+    const approverId = req.user?._id ? req.user._id.toString() : "";
+
+    if (requesterId && approverId && requesterId === approverId) {
+      throw createHttpError("You cannot approve your own completion request.", 403);
+    }
+
+    const previousStatus = task.status;
+    markTaskCompleted(task, req.user);
+    await task.save();
+
+    const statusChanges = buildFieldChanges(
+      { status: previousStatus },
+      { status: task.status },
+      TASK_STATUS_FIELDS
+    );
+
+    if (statusChanges.length) {
+      await logEntityActivity({
+        entityType: "task",
+        action: "updated",
+        entityId: task._id,
+        entityName: task.title,
+        actor: req.user,
+        details: statusChanges,
+        meta: { scope: "status" },
+      });
+    }
+
+    res.json({ message: "Task completion approved", task });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reject task completion
+// @route   POST /api/tasks/:id/reject-completion
+// @access  Private (Admin/Super Admin)
+const rejectTaskCompletion = async (req, res, next) => {
+  try {
+    if (!isPrivileged(req.user?.role)) {
+      throw createHttpError("Only admin or super admin can reject completion.", 403);
+    }
+
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      throw createHttpError("Task not found", 404);
+    }
+
+    if (task.status !== PENDING_APPROVAL_STATUS || task.approvalStatus !== "pending") {
+      throw createHttpError("Task is not awaiting approval.", 400);
+    }
+
+    const requesterId = normalizeObjectId(task.completionRequestedBy);
+    const approverId = req.user?._id ? req.user._id.toString() : "";
+
+    if (requesterId && approverId && requesterId === approverId) {
+      throw createHttpError("You cannot reject your own completion request.", 403);
+    }
+
+    const previousStatus = task.status;
+    rejectTaskCompletionRequest(task);
+    await task.save();
+
+    const statusChanges = buildFieldChanges(
+      { status: previousStatus },
+      { status: task.status },
+      TASK_STATUS_FIELDS
+    );
+
+    if (statusChanges.length) {
+      await logEntityActivity({
+        entityType: "task",
+        action: "updated",
+        entityId: task._id,
+        entityName: task.title,
+        actor: req.user,
+        details: statusChanges,
+        meta: { scope: "status" },
+      });
+    }
+
+    res.json({ message: "Task completion rejected", task });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // @desc    Update task checklist
@@ -1535,8 +1824,6 @@ const updateTaskChecklist = async (req, res, next) => {
         task.todoChecklist[index].completed = nextCompleted;
       });
 
-      const previousStatus = task.status;
-
       // Auto-update progress based on checklist completion
       const completedCount = task.todoChecklist.filter(
         (item) => item.completed
@@ -1545,23 +1832,18 @@ const updateTaskChecklist = async (req, res, next) => {
       task.progress =
         totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
 
-  // Auto-mark task as completed if all items are checked
-if (task.progress === 100) {
-  task.status = "Completed";
-  if (previousStatus !== "Completed" || !task.completedAt) {
-    task.completedAt = new Date();
-  }
-} else {
-  task.status = task.progress > 0 ? "In Progress" : "Pending";
-  if (previousStatus === "Completed") {
-    task.completedAt = null;
-  }
-}
+      await applyTaskCompletionState({
+        task,
+        actor: req.user,
+        shouldComplete: task.progress === 100,
+      });
 
 await task.save();
 
 const updatedTask = await Task.findById(req.params.id)
   .populate("assignedTo", "name email profileImageUrl")
+  .populate("completionRequestedBy", "name email role")
+  .populate("approvedBy", "name email role")
   .populate("todoChecklist.assignedTo", "name email profileImageUrl");
 
 res.json({ message: "Task checklist updated", task: updatedTask });
@@ -1864,7 +2146,13 @@ const getDashboardData = async (req, res, next) => {
       });
 
       // Ensure all possible statuses are included
-      const taskStatuses = ["Draft", "Pending", "In Progress", "Completed"];
+      const taskStatuses = [
+        "Draft",
+        "Pending",
+        "In Progress",
+        "Pending Approval",
+        "Completed",
+      ];
       const taskDistributionRaw = await Task.aggregate([
         ...baseMatchStages,        
         {
@@ -2133,7 +2421,13 @@ const overdueTasks = await Task.countDocuments({
 });
 
 // Task distribution by status
-const taskStatuses = ["Draft", "Pending", "In Progress", "Completed"];
+const taskStatuses = [
+  "Draft",
+  "Pending",
+  "In Progress",
+  "Pending Approval",
+  "Completed",
+];
 const taskDistributionRaw = await Task.aggregate([
   { $match: { assignedTo: userId } },
   { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -2350,6 +2644,9 @@ module.exports = {
     updateTask,
     deleteTask,
     updateTaskStatus,
+    requestTaskCompletionAction,
+    approveTaskCompletion,
+    rejectTaskCompletion,
     updateTaskChecklist,
     getNotifications,
     deleteNotifications,

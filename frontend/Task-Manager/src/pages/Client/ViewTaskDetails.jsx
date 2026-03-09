@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
@@ -9,6 +9,7 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import { formatDateTimeLabel } from "../../utils/dateUtils";
 import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
+import { getBackNavigationTarget } from "../../utils/routeNavigation";
 import { hasPrivilegedAccess } from "../../utils/roleUtils";
 
 const ClientViewTaskDetails = () => {
@@ -16,11 +17,18 @@ const ClientViewTaskDetails = () => {
   const [task, setTask] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useContext(UserContext);  
+  const location = useLocation();
+  const backTarget = useMemo(
+    () => getBackNavigationTarget(location, "/client/projects"),
+    [location]
+  );
 
   const getStatusTagColor = (status) => {
     switch (status) {
       case "In Progress":
         return "bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-500 text-white";
+      case "Pending Approval":
+        return "bg-gradient-to-r from-amber-500 via-orange-400 to-amber-300 text-white";
       case "Completed":
         return "bg-gradient-to-r from-emerald-500 via-lime-400 to-green-500 text-white";
       default:
@@ -37,6 +45,14 @@ const ClientViewTaskDetails = () => {
     return Number.isInteger(parsedValue)
       ? parsedValue.toString()
       : parsedValue.toFixed(2).replace(/\.?0+$/, "");
+  };
+
+  const formatApprovalStatus = (value) => {
+    if (!value) {
+      return "N/A";
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
   const getTaskDetailsByID = useCallback(async () => {
@@ -177,6 +193,15 @@ const ClientViewTaskDetails = () => {
       ? task.kraCategoryId.name
       : "—";
 
+  const requiresApproval = task?.kraCategoryId?.requiresApproval === true;
+  const approvalStatusLabel = formatApprovalStatus(task?.approvalStatus);
+  const approvedByLabel =
+    task?.approvedBy?.name || task?.approvedBy?.email || "N/A";
+  const earnedPointsValue =
+    task?.status === "Pending Approval" && task?.approvalStatus === "pending"
+      ? "0"
+      : formatSnapshotValue(task?.earnedPoints);
+
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
   const hasTaskStarted = useMemo(() => {
@@ -262,7 +287,26 @@ const ClientViewTaskDetails = () => {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <InfoBox label="KRA Category" value={kraCategoryName} />
+                    <InfoBox label="Category" value={kraCategoryName} />
+                    <InfoBox
+                      label="Requires Approval"
+                      value={requiresApproval ? "Yes" : "No"}
+                    />
+                    <InfoBox
+                      label="Approval Status"
+                      value={approvalStatusLabel}
+                    />
+                    <InfoBox
+                      label="Completion Requested At"
+                      value={formatDateTimeLabel(task?.completionRequestedAt, "N/A")}
+                    />
+                    <InfoBox
+                      label="Approved At"
+                      value={formatDateTimeLabel(task?.approvedAt, "N/A")}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                     <InfoBox
                       label="Base Points Snapshot"
                       value={formatSnapshotValue(task?.basePointsSnapshot)}
@@ -277,8 +321,9 @@ const ClientViewTaskDetails = () => {
                     />
                     <InfoBox
                       label="Earned Points"
-                      value={formatSnapshotValue(task?.earnedPoints)}
+                      value={earnedPointsValue}
                     />
+                    <InfoBox label="Approved By" value={approvedByLabel} />
                   </div>
 
                   <div>
@@ -367,7 +412,7 @@ const ClientViewTaskDetails = () => {
                   Review status, due dates and collaboration notes in one place.
                 </p>
                 <Link
-                  to="/client/projects"
+                  to={backTarget}
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:-translate-y-0.5 hover:bg-gradient-to-r hover:from-slate-900 hover:to-indigo-600 hover:text-white"
                 >
                   Back to Matters

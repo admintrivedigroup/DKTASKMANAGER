@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUserAuth } from "../../hooks/useUserAuth";
 import { UserContext } from "../../context/userContext.jsx";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
@@ -20,6 +20,7 @@ import { LuArrowRight, LuBadgeCheck, LuClipboardList, LuClock3, LuRefreshCcw } f
 import LoadingOverlay from "../../components/LoadingOverlay";
 import useActiveNotices from "../../hooks/useActiveNotices";
 import { formatFullDateTime } from "../../utils/dateUtils";
+import { navigateWithReturn } from "../../utils/routeNavigation";
 
 const NoticeBoard = lazy(() => import("../../components/NoticeBoard"));
 const CustomPieChart = lazy(() => import("../../components/Charts/CustomPieChart"));
@@ -33,6 +34,7 @@ const UserDashboard = () => {
 
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [dashboardData, setDashboardData] = useState(null);
   const [pieChartData, setPieChartData] = useState([]);
@@ -80,6 +82,18 @@ const UserDashboard = () => {
   const onSeeMore = () => {
     navigate("/user/tasks");
   };
+
+  const handleRecentTaskClick = useCallback(
+    (task) => {
+      const taskId = task?._id;
+      if (!taskId) {
+        return;
+      }
+
+      navigateWithReturn(navigate, `/user/task-details/${taskId}`, location);
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -265,6 +279,7 @@ const UserDashboard = () => {
             >
               <TaskListTable
                 tableData={(dashboardData?.recentTasks || []).slice(0, 5)}
+                onTaskClick={handleRecentTaskClick}
               />
             </Suspense>
           </section>

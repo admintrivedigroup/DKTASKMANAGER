@@ -25,7 +25,9 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import { UserContext } from "../../context/userContext.jsx";
 import { getRoleLabel } from "../../utils/roleUtils";
 import { useUserAuth } from "../../hooks/useUserAuth.jsx";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import useQueryParamState from "../../hooks/useQueryParamState";
+import { createFromNavigationState } from "../../utils/routeNavigation";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -134,12 +136,20 @@ const NotificationCenter = () => {
 
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const storageKey = user ? `notifications:lastSeen:${user._id}` : null;
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useQueryParamState("page", {
+    defaultValue: 1,
+    parse: (value) => {
+      const parsedValue = Number.parseInt(value, 10);
+      return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+    },
+    serialize: (value) => String(value),
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNotificationIds, setSelectedNotificationIds] = useState([]);
@@ -556,7 +566,11 @@ const NotificationCenter = () => {
                                 return (
                                   <button
                                     type="button"
-                                    onClick={() => navigate(redirectUrl)}
+                                    onClick={() =>
+                                      navigate(redirectUrl, {
+                                        state: createFromNavigationState(location),
+                                      })
+                                    }
                                     className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-700 transition hover:-translate-y-0.5 hover:border-indigo-300"
                                   >
                                     Open Channel

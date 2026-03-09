@@ -6,11 +6,12 @@ import React, {
   useState,
 } from "react";
 import { LuBell, LuLoader } from "react-icons/lu";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext.jsx";
 import { getRoleLabel, hasPrivilegedAccess } from "../../utils/roleUtils";
+import { createFromNavigationState } from "../../utils/routeNavigation";
 import PublishNoticeModal from "./PublishNoticeModal.jsx";
 import { formatRelativeTimeFromNow } from "../../utils/dateUtils";
 import { connectSocket } from "../../utils/socket";
@@ -34,6 +35,7 @@ const parseNotificationDate = (notification) => {
 const NotificationBell = ({ iconOverride = null }) => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate(); 
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -220,7 +222,9 @@ const NotificationBell = ({ iconOverride = null }) => {
 
     markNotificationsAsSeen();
     setOpen(false);
-    navigate(redirectUrl);
+    navigate(redirectUrl, {
+      state: createFromNavigationState(location),
+    });
   };
 
   return (

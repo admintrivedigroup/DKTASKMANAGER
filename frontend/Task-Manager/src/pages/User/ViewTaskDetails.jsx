@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
@@ -10,7 +10,11 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import { formatDateTimeLabel } from "../../utils/dateUtils";
 import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
-import { hasPrivilegedAccess } from "../../utils/roleUtils";
+import {
+  getRoleBasedFallbackRoute,
+  hasPrivilegedAccess,
+} from "../../utils/roleUtils";
+import { getBackNavigationTarget } from "../../utils/routeNavigation";
 import TaskFormModal from "../../components/TaskFormModal";
 import TaskChannel from "../../components/TaskChannel";
 
@@ -21,6 +25,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const { user } = useContext(UserContext);
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const handleTabChange = useCallback(
     (tabId) => {
@@ -44,22 +49,19 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   );
 
   const tasksRoute = useMemo(() => {
-    const role = user?.role;
-
-    switch (role) {
-      case "admin":
-        return "/admin/tasks";
-      case "super_admin":
-        return "/super-admin/tasks";
-      default:
-        return "/user/tasks";
-    }
-  }, [user?.role]);
+    return getRoleBasedFallbackRoute("tasks", user?.role, location.pathname);
+  }, [location.pathname, user?.role]);
+  const backTarget = useMemo(
+    () => getBackNavigationTarget(location, tasksRoute),
+    [location, tasksRoute]
+  );
 
   const getStatusTagColor = (status) => {
     switch (status) {
       case "In Progress":
         return "bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-500 text-white";
+      case "Pending Approval":
+        return "bg-gradient-to-r from-amber-500 via-orange-400 to-amber-300 text-white";
       case "Completed":
         return "bg-gradient-to-r from-emerald-500 via-lime-400 to-green-500 text-white";
       default:
@@ -76,6 +78,14 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     return Number.isInteger(parsedValue)
       ? parsedValue.toString()
       : parsedValue.toFixed(2).replace(/\.?0+$/, "");
+  };
+
+  const formatApprovalStatus = (value) => {
+    if (!value) {
+      return "N/A";
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
   // Fetch Task info by ID
@@ -220,6 +230,15 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
       ? task.kraCategoryId.name
       : "—";
 
+  const requiresApproval = task?.kraCategoryId?.requiresApproval === true;
+  const approvalStatusLabel = formatApprovalStatus(task?.approvalStatus);
+  const approvedByLabel =
+    task?.approvedBy?.name || task?.approvedBy?.email || "N/A";
+  const earnedPointsValue =
+    task?.status === "Pending Approval" && task?.approvalStatus === "pending"
+      ? "0"
+      : formatSnapshotValue(task?.earnedPoints);
+
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
   const isPersonalTask = Boolean(task?.isPersonal);
@@ -359,7 +378,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
             <>
               <div className="mt-6 flex flex-wrap items-center gap-2">
                 <Link
-                  to={tasksRoute}
+                  to={backTarget}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
                   aria-label="Back to tasks"
                 >
@@ -427,7 +446,26 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                        <InfoBox label="KRA Category" value={kraCategoryName} />
+                        <InfoBox label="Category" value={kraCategoryName} />
+                        <InfoBox
+                          label="Requires Approval"
+                          value={requiresApproval ? "Yes" : "No"}
+                        />
+                        <InfoBox
+                          label="Approval Status"
+                          value={approvalStatusLabel}
+                        />
+                        <InfoBox
+                          label="Completion Requested At"
+                          value={formatDateTimeLabel(task?.completionRequestedAt, "N/A")}
+                        />
+                        <InfoBox
+                          label="Approved At"
+                          value={formatDateTimeLabel(task?.approvedAt, "N/A")}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                         <InfoBox
                           label="Base Points Snapshot"
                           value={formatSnapshotValue(task?.basePointsSnapshot)}
@@ -442,8 +480,9 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                         />
                         <InfoBox
                           label="Earned Points"
-                          value={formatSnapshotValue(task?.earnedPoints)}
+                          value={earnedPointsValue}
                         />
+                        <InfoBox label="Approved By" value={approvedByLabel} />
                       </div>
 
                       <div>

@@ -15,9 +15,14 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import LoadingOverlay from "../LoadingOverlay";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { formatDateLabel, formatMediumDateTime } from "../../utils/dateUtils";
+import {
+  createFromNavigationState,
+  getBackNavigationTarget,
+} from "../../utils/routeNavigation";
 import {
   formatCurrency,
   getStatusMeta,
@@ -120,7 +125,9 @@ const MattersWorkspace = ({ basePath = "" }) => {
   const [cases, setCases] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useQueryParamState("search", {
+    defaultValue: "",
+  });
   const [matterInvoices, setMatterInvoices] = useState([]);
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
@@ -145,6 +152,11 @@ const MattersWorkspace = ({ basePath = "" }) => {
     const baseSegments = segments.slice(0, -3);
     return joinPaths(`/${baseSegments.join("/")}`);
   }, [basePath, location.pathname, matterId, caseId]);
+  const listFallbackRoute = useMemo(() => joinPaths(baseRoute), [baseRoute]);
+  const listBackTarget = useMemo(
+    () => getBackNavigationTarget(location, listFallbackRoute),
+    [listFallbackRoute, location]
+  );
 
   const taskDetailsBaseRoute = useMemo(() => {
     const source = basePath || location.pathname || "/admin";
@@ -444,14 +456,21 @@ const MattersWorkspace = ({ basePath = "" }) => {
     if (!targetMatterId) {
       return;
     }
-    navigate(joinPaths(baseRoute, targetMatterId));
+    navigate({
+      pathname: joinPaths(baseRoute, targetMatterId),
+      search: location.search,
+    });
   };
 
   const handleOpenCase = (targetCaseId) => {
     if (!targetCaseId || !matterId) {
       return;
     }
-    navigate(joinPaths(baseRoute, matterId, "cases", targetCaseId));
+    navigate({
+      pathname: joinPaths(baseRoute, matterId, "cases", targetCaseId),
+      search: location.search,
+      state: location.state,
+    });
   };
 
   const handleViewTaskDetails = useCallback(
@@ -469,13 +488,17 @@ const MattersWorkspace = ({ basePath = "" }) => {
         return;
       }
 
-      navigate(joinPaths(taskDetailsBaseRoute, "task-details", taskId));
+      navigate(joinPaths(taskDetailsBaseRoute, "task-details", taskId), {
+        state: createFromNavigationState(location),
+      });
     },
-    [navigate, taskDetailsBaseRoute]
+    [location, navigate, taskDetailsBaseRoute]
   );
 
   const handleBackToMatters = () => {
-    navigate(joinPaths(baseRoute));
+    navigate(listBackTarget, {
+      replace: listBackTarget === listFallbackRoute,
+    });
   };
 
   const handleBackToMatter = () => {
@@ -484,7 +507,11 @@ const MattersWorkspace = ({ basePath = "" }) => {
       return;
     }
 
-    navigate(joinPaths(baseRoute, matterId));
+    navigate({
+      pathname: joinPaths(baseRoute, matterId),
+      search: location.search,
+      state: location.state,
+    });
   };
 
   const renderMatterList = () => (

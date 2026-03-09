@@ -32,6 +32,10 @@ export const buildStatusTabs = (statusSummary = {}) => {
     { label: "Drafts", count: statusSummary.draftTasks || 0 },
     { label: "Pending", count: statusSummary.pendingTasks || 0 },
     { label: "In Progress", count: statusSummary.inProgressTasks || 0 },
+    {
+      label: "Pending Approval",
+      count: statusSummary.pendingApprovalTasks || 0,
+    },
     { label: "Completed", count: statusSummary.completedTasks || 0 },
   ];
 };
@@ -41,5 +45,6 @@ export const extractStatusSummary = (summary) => ({
   draftTasks: Number(summary?.draftTasks || 0),
   pendingTasks: Number(summary?.pendingTasks || 0),
   inProgressTasks: Number(summary?.inProgressTasks || 0),
+  pendingApprovalTasks: Number(summary?.pendingApprovalTasks || 0),
   completedTasks: Number(summary?.completedTasks || 0),
 });

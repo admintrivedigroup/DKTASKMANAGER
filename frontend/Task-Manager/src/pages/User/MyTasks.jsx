@@ -1,20 +1,65 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import { useNavigate } from "react-router-dom";
-import { LuSparkles } from "react-icons/lu";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { LuChevronLeft, LuChevronRight, LuSparkles } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import TaskCard from "../../components/Cards/TaskCard";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import useListSearchParams from "../../hooks/useListSearchParams";
 import useTasks from "../../hooks/useTasks";
 import TaskFormModal from "../../components/TaskFormModal";
 import useTaskNotifications from "../../hooks/useTaskNotifications";
+import { navigateWithReturn } from "../../utils/routeNavigation";
 
 const MyTasks = () => {
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [taskType, setTaskType] = useState("assigned");
+  const { state, setParam } = useListSearchParams({
+    status: { defaultValue: "All" },
+    tab: { defaultValue: "assigned" },
+    page: {
+      defaultValue: 1,
+      parse: (value) => {
+        const parsedValue = Number.parseInt(value, 10);
+        return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+      },
+      serialize: (value) => String(value),
+    },
+  });
+  const { status: filterStatus, tab: taskType, page: currentPage } = state;
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const PAGE_SIZE = 9;
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
+  const updateTaskListParams = useCallback(
+    (updates) => {
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+
+          Object.entries(updates).forEach(([key, value]) => {
+            const shouldDelete =
+              value === undefined ||
+              value === null ||
+              value === "" ||
+              (key === "status" && value === "All") ||
+              (key === "tab" && value === "assigned") ||
+              (key === "page" && value === 1);
+
+            if (shouldDelete) {
+              next.delete(key);
+            } else {
+              next.set(key, String(value));
+            }
+          });
+
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const { tasks: fetchedTasks, tabs, isLoading, refetch } = useTasks({
     statusFilter: filterStatus,
@@ -24,11 +69,91 @@ const MyTasks = () => {
   const { getUnreadCount } = useTaskNotifications(fetchedTasks);
 
   const handleClick = (taskId) => {
-    navigate(`/user/task-details/${taskId}`);
+    navigateWithReturn(navigate, `/user/task-details/${taskId}`, location);
   };
 
   const allTasks = useMemo(() => fetchedTasks, [fetchedTasks]);
   const isPersonalView = taskType === "personal";
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(allTasks.length / PAGE_SIZE)),
+    [allTasks.length]
+  );
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return allTasks.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [allTasks, currentPage]);
+  const pageStart = allTasks.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const pageEnd = allTasks.length
+    ? Math.min(currentPage * PAGE_SIZE, allTasks.length)
+    : 0;
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    setParam("page", (previousPage) => Math.min(previousPage, totalPages));
+  }, [isLoading, setParam, totalPages]);
+
+  const handlePageChange = (page) => {
+    setParam("page", (previousPage) => {
+      const nextPage = Math.min(Math.max(page, 1), totalPages);
+      return nextPage === previousPage ? previousPage : nextPage;
+    });
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) {
+      return null;
+    }
+
+    return (
+      <div className="mt-6 flex flex-col items-center gap-3 text-sm text-slate-600">
+        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm">
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:-translate-y-0.5 hover:text-indigo-600 disabled:translate-y-0 disabled:text-slate-300"
+          >
+            <LuChevronLeft className="text-lg" />
+          </button>
+          <div className="inline-flex items-center gap-1">
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const pageNumber = index + 1;
+              const isActive = pageNumber === currentPage;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`h-10 min-w-[2.75rem] rounded-full px-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 hover:-translate-y-0.5 hover:text-indigo-600"
+                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:-translate-y-0.5 hover:text-indigo-600 disabled:translate-y-0 disabled:text-slate-300"
+          >
+            <LuChevronRight className="text-lg" />
+          </button>
+        </div>
+        <div className="text-xs font-medium text-slate-500">
+          Showing {pageStart}-{pageEnd} of {allTasks.length}
+        </div>
+      </div>
+    );
+  };
 
   const metaChips = [
     isPersonalView ? "Scope: Personal Tasks" : "Scope: Assigned Tasks",
@@ -66,7 +191,12 @@ const MyTasks = () => {
             <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
               <select
                 value={taskType}
-                onChange={(event) => setTaskType(event.target.value)}
+                onChange={(event) => {
+                  updateTaskListParams({
+                    tab: event.target.value,
+                    page: 1,
+                  });
+                }}
                 className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:w-44"
               >
                 <option value="assigned">Assigned Tasks</option>
@@ -101,13 +231,18 @@ const MyTasks = () => {
                 <TaskStatusTabs
                   tabs={tabs}
                   activeTab={filterStatus}
-                  setActiveTab={setFilterStatus}
+                  setActiveTab={(value) => {
+                    updateTaskListParams({
+                      status: value,
+                      page: 1,
+                    });
+                  }}
                 />
               </div>
             )}
 
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {allTasks?.map((item) => (
+              {paginatedTasks?.map((item) => (
                 <TaskCard
                   key={item._id}
                   title={item.title}
@@ -143,6 +278,8 @@ const MyTasks = () => {
                 </div>
               )}
             </section>
+
+            {allTasks.length > 0 && renderPagination()}
           </>
         )}
       </div>

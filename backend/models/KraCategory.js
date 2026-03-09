@@ -12,6 +12,8 @@ const kraCategorySchema = new mongoose.Schema(
     basePoints: { type: Number, required: true },
     weightage: { type: Number, default: null },
     isActive: { type: Boolean, default: true },
+    requiresApproval: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

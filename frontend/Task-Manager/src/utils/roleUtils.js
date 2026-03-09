@@ -66,6 +66,23 @@ export const isRoleAllowed = (role, allowedRoles = []) => {
 export const getPrivilegedBasePath = (role) =>
   matchesRole(role, "super_admin") ? "/super-admin" : "/admin";
 
+export const getMemberBasePath = (pathname = "") =>
+  typeof pathname === "string" && pathname.startsWith("/member")
+    ? "/member"
+    : "/user";
+
+export const getBasePathForRole = (role, pathname = "") => {
+  if (matchesRole(role, "super_admin")) {
+    return "/super-admin";
+  }
+
+  if (matchesRole(role, "admin")) {
+    return "/admin";
+  }
+
+  return getMemberBasePath(pathname);
+};
+
 export const resolvePrivilegedPath = (path, role) => {
   if (typeof path !== "string") {
     return path;
@@ -79,14 +96,30 @@ export const resolvePrivilegedPath = (path, role) => {
   return path.replace(/^\/admin/, basePath);
 };
 
+const MODULE_ROUTE_SEGMENTS = {
+  dashboard: "dashboard",
+  tasks: "tasks",
+  employees: "employees",
+  clients: "clients",
+  calendar: "calendar",
+  kraKpi: "kra-kpi",
+  profileSettings: "profile-settings",
+};
+
+export const getModuleRouteForRole = (moduleKey, role, pathname = "") => {
+  const basePath = getBasePathForRole(role, pathname);
+  const routeSegment = MODULE_ROUTE_SEGMENTS[moduleKey];
+
+  if (!routeSegment) {
+    return basePath;
+  }
+
+  return `${basePath}/${routeSegment}`;
+};
+
+export const getRoleBasedFallbackRoute = (moduleKey, role, pathname = "") =>
+  getModuleRouteForRole(moduleKey, role, pathname);
+
 export const getDefaultRouteForRole = (role) => {
-  if (matchesRole(role, "super_admin")) {
-    return "/super-admin/dashboard";
-  }
-
-  if (matchesRole(role, "admin")) {
-    return "/admin/dashboard";
-  }
-
-  return "/user/dashboard";
+  return getModuleRouteForRole("dashboard", role);
 };

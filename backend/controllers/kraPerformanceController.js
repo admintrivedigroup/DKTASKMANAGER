@@ -17,7 +17,7 @@ const {
   toNumberOrZero,
 } = require("../utils/taskScoring");
 
-const OPEN_STATUSES = ["Pending", "In Progress"];
+const OPEN_STATUSES = ["Pending", "In Progress", "Pending Approval"];
 
 const parseIntegerQueryValue = (value, fieldName) => {
   if (value === undefined || value === null || value === "") {

@@ -26,7 +26,7 @@ exports.startTaskReminderJob = () => {
 
       const tasksDueSoon = await Task.find({
         dueDate: { $gte: now, $lte: upperBound },
-        status: { $in: ["Pending", "In Progress"] },
+        status: { $in: ["Pending", "In Progress", "Pending Approval"] },
       }).populate("assignedTo", "name email");
 
       for (const task of tasksDueSoon) {

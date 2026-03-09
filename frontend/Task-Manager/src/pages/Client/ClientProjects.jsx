@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LuScale } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import MatterCard from "../../components/Cards/MatterCard";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import useTasks from "../../hooks/useTasks";
+import { navigateWithReturn } from "../../utils/routeNavigation";
 
 const ClientProjects = () => {
   const viewCopy = useMemo(
@@ -22,8 +24,11 @@ const ClientProjects = () => {
     []
   );
 
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useQueryParamState("status", {
+    defaultValue: "All",
+  });
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { tasks: fetchedTasks, tabs, isLoading } = useTasks({
     statusFilter: filterStatus,
@@ -34,7 +39,7 @@ const ClientProjects = () => {
   const allTasks = useMemo(() => fetchedTasks, [fetchedTasks]);
 
   const handleViewDetails = (taskId) => {
-    navigate(`/client/task-details/${taskId}`);
+    navigateWithReturn(navigate, `/client/task-details/${taskId}`, location);
   };
 
   const matterSummaries = useMemo(() => {

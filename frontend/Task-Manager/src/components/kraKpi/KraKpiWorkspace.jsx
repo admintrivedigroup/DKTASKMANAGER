@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   LuChevronLeft,
   LuChevronRight,
@@ -12,6 +13,7 @@ import toast from "react-hot-toast";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import Modal from "../Modal";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import {
   DEFAULT_KRA_PRIORITY_MULTIPLIERS,
   DEFAULT_KRA_TIMELINESS_MULTIPLIERS,
@@ -282,6 +284,7 @@ const getPriorityBadgeClasses = (priority) => {
 };
 
 const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
+  const [, setSearchParams] = useSearchParams();
   const currentUserId =
     typeof currentUser?._id === "string" ? currentUser._id.trim() : "";
   const currentUserName =
@@ -298,22 +301,51 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
   const [loadingMultipliers, setLoadingMultipliers] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingPerformanceTasks, setLoadingPerformanceTasks] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(() =>
-    readOnly ? currentUserId : ""
+  const [selectedEmployeeId, setSelectedEmployeeId] = useQueryParamState(
+    "employeeId",
+    {
+      defaultValue: readOnly && currentUserId ? currentUserId : "",
+    }
   );
-  const [selectedFinancialYear, setSelectedFinancialYear] = useState(() =>
-    String(getFinancialYearStartYear())
+  const [selectedFinancialYear, setSelectedFinancialYear] = useQueryParamState(
+    "fy",
+    {
+      defaultValue: String(getFinancialYearStartYear()),
+    }
   );
-  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useQueryParamState("month", {
+    defaultValue: "all",
+  });
   const [categories, setCategories] = useState([]);
   const [performanceTasks, setPerformanceTasks] = useState([]);
   const [performanceSummary, setPerformanceSummary] = useState(
     createInitialPerformanceSummaryState
   );
-  const [taskStatusFilter, setTaskStatusFilter] = useState("all");
-  const [taskCategoryFilter, setTaskCategoryFilter] = useState("all");
-  const [showOnlyOverdueTasks, setShowOnlyOverdueTasks] = useState(false);
-  const [taskCurrentPage, setTaskCurrentPage] = useState(1);
+  const [taskStatusFilter, setTaskStatusFilter] = useQueryParamState("status", {
+    defaultValue: "all",
+  });
+  const [taskCategoryFilter, setTaskCategoryFilter] = useQueryParamState(
+    "category",
+    {
+      defaultValue: "all",
+    }
+  );
+  const [showOnlyOverdueTasks, setShowOnlyOverdueTasks] = useQueryParamState(
+    "overdue",
+    {
+      defaultValue: false,
+      parse: (value) => value === "true",
+      serialize: (value) => String(Boolean(value)),
+    }
+  );
+  const [taskCurrentPage, setTaskCurrentPage] = useQueryParamState("page", {
+    defaultValue: 1,
+    parse: (value) => {
+      const parsedValue = Number.parseInt(value, 10);
+      return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+    },
+    serialize: (value) => String(value),
+  });
   const [multiplierFormData, setMultiplierFormData] = useState(
     createInitialMultiplierFormState
   );
@@ -325,8 +357,41 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
   const [formData, setFormData] = useState(createInitialFormState);
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingToggleId, setPendingToggleId] = useState("");
+  const [pendingActiveToggleId, setPendingActiveToggleId] = useState("");
+  const [pendingApprovalToggleId, setPendingApprovalToggleId] = useState("");
   const [isCreatingOtherCategory, setIsCreatingOtherCategory] = useState(false);
+
+  const updateWorkspaceParams = useCallback(
+    (updates) => {
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+
+          Object.entries(updates).forEach(([key, value]) => {
+            const shouldDelete =
+              value === undefined ||
+              value === null ||
+              value === "" ||
+              (key === "month" && value === "all") ||
+              (key === "status" && value === "all") ||
+              (key === "category" && value === "all") ||
+              (key === "overdue" && value === false) ||
+              (key === "page" && value === 1);
+
+            if (shouldDelete) {
+              next.delete(key);
+            } else {
+              next.set(key, String(value));
+            }
+          });
+
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const selectedEmployee = useMemo(
     () => employees.find((employee) => employee?._id === selectedEmployeeId) || null,
@@ -1016,7 +1081,7 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
     }
 
     const categoryId = getCategoryId(category);
-    if (!categoryId || pendingToggleId) {
+    if (!categoryId || pendingActiveToggleId || pendingApprovalToggleId) {
       return;
     }
 
@@ -1027,7 +1092,7 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
     }
 
     const nextIsActive = !category?.isActive;
-    setPendingToggleId(categoryId);
+    setPendingActiveToggleId(categoryId);
     setCategories((previousCategories) =>
       previousCategories.map((entry) =>
         getCategoryId(entry) === categoryId
@@ -1042,6 +1107,7 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
         basePoints: Number(category?.basePoints) || 0,
         weightage: categoryWeightage,
         isActive: nextIsActive,
+        requiresApproval: category?.requiresApproval === true,
       });
 
       const updatedCategoryId = getCategoryId(updatedCategory) || categoryId;
@@ -1066,7 +1132,68 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
           "Unable to update active status. Please try again."
       );
     } finally {
-      setPendingToggleId("");
+      setPendingActiveToggleId("");
+    }
+  };
+
+  const handleToggleRequiresApproval = async (category) => {
+    if (readOnly) {
+      return;
+    }
+
+    const categoryId = getCategoryId(category);
+    if (!categoryId || pendingApprovalToggleId || pendingActiveToggleId) {
+      return;
+    }
+
+    const categoryWeightage = parseWeightageValue(category?.weightage);
+    if (categoryWeightage === null) {
+      toast.error("Weightage is required before changing approval status.");
+      return;
+    }
+
+    const nextRequiresApproval = !(category?.requiresApproval === true);
+    setPendingApprovalToggleId(categoryId);
+    setCategories((previousCategories) =>
+      previousCategories.map((entry) =>
+        getCategoryId(entry) === categoryId
+          ? { ...entry, requiresApproval: nextRequiresApproval }
+          : entry
+      )
+    );
+
+    try {
+      const updatedCategory = await updateKraKpiCategory(categoryId, {
+        name: category?.name || "",
+        basePoints: Number(category?.basePoints) || 0,
+        weightage: categoryWeightage,
+        isActive: category?.isActive !== false,
+        requiresApproval: nextRequiresApproval,
+      });
+
+      const updatedCategoryId = getCategoryId(updatedCategory) || categoryId;
+      setCategories((previousCategories) =>
+        previousCategories.map((entry) =>
+          getCategoryId(entry) === updatedCategoryId
+            ? { ...entry, ...updatedCategory }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle approval requirement", error);
+      setCategories((previousCategories) =>
+        previousCategories.map((entry) =>
+          getCategoryId(entry) === categoryId
+            ? { ...entry, requiresApproval: category?.requiresApproval === true }
+            : entry
+        )
+      );
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to update approval requirement. Please try again."
+      );
+    } finally {
+      setPendingApprovalToggleId("");
     }
   };
 
@@ -1098,6 +1225,7 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
         basePoints: 1,
         weightage: remainingActiveWeightage,
         isActive: true,
+        requiresApproval: false,
       });
       const createdCategoryId = getCategoryId(createdCategory);
 
@@ -1218,12 +1346,18 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
   };
 
   const handleFinancialYearChange = (event) => {
-    setSelectedFinancialYear(event.target.value);
-    setSelectedMonth("all");
+    updateWorkspaceParams({
+      fy: event.target.value,
+      month: "all",
+      page: 1,
+    });
   };
 
   const handleMonthChange = (event) => {
-    setSelectedMonth(event.target.value);
+    updateWorkspaceParams({
+      month: event.target.value,
+      page: 1,
+    });
   };
 
   return (
@@ -1257,7 +1391,10 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                 value={selectedEmployeeId}
                 onChange={(event) => {
                   if (!readOnly) {
-                    setSelectedEmployeeId(event.target.value);
+                    updateWorkspaceParams({
+                      employeeId: event.target.value,
+                      page: 1,
+                    });
                   }
                 }}
                 disabled={loadingEmployees || readOnly}
@@ -1414,7 +1551,12 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                   <select
                     id="taskStatusFilter"
                     value={taskStatusFilter}
-                    onChange={(event) => setTaskStatusFilter(event.target.value)}
+                    onChange={(event) =>
+                      updateWorkspaceParams({
+                        status: event.target.value,
+                        page: 1,
+                      })
+                    }
                     className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
                   >
                     {TASK_STATUS_FILTER_OPTIONS.map((statusOption) => (
@@ -1435,7 +1577,12 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                   <select
                     id="taskCategoryFilter"
                     value={taskCategoryFilter}
-                    onChange={(event) => setTaskCategoryFilter(event.target.value)}
+                    onChange={(event) =>
+                      updateWorkspaceParams({
+                        category: event.target.value,
+                        page: 1,
+                      })
+                    }
                     className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
                   >
                     <option value="all">All Categories</option>
@@ -1456,7 +1603,10 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                       type="checkbox"
                       checked={showOnlyOverdueTasks}
                       onChange={(event) =>
-                        setShowOnlyOverdueTasks(event.target.checked)
+                        updateWorkspaceParams({
+                          overdue: event.target.checked,
+                          page: 1,
+                        })
                       }
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/40"
                     />
@@ -1874,6 +2024,9 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                       Weightage %
                     </th>
                     <th scope="col" className="px-4 py-3">
+                      Approval Required
+                    </th>
+                    <th scope="col" className="px-4 py-3">
                       Active
                     </th>
                     {!readOnly ? (
@@ -1886,7 +2039,9 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
                   {categories.map((category) => {
                     const categoryId = getCategoryId(category);
-                    const isTogglePending = pendingToggleId === categoryId;
+                    const isActiveTogglePending = pendingActiveToggleId === categoryId;
+                    const isApprovalTogglePending =
+                      pendingApprovalToggleId === categoryId;
 
                     return (
                       <tr
@@ -1907,18 +2062,36 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
                         <td className="px-4 py-4">
                           {readOnly ? (
                             <span className="text-sm text-slate-600 dark:text-slate-300">
+                              {category?.requiresApproval ? "Yes" : "No"}
+                            </span>
+                          ) : (
+                            <label className="inline-flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={category?.requiresApproval === true}
+                                onChange={() => handleToggleRequiresApproval(category)}
+                                disabled={isApprovalTogglePending}
+                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label={`Set ${category?.name || "category"} approval requirement`}
+                              />
+                            </label>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          {readOnly ? (
+                            <span className="text-sm text-slate-600 dark:text-slate-300">
                               {category?.isActive ? "Yes" : "No"}
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleToggleActive(category)}
-                              disabled={isTogglePending}
+                              disabled={isActiveTogglePending}
                               className={`inline-flex h-7 w-12 items-center rounded-full p-1 transition ${
                                 category?.isActive
                                   ? "bg-emerald-500"
                                   : "bg-slate-300 dark:bg-slate-600"
-                              } ${isTogglePending ? "cursor-not-allowed opacity-70" : ""}`}
+                              } ${isActiveTogglePending ? "cursor-not-allowed opacity-70" : ""}`}
                               aria-label={`Set ${category?.name || "category"} active status`}
                             >
                               <span
@@ -2086,20 +2259,22 @@ const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
             </div>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-            <input
-              type="checkbox"
-              checked={formData.isActive}
-              onChange={(event) =>
-                setFormData((previous) => ({
-                  ...previous,
-                  isActive: event.target.checked,
-                }))
-              }
-              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/40"
-            />
-            Active
-          </label>
+          <div className="space-y-3">
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={(event) =>
+                  setFormData((previous) => ({
+                    ...previous,
+                    isActive: event.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/40"
+              />
+              Active
+            </label>
+          </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button

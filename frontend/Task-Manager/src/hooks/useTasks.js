@@ -65,7 +65,7 @@ const useTasks = ({
 } = {}) => {
   const [tasks, setTasks] = useState([]);
   const [statusSummary, setStatusSummary] = useState(DEFAULT_SUMMARY);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(Boolean(enabled));
 
   const fetchTasks = useCallback(async () => {
     if (!enabled) {

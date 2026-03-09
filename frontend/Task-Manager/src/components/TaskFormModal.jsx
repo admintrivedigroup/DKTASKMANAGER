@@ -30,6 +30,7 @@ const createDefaultTaskData = () => ({
 const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }) => {
   const [taskData, setTaskData] = useState(createDefaultTaskData());
   const [error, setError] = useState("");
+  const [kraCategoryError, setKraCategoryError] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
   const [openDeleteAlert, setOpenDeleteAlert] = useState(false);
@@ -109,6 +110,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setTaskData(createDefaultTaskData());
     setCurrentTask(null);
     setError("");
+    setKraCategoryError("");
     setLoading(false);
     setOpenDeleteAlert(false);
     setIsFetchingTask(false);
@@ -124,6 +126,10 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   }, [onClose, resetState]);
 
   const handleValueChange = (key, value) => {
+    if (key === "kraCategoryId") {
+      setKraCategoryError("");
+    }
+
     if (isPersonalMode && key === "assignedTo") {
       if (!personalAssigneeId) {
         return;
@@ -278,6 +284,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   const clearData = useCallback(() => {
     setTaskData(createDefaultTaskData());
     setError("");
+    setKraCategoryError("");
     setAssignedUserDetails([]);
     setKraCategories([]);
     setIsLoadingKraCategories(false);
@@ -321,7 +328,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         todoChecklist,
       };
       if (canUseKraCategory) {
-        payload.kraCategoryId = taskData.kraCategoryId || null;
+        payload.kraCategoryId = taskData.kraCategoryId;
       } else {
         delete payload.kraCategoryId;
       }
@@ -346,6 +353,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         requestError.response?.data?.message ||
         requestError.message ||
         "Failed to create task. Please try again.";
+      if (message === "KRA category is required for every task.") {
+        setKraCategoryError(message);
+      }
       toast.error(message);
     } finally {
       setLoading(false);
@@ -379,7 +389,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         todoChecklist,
       };
       if (canUseKraCategory) {
-        payload.kraCategoryId = taskData.kraCategoryId || null;
+        payload.kraCategoryId = taskData.kraCategoryId;
       } else {
         delete payload.kraCategoryId;
       }
@@ -398,6 +408,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         requestError.response?.data?.message ||
         requestError.message ||
         "Failed to update task. Please try again.";
+      if (message === "KRA category is required for every task.") {
+        setKraCategoryError(message);
+      }
       toast.error(message);
     } finally {
       setLoading(false);
@@ -426,6 +439,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
 
   const handleSubmit = () => {
     setError("");
+    setKraCategoryError("");
 
     if (!taskData.title.trim()) {
       setError("Title is required.");
@@ -463,6 +477,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
       return;
     }
 
+    if (canUseKraCategory && !taskData.kraCategoryId) {
+      setKraCategoryError("KRA category is required.");
+      return;
+    }
+
     if (!taskData.todoChecklist?.length) {
       setError("Add at least one todo item.");
       setShowMoreOptions(true);
@@ -495,9 +514,15 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
 
   const handleSaveDraft = () => {
     setError("");
+    setKraCategoryError("");
 
     if (!taskData.title.trim()) {
       setError("Title is required.");
+      return;
+    }
+
+    if (canUseKraCategory && !taskData.kraCategoryId) {
+      setKraCategoryError("KRA category is required.");
       return;
     }
 
@@ -515,6 +540,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     }
 
     setError("");
+    setKraCategoryError("");
 
     if (!isEditing) {
       clearData();
@@ -1000,7 +1026,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                                 KRA Category
                               </label>
                               <select
-                                className="form-input mt-0 h-12 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-800 shadow-sm transition duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100"
+                                className={`form-input mt-0 h-12 w-full rounded-xl border bg-white/80 px-3 text-sm text-slate-800 shadow-sm transition duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-900/60 dark:text-slate-100 ${
+                                  kraCategoryError
+                                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-100 dark:border-rose-500/80 dark:focus:ring-rose-500/30"
+                                    : "border-slate-200 dark:border-slate-700"
+                                }`}
                                 value={taskData.kraCategoryId || ""}
                                 onChange={({ target }) =>
                                   handleValueChange("kraCategoryId", target.value)
@@ -1034,6 +1064,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                                   ? `Categories for ${selectedAssigneeName}.`
                                   : "Categories are loaded for the first selected assignee."}
                               </p>
+                              {kraCategoryError && (
+                                <p className="text-xs font-medium text-rose-600 dark:text-rose-300">
+                                  {kraCategoryError}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

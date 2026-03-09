@@ -56,6 +56,7 @@ const normalizeCategory = (category = {}) => {
         ? ""
         : Number(category.weightage),
     isActive: category?.isActive !== false,
+    requiresApproval: category?.requiresApproval === true,
   };
 };
 

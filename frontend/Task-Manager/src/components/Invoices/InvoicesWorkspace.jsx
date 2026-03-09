@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LuArrowUpRight,
   LuClipboardCheck,
@@ -20,6 +20,7 @@ import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout.jsx";
 import LoadingOverlay from "../LoadingOverlay.jsx";
 import { UserContext } from "../../context/userContext.jsx";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import { useUserAuth } from "../../hooks/useUserAuth.jsx";
 import axiosInstance from "../../utils/axiosInstance.js";
 import { API_PATHS } from "../../utils/apiPaths.js";
@@ -34,6 +35,7 @@ import {
   STATUS_FILTERS,
   summarizeInvoices,
 } from "../../utils/invoiceUtils.js";
+import { createFromNavigationState } from "../../utils/routeNavigation.js";
 import { getPrivilegedBasePath, resolvePrivilegedPath } from "../../utils/roleUtils.js";
 
 const SummaryCard = ({ icon: Icon, title, value, hint, accent }) => (
@@ -220,10 +222,15 @@ const InvoicesWorkspace = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [invoices, setInvoices] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useQueryParamState("search", {
+    defaultValue: "",
+  });
+  const [statusFilter, setStatusFilter] = useQueryParamState("status", {
+    defaultValue: "all",
+  });
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -333,7 +340,9 @@ const InvoicesWorkspace = ({
       `/admin/matters/${invoice.matterId}`,
       viewerRole
     );
-    navigate(target);
+    navigate(target, {
+      state: createFromNavigationState(location),
+    });
   };
   
   const renderContent = () => {

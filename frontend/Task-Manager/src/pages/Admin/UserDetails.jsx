@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { formatDateLabel } from "../../utils/dateUtils";
 import { LuArrowLeft, LuExternalLink, LuLoader } from "react-icons/lu";
 import {
@@ -23,10 +23,20 @@ import DashboardLayout from "../../components/layouts/DashboardLayout";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext.jsx";
-import { getPrivilegedBasePath, normalizeRole } from "../../utils/roleUtils";
+import {
+  buildReturnLocation,
+  getBackNavigationTarget,
+  navigateWithReturn,
+} from "../../utils/routeNavigation";
+import {
+  getRoleBasedFallbackRoute,
+  getPrivilegedBasePath,
+  normalizeRole,
+} from "../../utils/roleUtils";
 import TaskFormModal from "../../components/TaskFormModal";
 import { formatCurrency } from "../../utils/invoiceUtils";
 import CustomPieChart from "../../components/Charts/CustomPieChart.jsx";
+import useQueryParamState from "../../hooks/useQueryParamState";
 
 const statusBadgeStyles = {
   Pending:
@@ -157,10 +167,16 @@ const computeKpiFromTasks = (tasks = []) => {
 };
 
 const formatDate = (date) => (date ? formatDateLabel(date, "—") : "—");
+const parsePageParam = (value) => {
+  const parsedValue = Number.parseInt(value, 10);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+};
+const serializePageParam = (value) => String(value);
 
 const UserDetails = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useContext(UserContext);
   const privilegedBasePath = useMemo(
     () => getPrivilegedBasePath(user?.role),
@@ -185,7 +201,11 @@ const UserDetails = () => {
   const [error, setError] = useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useQueryParamState("page", {
+    defaultValue: 1,
+    parse: parsePageParam,
+    serialize: serializePageParam,
+  });
 
   const PAGE_SIZE = 9;
 
@@ -203,6 +223,19 @@ const UserDetails = () => {
   );
   const isClientProfile = normalizedProfileRole === "client";
   const backNavigationLabel = isClientProfile ? "Clients" : "Employees";
+  const fallbackBackPath = useMemo(
+    () =>
+      getRoleBasedFallbackRoute(
+        isClientProfile ? "clients" : "employees",
+        user?.role,
+        location.pathname
+      ),
+    [isClientProfile, location.pathname, user?.role]
+  );
+  const backTarget = useMemo(
+    () => getBackNavigationTarget(location, fallbackBackPath),
+    [fallbackBackPath, location]
+  );
 
   const fetchUserDetails = useCallback(async () => {
     if (!userId) return;
@@ -273,16 +306,8 @@ const UserDetails = () => {
   }, [fetchUserDetails]);
 
   const handleBackToTeam = useCallback(() => {
-    const hasHistory = window?.history?.state?.idx > 0;
-
-    if (hasHistory) {
-      navigate(-1);
-      return;
-    }
-
-    const fallbackPath = isClientProfile ? "clients" : "employees";
-    navigate(`${privilegedBasePath}/${fallbackPath}`, { replace: true });
-  }, [isClientProfile, navigate, privilegedBasePath]);
+    navigate(backTarget, { replace: backTarget === fallbackBackPath });
+  }, [backTarget, fallbackBackPath, navigate]);
 
   const handleTaskFormClose = () => {
     setIsTaskFormOpen(false);
@@ -296,10 +321,37 @@ const UserDetails = () => {
 
   const handleOpenTaskDetails = (taskId) => {
     if (!taskId) return;
-    navigate(`${privilegedBasePath}/tasks`, {
+    navigateWithReturn(navigate, `${privilegedBasePath}/tasks`, location, {
       state: { highlightTaskId: taskId, filterStatus: "All" },
     });
   };
+
+  const handleTaskSummaryNavigation = useCallback(
+    (status = "All") => {
+      if (!userId || isClientProfile) {
+        return;
+      }
+
+      const searchParams = new URLSearchParams({
+        employeeId: userId,
+        status: status || "All",
+        page: "1",
+      });
+
+      navigate(
+        {
+          pathname: `${privilegedBasePath}/tasks`,
+          search: `?${searchParams.toString()}`,
+        },
+        {
+          state: {
+            from: buildReturnLocation(location),
+          },
+        }
+      );
+    },
+    [isClientProfile, location, navigate, privilegedBasePath, userId]
+  );
 
   const formatCount = useCallback((value) => {
     if (typeof value !== "number" || Number.isNaN(value)) {
@@ -350,6 +402,7 @@ const UserDetails = () => {
         displayValue: formatCount(taskSummary.total),
         caption: taskSummary.total === 1 ? "Task" : "Tasks",
         gradient: "from-slate-600 via-slate-500 to-slate-400",
+        taskStatus: "All",
       },
       {
         label: "Pending",
@@ -357,6 +410,7 @@ const UserDetails = () => {
         displayValue: formatCount(taskSummary.pending),
         caption: taskSummary.pending === 1 ? "Task" : "Tasks",
         gradient: "from-amber-500 via-orange-400 to-yellow-400",
+        taskStatus: "Pending",
       },
       {
         label: "In Progress",
@@ -364,6 +418,7 @@ const UserDetails = () => {
         displayValue: formatCount(taskSummary.inProgress),
         caption: taskSummary.inProgress === 1 ? "Task" : "Tasks",
         gradient: "from-sky-500 via-cyan-500 to-blue-500",
+        taskStatus: "In Progress",
       },
       {
         label: "Completed",
@@ -371,6 +426,7 @@ const UserDetails = () => {
         displayValue: formatCount(taskSummary.completed),
         caption: taskSummary.completed === 1 ? "Task" : "Tasks",
         gradient: "from-emerald-500 via-green-500 to-lime-400",
+        taskStatus: "Completed",
       },
     ];
   }, [
@@ -394,12 +450,8 @@ const UserDetails = () => {
   );
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [tasks]);
-
-  useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
-  }, [totalPages]);
+  }, [setCurrentPage, totalPages]);
 
   const paginatedTasks = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -498,25 +550,51 @@ const UserDetails = () => {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryItems.map((item) => (
-            <div
-              key={item.label}
-              className={`relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50`}
-            >
-              <span className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-10`} />
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
-                {item.label}
-              </p>
-              <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">
-                {item.displayValue ?? formatCount(item.value)}
-              </p>
-             {item.caption ? (
-                <p className="mt-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
-                  {item.caption}
+          {summaryItems.map((item) => {
+            const isTaskSummaryCard = !isClientProfile && item.taskStatus;
+            const cardClassName = `relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-5 text-left shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50 ${
+              isTaskSummaryCard
+                ? "cursor-pointer transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_22px_48px_rgba(79,70,229,0.14)] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                : ""
+            }`;
+
+            const content = (
+              <>
+                <span className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-10`} />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+                  {item.label}
                 </p>
-              ) : null}              
-            </div>
-          ))}
+                <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">
+                  {item.displayValue ?? formatCount(item.value)}
+                </p>
+                {item.caption ? (
+                  <p className="mt-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+                    {item.caption}
+                  </p>
+                ) : null}
+              </>
+            );
+
+            if (isTaskSummaryCard) {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  className={cardClassName}
+                  onClick={() => handleTaskSummaryNavigation(item.taskStatus)}
+                  aria-label={`View ${item.label.toLowerCase()} for ${userData?.name || "this employee"}`}
+                >
+                  {content}
+                </button>
+              );
+            }
+
+            return (
+              <div key={item.label} className={cardClassName}>
+                {content}
+              </div>
+            );
+          })}
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/80 dark:shadow-slate-950/50">

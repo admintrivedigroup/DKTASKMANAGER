@@ -168,7 +168,7 @@ const getKraCategories = async (req, res) => {
       activeOnly = parsedActiveOnly.value;
     }
 
-    const filter = { employeeId };
+    const filter = { employeeId, deletedAt: null };
     if (activeOnly) {
       filter.isActive = true;
     }
@@ -217,12 +217,27 @@ const createKraCategory = async (req, res) => {
       isActive = parsedIsActive.value;
     }
 
+    let requiresApproval;
+    if (req.body?.requiresApproval !== undefined) {
+      const parsedRequiresApproval = parseBooleanField(
+        req.body.requiresApproval,
+        "requiresApproval"
+      );
+      if (!parsedRequiresApproval.valid) {
+        return res.status(400).json({ message: parsedRequiresApproval.message });
+      }
+
+      requiresApproval = parsedRequiresApproval.value;
+    }
+
     const payload = {
       employeeId,
       name,
       basePoints: parsedBasePoints.value,
       weightage: parsedWeightage.value,
       isActive: isActive !== undefined ? isActive : true,
+      requiresApproval:
+        requiresApproval !== undefined ? requiresApproval : false,
     };
 
     const category = await runWithOptionalTransaction(async (session) => {
@@ -329,14 +344,30 @@ const updateKraCategory = async (req, res) => {
       updates.isActive = parsedIsActive.value;
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "requiresApproval")) {
+      const parsedRequiresApproval = parseBooleanField(
+        req.body.requiresApproval,
+        "requiresApproval"
+      );
+      if (!parsedRequiresApproval.valid) {
+        return res.status(400).json({ message: parsedRequiresApproval.message });
+      }
+
+      updates.requiresApproval = parsedRequiresApproval.value;
+    }
+
     if (!Object.keys(updates).length) {
       return res.status(400).json({
-        message: "Provide at least one field to update: name, basePoints, weightage, isActive",
+        message:
+          "Provide at least one field to update: name, basePoints, weightage, isActive, requiresApproval",
       });
     }
 
     const category = await runWithOptionalTransaction(async (session) => {
-      const existingCategoryQuery = KraCategory.findById(id);
+      const existingCategoryQuery = KraCategory.findOne({
+        _id: id,
+        deletedAt: null,
+      });
       const existingCategory = session
         ? await existingCategoryQuery.session(session)
         : await existingCategoryQuery;
@@ -410,15 +441,14 @@ const deleteKraCategory = async (req, res) => {
       return res.status(400).json({ message: "A valid category id is required" });
     }
 
-    const category = await KraCategory.findById(id);
+    const category = await KraCategory.findOne({ _id: id, deletedAt: null });
     if (!category) {
       return res.status(404).json({ message: "KRA category not found" });
     }
 
-    if (category.isActive) {
-      category.isActive = false;
-      await category.save();
-    }
+    category.isActive = false;
+    category.deletedAt = new Date();
+    await category.save();
 
     res.json({
       message: "KRA category deleted successfully",

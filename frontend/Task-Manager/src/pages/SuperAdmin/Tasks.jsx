@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LuCalendarRange,
   LuChevronLeft,
@@ -8,6 +8,7 @@ import {
   LuRotateCcw,
   LuSearch,
 } from "react-icons/lu";
+import toast from "react-hot-toast";
 
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
@@ -17,8 +18,12 @@ import TaskFormModal from "../../components/TaskFormModal";
 import ViewToggle from "../../components/ViewToggle";
 import TaskListTable from "../../components/TaskListTable";
 import SearchableSelect from "../../components/SearchableSelect";
+import useQueryParamState from "../../hooks/useQueryParamState";
 import useTasks from "../../hooks/useTasks";
 import useTaskNotifications from "../../hooks/useTaskNotifications";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import { navigateWithReturn } from "../../utils/routeNavigation";
 
 const normalizeAssigneeOption = (assignee) => {
   if (!assignee) {
@@ -52,29 +57,102 @@ const normalizeAssigneeOption = (assignee) => {
   return null;
 };
 
+const getDateInputValue = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 const Tasks = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const locationState = location.state;
-  const initialFilterStatus = locationState?.filterStatus || "All";
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
-  const [selectedDate, setSelectedDate] = useState("");
-  const [assignedFilter, setAssignedFilter] = useState("all");
+  const consumedLocationStateRef = useRef({
+    highlightTaskId: false,
+    filterStatus: false,
+    openTaskForm: false,
+  });
+  const [searchQuery, setSearchQuery] = useQueryParamState("search", {
+    defaultValue: "",
+  });
+  const [filterStatus, setFilterStatus] = useQueryParamState("status", {
+    defaultValue: "All",
+  });
+  const [selectedDate, setSelectedDate] = useQueryParamState("dueDate", {
+    defaultValue: "",
+  });
+  const [assignedFilter, setAssignedFilter] = useQueryParamState("employeeId", {
+    defaultValue: "all",
+  });
   const [assignedSearch, setAssignedSearch] = useState("");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState(null);
-  const [taskScope, setTaskScope] = useState("All Tasks");
-  const [viewMode, setViewMode] = useState("grid");
+  const [taskScope, setTaskScope] = useQueryParamState("tab", {
+    defaultValue: "All Tasks",
+  });
+  const [viewMode, setViewMode] = useQueryParamState("view", {
+    defaultValue: "grid",
+  });
   const [highlightTaskId, setHighlightTaskId] = useState(
     locationState?.highlightTaskId || null
   );
   const [isHighlighting, setIsHighlighting] = useState(
     Boolean(locationState?.highlightTaskId)
   );
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useQueryParamState("page", {
+    defaultValue: 1,
+    parse: (value) => {
+      const parsedValue = Number.parseInt(value, 10);
+      return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1;
+    },
+    serialize: (value) => String(value),
+  });
+  const [approvalActionTaskId, setApprovalActionTaskId] = useState(null);
 
   const PAGE_SIZE = 9;
+  const updateTaskListParams = useCallback(
+    (updates) => {
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+
+          Object.entries(updates).forEach(([key, value]) => {
+            const shouldDelete =
+              value === undefined ||
+              value === null ||
+              value === "" ||
+              (key === "status" && value === "All") ||
+              (key === "employeeId" && value === "all") ||
+              (key === "tab" && value === "All Tasks") ||
+              (key === "view" && value === "grid") ||
+              (key === "page" && value === 1);
+
+            if (shouldDelete) {
+              next.delete(key);
+            } else {
+              next.set(key, String(value));
+            }
+          });
+
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const { tasks, tabs, isLoading, refetch } = useTasks({
     statusFilter: filterStatus,
@@ -128,10 +206,13 @@ const Tasks = () => {
     assignedFilter !== "all";
 
   const handleResetFilters = () => {
-    setFilterStatus("All");
-    setSearchQuery("");
-    setSelectedDate("");
-    setAssignedFilter("all");
+    updateTaskListParams({
+      status: "All",
+      search: "",
+      dueDate: "",
+      employeeId: "all",
+      page: 1,
+    });
     setAssignedSearch("");
   };
 
@@ -155,46 +236,100 @@ const Tasks = () => {
       return;
     }
 
-    navigate(`/super-admin/task-details/${taskId}`);
+    navigateWithReturn(
+      navigate,
+      `/super-admin/task-details/${taskId}`,
+      location
+    );
+  };
+
+  const handleApprovalDecision = async (task, decision) => {
+    const taskId = task?._id;
+    if (!taskId) {
+      return;
+    }
+
+    const endpoint =
+      decision === "approve"
+        ? API_PATHS.TASKS.APPROVE_COMPLETION(taskId)
+        : API_PATHS.TASKS.REJECT_COMPLETION(taskId);
+
+    try {
+      setApprovalActionTaskId(taskId);
+      await axiosInstance.post(endpoint);
+      toast.success(
+        decision === "approve"
+          ? "Task completion approved."
+          : "Task completion rejected."
+      );
+      await refetch();
+    } catch (error) {
+      console.error(`Failed to ${decision} task completion`, error);
+      toast.error(
+        error?.response?.data?.message ||
+          `Unable to ${decision} task completion right now.`
+      );
+    } finally {
+      setApprovalActionTaskId(null);
+    }
   };
 
   useEffect(() => {
-    if (!locationState?.highlightTaskId) {
+    const incomingHighlightId = locationState?.highlightTaskId;
+    if (!incomingHighlightId || consumedLocationStateRef.current.highlightTaskId) {
       return;
     }
+    consumedLocationStateRef.current.highlightTaskId = true;
 
-    const { highlightTaskId: incomingHighlightId, ...restState } =
-      locationState;
+    const { highlightTaskId: _highlightTaskId, ...restState } = locationState;
 
     setHighlightTaskId(incomingHighlightId);
     setIsHighlighting(Boolean(incomingHighlightId));
-    setViewMode("grid");
-    setFilterStatus("All");
+    updateTaskListParams({ view: "grid", status: "All" });
 
-    navigate(location.pathname, {
-      replace: true,
-      state: restState,
-    });
-  }, [location.pathname, locationState, navigate]);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+      },
+      {
+        replace: true,
+        state: restState,
+      }
+    );
+  }, [location.pathname, location.search, locationState, navigate, updateTaskListParams]);
 
   useEffect(() => {
-    if (typeof locationState?.filterStatus !== "string") {
+    const incomingFilterStatus = locationState?.filterStatus;
+    if (
+      typeof incomingFilterStatus !== "string" ||
+      consumedLocationStateRef.current.filterStatus
+    ) {
       return;
     }
+    consumedLocationStateRef.current.filterStatus = true;
 
-    setFilterStatus(locationState.filterStatus);
+    setFilterStatus(incomingFilterStatus);
 
     const { filterStatus: _filterStatus, ...restState } = locationState;
-    navigate(location.pathname, {
-      replace: true,
-      state: restState,
-    });
-  }, [location.pathname, locationState, navigate]);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+      },
+      {
+        replace: true,
+        state: restState,
+      }
+    );
+  }, [location.pathname, location.search, locationState, navigate, setFilterStatus]);
 
   useEffect(() => {
-    if (!locationState?.openTaskForm) {
+    const shouldOpenTaskForm = locationState?.openTaskForm;
+    if (!shouldOpenTaskForm || consumedLocationStateRef.current.openTaskForm) {
       return;
     }
+    consumedLocationStateRef.current.openTaskForm = true;
 
     const { openTaskForm: _openTaskForm, taskId, ...restState } =
       locationState || {};
@@ -202,11 +337,17 @@ const Tasks = () => {
     setActiveTaskId(taskId || null);
     setIsTaskFormOpen(true);
 
-    navigate(location.pathname, {
-      replace: true,
-      state: restState,
-    });
-  }, [location.pathname, locationState, navigate]);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+      },
+      {
+        replace: true,
+        state: restState,
+      }
+    );
+  }, [location.pathname, location.search, locationState, navigate]);
 
   const filteredTasks = useMemo(() => {
     const normalizedAssignedFilter = assignedFilter.trim().toLowerCase();
@@ -214,15 +355,17 @@ const Tasks = () => {
     return tasks.filter((task) => {
       const normalizedQuery = searchQuery.trim().toLowerCase();
       const normalizedSelectedDate = selectedDate.trim();
+      const normalizedTitle = task.title?.toLowerCase?.() || "";
+      const normalizedDescription = task.description?.toLowerCase?.() || "";
 
       const matchesSearch =
-        !normalizedQuery || task.title?.toLowerCase().includes(normalizedQuery);
+        !normalizedQuery ||
+        normalizedTitle.includes(normalizedQuery) ||
+        normalizedDescription.includes(normalizedQuery);
 
       const matchesDate =
         !normalizedSelectedDate ||
-        (task.dueDate &&
-          new Date(task.dueDate).toISOString().split("T")[0] ===
-            normalizedSelectedDate);
+        getDateInputValue(task.dueDate) === normalizedSelectedDate;
 
       const assignedMembers = Array.isArray(task.assignedTo)
         ? task.assignedTo
@@ -247,12 +390,12 @@ const Tasks = () => {
   );
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus, searchQuery, selectedDate, taskScope, tasks, assignedFilter]);
+    if (isLoading) {
+      return;
+    }
 
-  useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
-  }, [totalPages]);
+  }, [isLoading, totalPages]);
 
   const paginatedTasks = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -405,7 +548,12 @@ const Tasks = () => {
             <div className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
               <select
                 value={taskScope}
-                onChange={(event) => setTaskScope(event.target.value)}
+                onChange={(event) => {
+                  updateTaskListParams({
+                    tab: event.target.value,
+                    page: 1,
+                  });
+                }}
                 className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:w-40"
               >
                 <option>All Tasks</option>
@@ -434,7 +582,12 @@ const Tasks = () => {
                       <TaskStatusTabs
                         tabs={tabs}
                         activeTab={filterStatus}
-                        setActiveTab={setFilterStatus}
+                        setActiveTab={(value) => {
+                          updateTaskListParams({
+                            status: value,
+                            page: 1,
+                          });
+                        }}
                       />
                     </div>
                     <div className="flex items-center justify-end gap-2 shrink-0">
@@ -460,9 +613,12 @@ const Tasks = () => {
                           <input
                             type="text"
                             value={searchQuery}
-                            onChange={(event) =>
-                              setSearchQuery(event.target.value)
-                            }
+                            onChange={(event) => {
+                              updateTaskListParams({
+                                search: event.target.value,
+                                page: 1,
+                              });
+                            }}
                             placeholder="Search tasks"
                             className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
                           />
@@ -477,9 +633,12 @@ const Tasks = () => {
                           <input
                             type="date"
                             value={selectedDate}
-                            onChange={(event) =>
-                              setSelectedDate(event.target.value)
-                            }
+                            onChange={(event) => {
+                              updateTaskListParams({
+                                dueDate: event.target.value,
+                                page: 1,
+                              });
+                            }}
                             className="h-11 w-full rounded-lg border border-slate-200 bg-white px-9 text-sm text-slate-700 shadow-sm transition focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-100"
                           />
                         </div>
@@ -490,7 +649,12 @@ const Tasks = () => {
                         </span>
                         <SearchableSelect
                           value={assignedFilter}
-                          onChange={setAssignedFilter}
+                          onChange={(value) => {
+                            updateTaskListParams({
+                              employeeId: value,
+                              page: 1,
+                            });
+                          }}
                           options={assigneeOptions}
                           filteredOptions={filteredAssigneeOptions}
                           getOptionValue={(option) => option.id}
@@ -525,6 +689,7 @@ const Tasks = () => {
                 {paginatedTasks?.map((item) => (
                   <TaskCard
                     key={item._id}
+                    task={item}
                     cardId={item._id}
                     title={item.title}
                     description={item.description}
@@ -548,6 +713,9 @@ const Tasks = () => {
                     }
                     onClick={() => handleTaskCardClick(item._id)}
                     onEdit={() => openTaskForm(item._id)}
+                    onApprove={(task) => handleApprovalDecision(task, "approve")}
+                    onReject={(task) => handleApprovalDecision(task, "reject")}
+                    isApprovalActionLoading={approvalActionTaskId === item._id}
                   />
                 ))}
 
@@ -566,6 +734,9 @@ const Tasks = () => {
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
                     onEdit={(task) => openTaskForm(task?._id)}
+                    onApprove={(task) => handleApprovalDecision(task, "approve")}
+                    onReject={(task) => handleApprovalDecision(task, "reject")}
+                    approvalActionTaskId={approvalActionTaskId}
                     getUnreadCount={getUnreadCount}
                     className="mt-0"
                   />

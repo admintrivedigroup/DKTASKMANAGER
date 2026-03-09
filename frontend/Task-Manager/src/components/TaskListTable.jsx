@@ -10,6 +10,9 @@ const TaskListTable = ({
   tableData,
   onTaskClick,
   onEdit,
+  onApprove,
+  onReject,
+  approvalActionTaskId = null,
   getUnreadCount,
   className = "",
 }) => {
@@ -29,6 +32,8 @@ const TaskListTable = ({
         return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
       case "In Progress":
         return "bg-gradient-to-r from-sky-500 to-cyan-500 text-white";
+      case "Pending Approval":
+        return "bg-gradient-to-r from-amber-500 to-orange-400 text-white";
       default:
         return "bg-gradient-to-r from-slate-500 to-slate-400 text-white";
     }
@@ -183,6 +188,63 @@ const TaskListTable = ({
     .join(" ");
 
   const hasEditAction = typeof onEdit === "function";
+  const hasApprovalActions =
+    typeof onApprove === "function" || typeof onReject === "function";
+
+  const canRenderApprovalActions = (task) =>
+    task?.status === "Pending Approval" && task?.approvalStatus === "pending";
+
+  const renderActionButtons = (task) => {
+    if (!hasEditAction && !hasApprovalActions) {
+      return null;
+    }
+
+    const isApprovalActionLoading =
+      Boolean(approvalActionTaskId) && approvalActionTaskId === task?._id;
+
+    return (
+      <div className="flex items-center justify-end gap-2">
+        {canRenderApprovalActions(task) && typeof onApprove === "function" ? (
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={(event) => {
+              event.stopPropagation();
+              onApprove(task);
+            }}
+            disabled={isApprovalActionLoading}
+          >
+            Approve
+          </button>
+        ) : null}
+        {canRenderApprovalActions(task) && typeof onReject === "function" ? (
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={(event) => {
+              event.stopPropagation();
+              onReject(task);
+            }}
+            disabled={isApprovalActionLoading}
+          >
+            Reject
+          </button>
+        ) : null}
+        {hasEditAction ? (
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(task);
+            }}
+          >
+            Edit
+          </button>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div className={containerClassName}>
@@ -198,7 +260,7 @@ const TaskListTable = ({
               <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
               <th className="hidden px-6 py-3 md:table-cell">Start Date</th>
               <th className="hidden px-6 py-3 md:table-cell">Points</th>
-              {hasEditAction && (
+              {(hasEditAction || hasApprovalActions) && (
                 <th className="px-6 py-3 text-right">Actions</th>
               )}
             </tr>
@@ -269,18 +331,9 @@ const TaskListTable = ({
                   <td className="hidden px-6 py-4 text-sm font-medium text-slate-700 md:table-cell dark:text-slate-200">
                     {formatPoints(task)}
                   </td>
-                  {hasEditAction && (
+                  {(hasEditAction || hasApprovalActions) && (
                     <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onEdit(task);
-                        }}
-                      >
-                        Edit
-                      </button>
+                      {renderActionButtons(task)}
                     </td>
                   )}
                 </tr>
@@ -321,18 +374,7 @@ const TaskListTable = ({
                     >
                       {task.status}
                     </span>
-                    {hasEditAction && (
-                      <button
-                        type="button"
-                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onEdit(task);
-                        }}
-                      >
-                        Edit
-                      </button>
-                    )}
+                    {(hasEditAction || hasApprovalActions) && renderActionButtons(task)}
                   </div>
                 </div>
 
