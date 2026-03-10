@@ -47,14 +47,6 @@ const normalizeOptionalId = (value, fieldName) => {
   return normalizeRequiredId(value, fieldName);
 };
 
-const normalizeRequiredKraCategoryId = (value) => {
-  try {
-    return normalizeRequiredId(value, "kraCategoryId");
-  } catch (error) {
-    throw createHttpError("KRA category is required for every task.", 400);
-  }
-};
-
 const normalizeAssigneeIds = (assignedTo) => {
   if (!Array.isArray(assignedTo)) {
     throw createHttpError("assignedTo must be an array", 400);
@@ -419,8 +411,6 @@ const validateCreateTaskPayload = (payload) => {
     sanitized.caseFile = caseFile;
   }
 
-  sanitized.kraCategoryId = normalizeRequiredKraCategoryId(payload.kraCategoryId);
-
   const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);
   if (relatedDocuments && relatedDocuments.length) {
     sanitized.relatedDocuments = relatedDocuments;
@@ -543,8 +533,6 @@ const validateUpdateTaskPayload = (payload) => {
   if (hasOwn(payload, "caseFile")) {
     sanitized.caseFile = normalizeOptionalId(payload.caseFile, "caseFile");
   }
-
-  sanitized.kraCategoryId = normalizeRequiredKraCategoryId(payload.kraCategoryId);
 
   if (hasOwn(payload, "relatedDocuments")) {
     const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);

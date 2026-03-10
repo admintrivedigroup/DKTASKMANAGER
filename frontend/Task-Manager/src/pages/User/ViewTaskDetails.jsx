@@ -1,14 +1,15 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { LuArrowLeft, LuSquareArrowOutUpRight } from "react-icons/lu";
+import toast from "react-hot-toast";
+
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import AvatarGroup from "../../components/AvatarGroup";
-import { LuArrowLeft, LuSquareArrowOutUpRight } from "react-icons/lu";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { formatDateTimeLabel } from "../../utils/dateUtils";
-import toast from "react-hot-toast";
 import { UserContext } from "../../context/userContext.jsx";
 import {
   getRoleBasedFallbackRoute,
@@ -27,6 +28,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   const { user } = useContext(UserContext);
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const handleTabChange = useCallback(
     (tabId) => {
       const nextTabId =
@@ -48,9 +50,10 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     [setSearchParams, task?.isPersonal]
   );
 
-  const tasksRoute = useMemo(() => {
-    return getRoleBasedFallbackRoute("tasks", user?.role, location.pathname);
-  }, [location.pathname, user?.role]);
+  const tasksRoute = useMemo(
+    () => getRoleBasedFallbackRoute("tasks", user?.role, location.pathname),
+    [location.pathname, user?.role]
+  );
   const backTarget = useMemo(
     () => getBackNavigationTarget(location, tasksRoute),
     [location, tasksRoute]
@@ -60,8 +63,6 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     switch (status) {
       case "In Progress":
         return "bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-500 text-white";
-      case "Pending Approval":
-        return "bg-gradient-to-r from-amber-500 via-orange-400 to-amber-300 text-white";
       case "Completed":
         return "bg-gradient-to-r from-emerald-500 via-lime-400 to-green-500 text-white";
       default:
@@ -69,38 +70,13 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     }
   };
 
-  const formatSnapshotValue = (value) => {
-    const parsedValue = Number(value);
-    if (!Number.isFinite(parsedValue)) {
-      return "—";
-    }
-
-    return Number.isInteger(parsedValue)
-      ? parsedValue.toString()
-      : parsedValue.toFixed(2).replace(/\.?0+$/, "");
-  };
-
-  const formatApprovalStatus = (value) => {
-    if (!value) {
-      return "N/A";
-    }
-
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  };
-
-  // Fetch Task info by ID
   const getTaskDetailsByID = useCallback(async () => {
     try {
       setIsLoading(true);
       setTask(null);
-
-      const response = await axiosInstance.get(
-        API_PATHS.TASKS.GET_TASK_BY_ID(id)
-      );
-    
+      const response = await axiosInstance.get(API_PATHS.TASKS.GET_TASK_BY_ID(id));
       if (response.data) {
-        const taskInfo = response.data;
-        setTask(taskInfo);
+        setTask(response.data);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -109,7 +85,6 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     }
   }, [id]);
 
-  // handle todo check
   const updateTodoCheckList = async (todoId) => {
     if (!task) {
       return;
@@ -170,33 +145,28 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
       if (response.status === 200) {
         setTask((prevTask) =>
           response.data?.task ||
-          (prevTask
-            ? { ...prevTask, todoChecklist: updatedChecklist }
-            : prevTask)
+          (prevTask ? { ...prevTask, todoChecklist: updatedChecklist } : prevTask)
         );
       } else {
         setTask((prevTask) =>
-          prevTask
-            ? { ...prevTask, todoChecklist: previousChecklist }
-            : prevTask
-        );       
+          prevTask ? { ...prevTask, todoChecklist: previousChecklist } : prevTask
+        );
       }
     } catch (error) {
       console.error("Failed to update checklist", error);
       setTask((prevTask) =>
         prevTask ? { ...prevTask, todoChecklist: previousChecklist } : prevTask
       );
-      toast.error("Failed to update checklist");      
+      toast.error("Failed to update checklist");
     }
   };
-  
 
-  // Handle attachment link lick
   const handleLinkClick = (link) => {
-    if (!/^https?:\/\//i.test(link)) {
-      link = "https://" + link; // Default to HTTPS
+    let safeLink = link;
+    if (!/^https?:\/\//i.test(safeLink)) {
+      safeLink = `https://${safeLink}`;
     }
-    window.open(link, "_blank");
+    window.open(safeLink, "_blank");
   };
 
   useEffect(() => {
@@ -225,20 +195,6 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
   const todoChecklistItems = Array.isArray(task?.todoChecklist)
     ? task.todoChecklist
     : [];
-  const kraCategoryName =
-    task?.kraCategoryId?.name && typeof task.kraCategoryId.name === "string"
-      ? task.kraCategoryId.name
-      : "—";
-
-  const requiresApproval = task?.kraCategoryId?.requiresApproval === true;
-  const approvalStatusLabel = formatApprovalStatus(task?.approvalStatus);
-  const approvedByLabel =
-    task?.approvedBy?.name || task?.approvedBy?.email || "N/A";
-  const earnedPointsValue =
-    task?.status === "Pending Approval" && task?.approvalStatus === "pending"
-      ? "0"
-      : formatSnapshotValue(task?.earnedPoints);
-
   const normalizedUserId = user?._id ? user._id.toString() : "";
   const isPrivilegedUser = hasPrivilegedAccess(user?.role);
   const isPersonalTask = Boolean(task?.isPersonal);
@@ -255,7 +211,6 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
     if (activeMenu) {
       return activeMenu;
     }
-
     return isPrivilegedUser ? "Tasks" : "My Tasks";
   }, [activeMenu, isPrivilegedUser]);
   const hasTaskStarted = useMemo(() => {
@@ -346,11 +301,11 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {task?.status && (
+                  {task?.status ? (
                     <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white ${getStatusTagColor(task.status)}`}>
                       Status: {task.status}
                     </span>
-                  )}
+                  ) : null}
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
                     Priority: {task?.priority || "N/A"}
                   </span>
@@ -361,7 +316,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
               </div>
 
               <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                {isPersonalTask && isAssignedToCurrentUser && (
+                {isPersonalTask && isAssignedToCurrentUser ? (
                   <button
                     type="button"
                     className="add-btn h-11"
@@ -369,7 +324,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                   >
                     Update Task
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           </section>
@@ -384,12 +339,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                 >
                   <LuArrowLeft className="text-base" />
                 </Link>
-                {[
-                  { id: "details", label: "Details" },
-                  ...(isChannelAvailable
-                    ? [{ id: "channel", label: "Channel" }]
-                    : []),
-                ].map((tab) => (
+                {[{ id: "details", label: "Details" }, ...(isChannelAvailable ? [{ id: "channel", label: "Channel" }] : [])].map((tab) => (
                   <button
                     key={tab.id}
                     type="button"
@@ -413,23 +363,15 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                         <InfoBox label="Priority" value={task?.priority} />
-                        <InfoBox
-                          label="Start Date"
-                          value={formatDateTimeLabel(task?.startDate, "N/A")}
-                        />
-                        <InfoBox
-                          label="Due Date"
-                          value={formatDateTimeLabel(task?.dueDate, "N/A")}
-                        />
+                        <InfoBox label="Start Date" value={formatDateTimeLabel(task?.startDate, "N/A")} />
+                        <InfoBox label="Due Date" value={formatDateTimeLabel(task?.dueDate, "N/A")} />
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
                             Assigned To
                           </p>
                           <div className="mt-2 rounded-2xl border border-white/60 bg-white/80 p-3">
                             <AvatarGroup
-                              avatars={assignedMembers?.map?.(
-                                (item) => item?.profileImageUrl
-                              )}
+                              avatars={assignedMembers?.map?.((item) => item?.profileImageUrl)}
                               maxVisible={5}
                             />
                             {assigneeNames.length > 0 ? (
@@ -437,52 +379,10 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                                 {assigneeNames.join(", ")}
                               </p>
                             ) : (
-                              <p className="mt-2 text-xs text-slate-400">
-                                Unassigned
-                              </p>
+                              <p className="mt-2 text-xs text-slate-400">Unassigned</p>
                             )}
                           </div>
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                        <InfoBox label="Category" value={kraCategoryName} />
-                        <InfoBox
-                          label="Requires Approval"
-                          value={requiresApproval ? "Yes" : "No"}
-                        />
-                        <InfoBox
-                          label="Approval Status"
-                          value={approvalStatusLabel}
-                        />
-                        <InfoBox
-                          label="Completion Requested At"
-                          value={formatDateTimeLabel(task?.completionRequestedAt, "N/A")}
-                        />
-                        <InfoBox
-                          label="Approved At"
-                          value={formatDateTimeLabel(task?.approvedAt, "N/A")}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                        <InfoBox
-                          label="Base Points Snapshot"
-                          value={formatSnapshotValue(task?.basePointsSnapshot)}
-                        />
-                        <InfoBox
-                          label="Priority Multiplier Snapshot"
-                          value={formatSnapshotValue(task?.priorityMultiplierSnapshot)}
-                        />
-                        <InfoBox
-                          label="Timeliness Multiplier Snapshot"
-                          value={formatSnapshotValue(task?.timelinessMultiplierSnapshot)}
-                        />
-                        <InfoBox
-                          label="Earned Points"
-                          value={earnedPointsValue}
-                        />
-                        <InfoBox label="Approved By" value={approvedByLabel} />
                       </div>
 
                       <div>
@@ -492,29 +392,17 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                         <div className="mt-3 space-y-3">
                           {todoChecklistItems?.map?.((item, index) => {
                             const todoIdValue = item?._id || item?.id || null;
-                            const todoId = todoIdValue
-                              ? todoIdValue.toString()
-                              : null;
-                            const assignedValue =
-                              item?.assignedTo?._id || item?.assignedTo || "";
-                            const assignedId = assignedValue
-                              ? assignedValue.toString()
-                              : "";
-
+                            const todoId = todoIdValue ? todoIdValue.toString() : null;
+                            const assignedValue = item?.assignedTo?._id || item?.assignedTo || "";
+                            const assignedId = assignedValue ? assignedValue.toString() : "";
                             const assigneeDetails =
-                              (typeof item?.assignedTo === "object" &&
-                                item?.assignedTo !== null
+                              (typeof item?.assignedTo === "object" && item?.assignedTo !== null
                                 ? item.assignedTo
                                 : null) ||
                               assignedMembers.find((member) => {
-                                const memberId =
-                                  member?._id || member?.id || member;
-                                return (
-                                  memberId &&
-                                  memberId.toString() === assignedId
-                                );
+                                const memberId = member?._id || member?.id || member;
+                                return memberId && memberId.toString() === assignedId;
                               });
-
                             const assigneeName = assigneeDetails?.name || "";
                             const canToggleUser =
                               isPrivilegedUser ||
@@ -547,13 +435,13 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                         </div>
                       </div>
 
-                      {task?.attachments?.length > 0 && (
+                      {task?.attachments?.length > 0 ? (
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">
                             Attachments
                           </p>
                           <div className="mt-3 space-y-3">
-                            {task?.attachments?.map?.((link, index) => (
+                            {task.attachments.map((link, index) => (
                               <Attachment
                                 key={`link_${index}`}
                                 link={link}
@@ -563,7 +451,7 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
                             ))}
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
@@ -597,64 +485,60 @@ const ViewTaskDetails = ({ activeMenu } = {}) => {
         mode="personal"
       />
 
-      {task &&
-        isChannelOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div className="fixed inset-0 z-[1200] bg-slate-950/40 backdrop-blur-sm">
-            <div className="flex h-[100dvh] w-screen flex-col bg-slate-50">
-              <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                    Task Channel
-                  </p>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {task?.title || "Task"}
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("details")}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-hidden px-0 py-0 sm:px-6 sm:py-5">
-                {canAccessChannel ? (
-                  <TaskChannel
-                    task={task}
-                    user={user}
-                    isAssigned={isAssignedToCurrentUser}
-                    isPrivileged={isPrivilegedUser}
-                    isFullscreen
-                  />
-                ) : (
-                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                    The channel is available to assignees, admins, and super admins
-                    only.
+      {task && isChannelOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[1200] bg-slate-950/40 backdrop-blur-sm">
+              <div className="flex h-[100dvh] w-screen flex-col bg-slate-50">
+                <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                      Task Channel
+                    </p>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      {task?.title || "Task"}
+                    </h2>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("details")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-hidden px-0 py-0 sm:px-6 sm:py-5">
+                  {canAccessChannel ? (
+                    <TaskChannel
+                      task={task}
+                      user={user}
+                      isAssigned={isAssignedToCurrentUser}
+                      isPrivileged={isPrivilegedUser}
+                      isFullscreen
+                    />
+                  ) : (
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                      The channel is available to assignees, admins, and super admins only.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>,
-          document.body
-        )}
+            </div>,
+            document.body
+          )
+        : null}
     </DashboardLayout>
   );
 };
 
 export default ViewTaskDetails;
 
-const InfoBox = ({ label, value }) => {
-  return (
-    <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
-    </div>
-  );
-};
+const InfoBox = ({ label, value }) => (
+  <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">{label}</p>
+    <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
+  </div>
+);
 
 const TodoCheckList = ({
   text,
@@ -663,50 +547,42 @@ const TodoCheckList = ({
   disabled,
   assigneeName,
   disabledMessage,
-}) => {
-  return (
-    <div className="flex items-start gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.08)]">
-      <input
-        type="checkbox"
-        checked={isChecked}
-        onChange={onChange}
-        disabled={disabled}
-        className="mt-1 h-5 w-5 cursor-pointer rounded-full border border-slate-300 text-primary focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-      />
-      <div className="space-y-1">
-        <p className="text-sm text-slate-700">{text}</p>
-        {assigneeName && (
-          <p className="text-xs text-slate-500">Assigned to {assigneeName}</p>
-        )}
-        {disabled && (
-          <p className="text-[11px] text-slate-400">
-            {disabledMessage ||
-              (assigneeName
-                ? `Only ${assigneeName} can mark this item complete.`
-                : "Only the assigned member can mark this item complete.")}
-          </p>
-        )}
-      </div>
+}) => (
+  <div className="flex items-start gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.08)]">
+    <input
+      type="checkbox"
+      checked={isChecked}
+      onChange={onChange}
+      disabled={disabled}
+      className="mt-1 h-5 w-5 cursor-pointer rounded-full border border-slate-300 text-primary focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+    />
+    <div className="space-y-1">
+      <p className="text-sm text-slate-700">{text}</p>
+      {assigneeName ? <p className="text-xs text-slate-500">Assigned to {assigneeName}</p> : null}
+      {disabled ? (
+        <p className="text-[11px] text-slate-400">
+          {disabledMessage ||
+            (assigneeName
+              ? `Only ${assigneeName} can mark this item complete.`
+              : "Only the assigned member can mark this item complete.")}
+        </p>
+      ) : null}
     </div>
-  );
-};
+  </div>
+);
 
-const Attachment = ({ link, index, onClick }) => {
-  return (
-    <button
-      type="button"
-      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-left text-sm text-slate-700 shadow-[0_12px_24px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
-      onClick={onClick}
-    >
-      <div className="flex flex-1 items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-          {index < 9 ? `0${index + 1}` : index + 1}
-        </span>
-
-        <p className="line-clamp-1 text-sm">{link}</p>
-      </div>
-
-      <LuSquareArrowOutUpRight className="text-base" />
-    </button>
-  );
-};
+const Attachment = ({ link, index, onClick }) => (
+  <button
+    type="button"
+    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-left text-sm text-slate-700 shadow-[0_12px_24px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
+    onClick={onClick}
+  >
+    <div className="flex flex-1 items-center gap-3">
+      <span className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+        {index < 9 ? `0${index + 1}` : index + 1}
+      </span>
+      <p className="line-clamp-1 text-sm">{link}</p>
+    </div>
+    <LuSquareArrowOutUpRight className="text-base" />
+  </button>
+);

@@ -245,6 +245,7 @@ const MyTasks = () => {
               {paginatedTasks?.map((item) => (
                 <TaskCard
                   key={item._id}
+                  task={item}
                   title={item.title}
                   description={item.description}
                   priority={item.priority}

@@ -1,4 +1,3 @@
-import React from "react";
 import { LuCalendar, LuClock3, LuUser } from "react-icons/lu";
 import { formatDateTimeLabel } from "../utils/dateUtils";
 import {
@@ -10,9 +9,6 @@ const TaskListTable = ({
   tableData,
   onTaskClick,
   onEdit,
-  onApprove,
-  onReject,
-  approvalActionTaskId = null,
   getUnreadCount,
   className = "",
 }) => {
@@ -32,8 +28,6 @@ const TaskListTable = ({
         return "bg-gradient-to-r from-purple-500 to-pink-500 text-white";
       case "In Progress":
         return "bg-gradient-to-r from-sky-500 to-cyan-500 text-white";
-      case "Pending Approval":
-        return "bg-gradient-to-r from-amber-500 to-orange-400 text-white";
       default:
         return "bg-gradient-to-r from-slate-500 to-slate-400 text-white";
     }
@@ -79,22 +73,7 @@ const TaskListTable = ({
   const formatDate = (value, fallback = "N/A") =>
     formatDateTimeLabel(value, fallback);
 
-  const formatPoints = (task) => {
-    if (task?.status !== "Completed") {
-      return "—";
-    }
-
-    const normalizedPoints = Number(task?.earnedPoints);
-    if (!Number.isFinite(normalizedPoints)) {
-      return "—";
-    }
-
-    return Number.isInteger(normalizedPoints)
-      ? normalizedPoints.toString()
-      : normalizedPoints.toFixed(2).replace(/\.?0+$/, "");
-  };
-
- const handleTaskActivation = (task) => {
+  const handleTaskActivation = (task) => {
     if (typeof onTaskClick === "function" && task) {
       onTaskClick(task);
     }
@@ -155,7 +134,7 @@ const TaskListTable = ({
     );
   };
 
- const getProgressMeta = (task) => {
+  const getProgressMeta = (task) => {
     const percentage = calculateTaskCompletion({
       progress:
         task?.progress ??
@@ -188,60 +167,24 @@ const TaskListTable = ({
     .join(" ");
 
   const hasEditAction = typeof onEdit === "function";
-  const hasApprovalActions =
-    typeof onApprove === "function" || typeof onReject === "function";
-
-  const canRenderApprovalActions = (task) =>
-    task?.status === "Pending Approval" && task?.approvalStatus === "pending";
 
   const renderActionButtons = (task) => {
-    if (!hasEditAction && !hasApprovalActions) {
+    if (!hasEditAction) {
       return null;
     }
 
-    const isApprovalActionLoading =
-      Boolean(approvalActionTaskId) && approvalActionTaskId === task?._id;
-
     return (
       <div className="flex items-center justify-end gap-2">
-        {canRenderApprovalActions(task) && typeof onApprove === "function" ? (
-          <button
-            type="button"
-            className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={(event) => {
-              event.stopPropagation();
-              onApprove(task);
-            }}
-            disabled={isApprovalActionLoading}
-          >
-            Approve
-          </button>
-        ) : null}
-        {canRenderApprovalActions(task) && typeof onReject === "function" ? (
-          <button
-            type="button"
-            className="inline-flex items-center rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={(event) => {
-              event.stopPropagation();
-              onReject(task);
-            }}
-            disabled={isApprovalActionLoading}
-          >
-            Reject
-          </button>
-        ) : null}
-        {hasEditAction ? (
-          <button
-            type="button"
-            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit(task);
-            }}
-          >
-            Edit
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit(task);
+          }}
+        >
+          Edit
+        </button>
       </div>
     );
   };
@@ -259,10 +202,9 @@ const TaskListTable = ({
               <th className="hidden px-6 py-3 md:table-cell">Due Date</th>
               <th className="hidden px-6 py-3 md:table-cell">Assigned To</th>
               <th className="hidden px-6 py-3 md:table-cell">Start Date</th>
-              <th className="hidden px-6 py-3 md:table-cell">Points</th>
-              {(hasEditAction || hasApprovalActions) && (
+              {hasEditAction ? (
                 <th className="px-6 py-3 text-right">Actions</th>
-              )}
+              ) : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900/60">
@@ -328,14 +270,11 @@ const TaskListTable = ({
                   <td className="hidden px-6 py-4 text-sm text-slate-500 md:table-cell dark:text-slate-300">
                     {formatDate(task.startDate || task.createdAt)}
                   </td>
-                  <td className="hidden px-6 py-4 text-sm font-medium text-slate-700 md:table-cell dark:text-slate-200">
-                    {formatPoints(task)}
-                  </td>
-                  {(hasEditAction || hasApprovalActions) && (
+                  {hasEditAction ? (
                     <td className="px-6 py-4 text-right">
                       {renderActionButtons(task)}
                     </td>
-                  )}
+                  ) : null}
                 </tr>
               );
             })}
@@ -374,14 +313,14 @@ const TaskListTable = ({
                     >
                       {task.status}
                     </span>
-                    {(hasEditAction || hasApprovalActions) && renderActionButtons(task)}
+                    {hasEditAction ? renderActionButtons(task) : null}
                   </div>
                 </div>
 
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   {task.priority}
                 </div>
-                
+
                 <div className="mt-4 space-y-1">
                   <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <span>Progress</span>
@@ -422,14 +361,6 @@ const TaskListTable = ({
                       {formatDate(task.startDate || task.createdAt)}
                     </dd>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <dt className="font-medium text-slate-500 dark:text-slate-400">
-                      Points
-                    </dt>
-                    <dd className="text-slate-700 dark:text-slate-200">
-                      {formatPoints(task)}
-                    </dd>
-                  </div>
                 </dl>
               </article>
             );
@@ -439,7 +370,7 @@ const TaskListTable = ({
             No tasks available yet.
           </p>
         )}
-      </div>      
+      </div>
     </div>
   );
 };

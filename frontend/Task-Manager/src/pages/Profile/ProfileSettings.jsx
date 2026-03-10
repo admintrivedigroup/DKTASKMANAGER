@@ -746,7 +746,7 @@ const ProfileSettings = () => {
                 Apply for Leave
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Submit your leave dates so KPI can exclude tasks during approved leave.
+                Submit your leave dates so approved leave can be reflected in planning.
               </p>
             </div>
 

@@ -201,7 +201,7 @@ const exportUsersReport = async (req, res) => {
       { header: "Email", key: "email", width: 40 },
       { header: "Total Assigned Tasks", key: "totalAssignedTasks", width: 20 },
       { header: "Leave Excluded Tasks", key: "leaveExcludedTasks", width: 20 },
-      { header: "KPI Counted Tasks", key: "taskCount", width: 20 },
+      { header: "Counted Tasks", key: "taskCount", width: 20 },
       { header: "Pending Tasks", key: "pendingTasks", width: 20 },
       {
         header: "In Progress Tasks",

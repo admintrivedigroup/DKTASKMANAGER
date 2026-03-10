@@ -22,12 +22,7 @@ describe("taskValidators", () => {
       recurrence: "Weekly",
       recurrenceEndDate: "2025-02-10T00:00:00.000Z",
       estimatedHours: "12.5",
-      kraCategoryId: "kra-cat-1",
-      assignedTo: [
-        { _id: "abc123" },
-        "def456",
-        "abc123", // duplicate should be removed
-      ],
+      assignedTo: [{ _id: "abc123" }, "def456", "abc123"],
       attachments: [{ name: "brief.pdf" }],
       todoChecklist: [
         "Draft announcement",
@@ -55,7 +50,6 @@ describe("taskValidators", () => {
       recurrence: "Weekly",
       recurrenceEndDate: "2025-02-10T00:00:00.000Z",
       estimatedHours: 12.5,
-      kraCategoryId: "kra-cat-1",
       assignedTo: ["abc123", "def456"],
       todoChecklist: [
         "Draft announcement",
@@ -87,15 +81,6 @@ describe("taskValidators", () => {
     );
   });
 
-  test("validateUpdateTaskPayload rejects missing kraCategoryId", () => {
-    assert.throws(
-      () => validateUpdateTaskPayload({}),
-      (error) =>
-        error instanceof HttpError &&
-        /KRA category is required for every task\./.test(error.message)
-    );
-  });
-
   test("validateUpdateTaskPayload sanitizes provided fields", () => {
     const payload = {
       title: "  Updated title ",
@@ -113,7 +98,6 @@ describe("taskValidators", () => {
       recurrence: "Monthly",
       recurrenceEndDate: "2025-06-01T00:00:00.000Z",
       estimatedHours: 40,
-      kraCategoryId: "kra-cat-2",
     };
 
     const result = validateUpdateTaskPayload(payload);
@@ -134,37 +118,7 @@ describe("taskValidators", () => {
       recurrence: "Monthly",
       recurrenceEndDate: "2025-06-01T00:00:00.000Z",
       estimatedHours: 40,
-      kraCategoryId: "kra-cat-2",
     });
-  });
-
-  test("validateUpdateTaskPayload requires kraCategoryId", () => {
-    assert.throws(
-      () =>
-        validateUpdateTaskPayload({
-          title: "Updated title",
-        }),
-      (error) =>
-        error instanceof HttpError &&
-        /KRA category is required for every task\./.test(error.message)
-    );
-  });
-
-  test("validateCreateTaskPayload requires kraCategoryId", () => {
-    assert.throws(
-      () =>
-        validateCreateTaskPayload({
-          title: "Task without KRA",
-          description: "Description",
-          priority: "Low",
-          dueDate: "2025-01-10T00:00:00.000Z",
-          assignedTo: ["user-1"],
-          todoChecklist: ["Prep"],
-        }),
-      (error) =>
-        error instanceof HttpError &&
-        /KRA category is required for every task\./.test(error.message)
-    );
   });
 
   test("validateCreateTaskPayload rejects startDate after dueDate", () => {
@@ -176,7 +130,6 @@ describe("taskValidators", () => {
           priority: "Low",
           dueDate: "2025-01-01T00:00:00.000Z",
           startDate: "2025-01-02T00:00:00.000Z",
-          kraCategoryId: "kra-cat-1",
           assignedTo: ["user-1"],
           todoChecklist: ["Prep"],
         }),
@@ -195,7 +148,6 @@ describe("taskValidators", () => {
           priority: "Medium",
           dueDate: "2025-03-01T00:00:00.000Z",
           recurrence: "Daily",
-          kraCategoryId: "kra-cat-1",
           assignedTo: ["user-1"],
           todoChecklist: ["Prep"],
         }),
@@ -212,7 +164,6 @@ describe("taskValidators", () => {
       () =>
         validateUpdateTaskPayload({
           recurrence: "Weekly",
-          kraCategoryId: "kra-cat-1",
         }),
       (error) =>
         error instanceof HttpError &&

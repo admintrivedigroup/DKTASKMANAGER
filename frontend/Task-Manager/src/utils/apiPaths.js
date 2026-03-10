@@ -37,8 +37,6 @@ export const API_PATHS = {
 
     UPDATE_TASK_STATUS: (taskId) => `/api/tasks/${taskId}/status`, // Update task status
     REQUEST_COMPLETION: (taskId) => `/api/tasks/${taskId}/request-complete`,
-    APPROVE_COMPLETION: (taskId) => `/api/tasks/${taskId}/approve-completion`,
-    REJECT_COMPLETION: (taskId) => `/api/tasks/${taskId}/reject-completion`,
     UPDATE_TODO_CHECKLIST: (taskId) => `/api/tasks/${taskId}/todo`, // Update todo checklist
     GET_TASK_MESSAGES: (taskId) => `/api/tasks/${taskId}/messages`,
     POST_TASK_MESSAGE: (taskId) => `/api/tasks/${taskId}/messages`,
@@ -99,17 +97,5 @@ export const API_PATHS = {
     GET_ALL: "/api/roles",
     CREATE: "/api/roles",
     DELETE: (roleId) => `/api/roles/${roleId}`,
-  },
-  KRA_KPI: {
-    GET_CATEGORIES: "/api/kra/categories",
-    CREATE_CATEGORY: "/api/kra/categories",
-    UPDATE_CATEGORY: (categoryId) => `/api/kra/categories/${categoryId}`,
-    DELETE_CATEGORY: (categoryId) => `/api/kra/categories/${categoryId}`,
-    GET_MULTIPLIERS: "/api/kra/multipliers",
-    UPDATE_MULTIPLIERS: "/api/kra/multipliers",
-    GET_WEIGHTAGE_STATUS: "/api/kra/weightage-status",
-    GET_SUMMARY: "/api/kra-kpi/summary",
-    GET_PERFORMANCE_SUMMARY: "/api/kra/performance/summary",
-    GET_PERFORMANCE_TASKS: "/api/kra/performance/tasks",
   },
 };

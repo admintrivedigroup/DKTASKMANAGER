@@ -119,8 +119,6 @@ const Tasks = () => {
     },
     serialize: (value) => String(value),
   });
-  const [approvalActionTaskId, setApprovalActionTaskId] = useState(null);
-
   const PAGE_SIZE = 9;
   const updateTaskListParams = useCallback(
     (updates) => {
@@ -237,37 +235,6 @@ const Tasks = () => {
     }
 
     navigateWithReturn(navigate, `/admin/task-details/${taskId}`, location);
-  };
-
-  const handleApprovalDecision = async (task, decision) => {
-    const taskId = task?._id;
-    if (!taskId) {
-      return;
-    }
-
-    const endpoint =
-      decision === "approve"
-        ? API_PATHS.TASKS.APPROVE_COMPLETION(taskId)
-        : API_PATHS.TASKS.REJECT_COMPLETION(taskId);
-
-    try {
-      setApprovalActionTaskId(taskId);
-      await axiosInstance.post(endpoint);
-      toast.success(
-        decision === "approve"
-          ? "Task completion approved."
-          : "Task completion rejected."
-      );
-      await refetch();
-    } catch (error) {
-      console.error(`Failed to ${decision} task completion`, error);
-      toast.error(
-        error?.response?.data?.message ||
-          `Unable to ${decision} task completion right now.`
-      );
-    } finally {
-      setApprovalActionTaskId(null);
-    }
   };
 
   useEffect(() => {
@@ -709,9 +676,6 @@ const Tasks = () => {
                     }
                     onClick={() => handleTaskCardClick(item._id)}
                     onEdit={() => openTaskForm(item._id)}
-                    onApprove={(task) => handleApprovalDecision(task, "approve")}
-                    onReject={(task) => handleApprovalDecision(task, "reject")}
-                    isApprovalActionLoading={approvalActionTaskId === item._id}
                   />
                 ))}
 
@@ -730,9 +694,6 @@ const Tasks = () => {
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
                     onEdit={(task) => openTaskForm(task?._id)}
-                    onApprove={(task) => handleApprovalDecision(task, "approve")}
-                    onReject={(task) => handleApprovalDecision(task, "reject")}
-                    approvalActionTaskId={approvalActionTaskId}
                     getUnreadCount={getUnreadCount}
                     className="mt-0"
                   />
