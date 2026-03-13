@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 
 const Task = require("../models/Task");
+const EmployeeKraColumn = require("../models/EmployeeKraColumn");
 const User = require("../models/User");
 const Matter = require("../models/Matter");
 const CaseFile = require("../models/CaseFile");
@@ -68,6 +69,48 @@ const normalizeAssigneeIds = (assignees) => {
   return list
     .map((assignee) => normalizeObjectId(assignee))
     .filter(Boolean);
+};
+
+const resolveTaskKraColumnId = async ({ kraColumnId, assignedTo }) => {
+  const normalizedKraColumnId = normalizeObjectId(kraColumnId);
+
+  if (normalizedKraColumnId === undefined) {
+    return undefined;
+  }
+
+  if (normalizedKraColumnId === null) {
+    return null;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(normalizedKraColumnId)) {
+    throw createHttpError("kraColumnId must be a valid identifier", 400);
+  }
+
+  const normalizedAssigneeIds = [...new Set(normalizeAssigneeIds(assignedTo))];
+
+  if (normalizedAssigneeIds.length !== 1) {
+    throw createHttpError(
+      "kraColumnId can only be used when the task is assigned to exactly one employee.",
+      400
+    );
+  }
+
+  const kraColumn = await EmployeeKraColumn.findById(normalizedKraColumnId).select(
+    "_id employeeId"
+  );
+
+  if (!kraColumn) {
+    throw createHttpError("Selected KRA column could not be found.", 400);
+  }
+
+  if (kraColumn.employeeId.toString() !== normalizedAssigneeIds[0]) {
+    throw createHttpError(
+      "kraColumnId must belong to the selected employee.",
+      400
+    );
+  }
+
+  return normalizedKraColumnId;
 };
 
 const buildActorSnapshot = (user) => {
@@ -607,6 +650,70 @@ const TASK_ACTIVITY_FIELDS = [
 
 const TASK_STATUS_FIELDS = [{ path: "status", label: "Status" }];
 const PENDING_APPROVAL_STATUS = "Pending Approval";
+const PRIORITY_MULTIPLIERS = {
+  High: 1.5,
+  Medium: 1,
+  Low: 0.75,
+};
+const ON_TIME_MULTIPLIER = 1;
+const LATE_MULTIPLIER = 0.5;
+
+const roundScoreValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Number(value.toFixed(4));
+};
+
+const getPriorityMultiplier = (priority) => {
+  return PRIORITY_MULTIPLIERS[priority] ?? 1;
+};
+
+const getTimelinessMultiplier = ({ dueDate, completedAt }) => {
+  if (!dueDate || !completedAt) {
+    return ON_TIME_MULTIPLIER;
+  }
+
+  const dueAt = new Date(dueDate);
+  const completedTime = new Date(completedAt);
+
+  if (Number.isNaN(dueAt.getTime()) || Number.isNaN(completedTime.getTime())) {
+    return ON_TIME_MULTIPLIER;
+  }
+
+  return completedTime.getTime() <= dueAt.getTime()
+    ? ON_TIME_MULTIPLIER
+    : LATE_MULTIPLIER;
+};
+
+const freezeTaskScoreSnapshot = async (task) => {
+  if (!task || task.completedAt || task.earnedPoints !== null || task.lostPoints !== null) {
+    return;
+  }
+
+  const completedAt = new Date();
+  const priorityMultiplier = getPriorityMultiplier(task.priority);
+  let basePoints = 0;
+
+  if (task.kraColumnId) {
+    const kraColumn = await EmployeeKraColumn.findById(task.kraColumnId).select(
+      "basePoints"
+    );
+    basePoints = Number(kraColumn?.basePoints || 0);
+  }
+
+  const timelinessMultiplier = getTimelinessMultiplier({
+    dueDate: task.dueDate,
+    completedAt,
+  });
+  const idealPoints = basePoints * priorityMultiplier;
+  const earnedPoints = idealPoints * timelinessMultiplier;
+
+  task.completedAt = completedAt;
+  task.earnedPoints = roundScoreValue(earnedPoints);
+  task.lostPoints = roundScoreValue(idealPoints - earnedPoints);
+};
 
 const clearCompletionApprovalFields = (task, { keepApprovalStatus = false } = {}) => {
   task.completionRequestedAt = null;
@@ -619,9 +726,9 @@ const clearCompletionApprovalFields = (task, { keepApprovalStatus = false } = {}
   }
 };
 
-const markTaskCompleted = (task, actor) => {
+const markTaskCompleted = async (task, actor) => {
   task.status = "Completed";
-  task.completedAt = actor?._id ? new Date() : task.completedAt || new Date();
+  await freezeTaskScoreSnapshot(task);
   clearCompletionApprovalFields(task);
 
   if (actor?._id) {
@@ -633,7 +740,6 @@ const markTaskCompleted = (task, actor) => {
 
 const requestTaskCompletion = (task, actor) => {
   task.status = PENDING_APPROVAL_STATUS;
-  task.completedAt = null;
   task.completionRequestedAt = new Date();
   task.completionRequestedBy = actor?._id || null;
   task.approvalStatus = "pending";
@@ -643,13 +749,11 @@ const requestTaskCompletion = (task, actor) => {
 
 const rejectTaskCompletionRequest = (task) => {
   task.status = "In Progress";
-  task.completedAt = null;
   clearCompletionApprovalFields(task, { keepApprovalStatus: true });
   task.approvalStatus = "rejected";
 };
 
 const resetCompletionStateForOpenTask = (task) => {
-  task.completedAt = null;
   clearCompletionApprovalFields(task);
 };
 
@@ -679,7 +783,7 @@ const applyTaskCompletionState = async ({
       return;
     }
 
-    markTaskCompleted(task);
+    await markTaskCompleted(task);
     return;
   }
 
@@ -758,6 +862,7 @@ const createTask = async (req, res, next) => {
             status,
             matter: matterId,
             caseFile: caseFileId,
+            kraColumnId,
             relatedDocuments,
             reminderMinutesBefore,
             recurrence,
@@ -831,6 +936,15 @@ const createTask = async (req, res, next) => {
 
           if (resolvedCaseId !== undefined) {
             taskPayload.caseFile = resolvedCaseId;
+          }
+
+          const resolvedKraColumnId = await resolveTaskKraColumnId({
+            kraColumnId,
+            assignedTo: assignedUserIds,
+          });
+
+          if (resolvedKraColumnId !== undefined) {
+            taskPayload.kraColumnId = resolvedKraColumnId;
           }
 
           if (relatedDocumentIds.length) {
@@ -910,6 +1024,7 @@ const createPersonalTask = async (req, res, next) => {
       attachments,
       todoChecklist,
       status,
+      kraColumnId,
       reminderMinutesBefore,
       recurrence,
       recurrenceEndDate,
@@ -985,6 +1100,15 @@ const createPersonalTask = async (req, res, next) => {
 
     if (estimatedHours !== undefined) {
       taskPayload.estimatedHours = estimatedHours;
+    }
+
+    const resolvedKraColumnId = await resolveTaskKraColumnId({
+      kraColumnId,
+      assignedTo: assignedIds,
+    });
+
+    if (resolvedKraColumnId !== undefined) {
+      taskPayload.kraColumnId = resolvedKraColumnId;
     }
 
     const task = await Task.create(taskPayload);
@@ -1191,6 +1315,20 @@ if (Object.prototype.hasOwnProperty.call(req.body, "estimatedHours")) {
     req.body.estimatedHours === null || req.body.estimatedHours === undefined
       ? null
       : req.body.estimatedHours;
+}
+
+if (
+  Object.prototype.hasOwnProperty.call(req.body, "kraColumnId") ||
+  assigneesUpdated
+) {
+  const nextKraColumnId = Object.prototype.hasOwnProperty.call(req.body, "kraColumnId")
+    ? req.body.kraColumnId
+    : task.kraColumnId;
+  const resolvedKraColumnId = await resolveTaskKraColumnId({
+    kraColumnId: nextKraColumnId,
+    assignedTo: task.assignedTo,
+  });
+  task.kraColumnId = resolvedKraColumnId ?? null;
 }
 
 const updatedStartDate = task.startDate ? task.startDate.getTime() : null;
@@ -1562,7 +1700,7 @@ const approveTaskCompletion = async (req, res, next) => {
     }
 
     const previousStatus = task.status;
-    markTaskCompleted(task, req.user);
+    await markTaskCompleted(task, req.user);
     await task.save();
 
     const statusChanges = buildFieldChanges(

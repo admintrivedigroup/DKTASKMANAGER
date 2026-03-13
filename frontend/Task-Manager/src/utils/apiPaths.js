@@ -98,4 +98,10 @@ export const API_PATHS = {
     CREATE: "/api/roles",
     DELETE: (roleId) => `/api/roles/${roleId}`,
   },
+  KRA_COLUMNS: {
+    GET_BY_EMPLOYEE: (employeeId) => `/api/kra-columns?employeeId=${employeeId}`,
+    CREATE: "/api/kra-columns",
+    UPDATE: (columnId) => `/api/kra-columns/${columnId}`,
+    DELETE: (columnId) => `/api/kra-columns/${columnId}`,
+  },
 };

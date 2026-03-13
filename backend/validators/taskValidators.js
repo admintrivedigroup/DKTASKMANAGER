@@ -411,6 +411,11 @@ const validateCreateTaskPayload = (payload) => {
     sanitized.caseFile = caseFile;
   }
 
+  const kraColumnId = normalizeOptionalId(payload.kraColumnId, "kraColumnId");
+  if (kraColumnId !== undefined) {
+    sanitized.kraColumnId = kraColumnId;
+  }
+
   const relatedDocuments = normalizeDocumentIds(payload.relatedDocuments);
   if (relatedDocuments && relatedDocuments.length) {
     sanitized.relatedDocuments = relatedDocuments;
@@ -532,6 +537,10 @@ const validateUpdateTaskPayload = (payload) => {
 
   if (hasOwn(payload, "caseFile")) {
     sanitized.caseFile = normalizeOptionalId(payload.caseFile, "caseFile");
+  }
+
+  if (hasOwn(payload, "kraColumnId")) {
+    sanitized.kraColumnId = normalizeOptionalId(payload.kraColumnId, "kraColumnId");
   }
 
   if (hasOwn(payload, "relatedDocuments")) {

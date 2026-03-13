@@ -34,6 +34,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   const [isFetchingTask, setIsFetchingTask] = useState(false);
   const [assignedUserDetails, setAssignedUserDetails] = useState([]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [kraCategories, setKraCategories] = useState([]);
+  const [selectedKraCategory, setSelectedKraCategory] = useState(null);
   const { user } = useContext(UserContext);
 
   const isPersonalMode = mode === "personal";
@@ -79,6 +81,42 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         : [],
     [personalAssigneeId, user?.email, user?.name, user?.profileImageUrl]
   );
+  const selectedKraEmployeeId = useMemo(() => {
+    if (taskData.assignedTo?.length !== 1) {
+      return null;
+    }
+
+    return taskData.assignedTo[0] || null;
+  }, [taskData.assignedTo]);
+  const kraCategoryOptions = useMemo(
+    () =>
+      kraCategories.map((category) => ({
+        value: category?._id || category?.id,
+        label: `${category?.label || "Untitled"} | Weightage: ${
+          Number(category?.weightage) || 0
+        }% | Base Points: ${Number(category?.basePoints) || 0}`,
+      })),
+    [kraCategories]
+  );
+  const hasKraCategories = kraCategoryOptions.length > 0;
+
+  const fetchKraCategories = useCallback(async (employeeId) => {
+    if (!employeeId) {
+      setKraCategories([]);
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get(
+        API_PATHS.KRA_COLUMNS.GET_BY_EMPLOYEE(employeeId)
+      );
+      setKraCategories(Array.isArray(response.data) ? response.data : []);
+    } catch (requestError) {
+      console.error("Error fetching KRA categories:", requestError);
+      setKraCategories([]);
+    }
+  }, []);
+
   const resetState = useCallback(() => {
     setTaskData(createDefaultTaskData());
     setCurrentTask(null);
@@ -88,6 +126,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setIsFetchingTask(false);
     setAssignedUserDetails([]);
     setShowMoreOptions(false);
+    setKraCategories([]);
+    setSelectedKraCategory(null);
   }, []);
 
   const handleModalClose = useCallback(() => {
@@ -110,13 +150,19 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     }
 
     if (key === "assignedTo") {
-      setTaskData((prevState) => {
-        const normalizedAssignees = Array.isArray(value)
-          ? [...new Set(value.map((assignee) => assignee?.toString()))].filter(
-              Boolean
-            )
-          : [];
+      const normalizedAssignees = Array.isArray(value)
+        ? [...new Set(value.map((assignee) => assignee?.toString()))].filter(Boolean)
+        : [];
+      const currentSingleAssignee =
+        taskData.assignedTo?.length === 1 ? taskData.assignedTo[0] : null;
 
+      if (
+        normalizedAssignees.length !== 1 ||
+        normalizedAssignees[0] !== currentSingleAssignee
+      ) {
+        setSelectedKraCategory(null);
+      }
+      setTaskData((prevState) => {
         const validAssigneesSet = new Set(normalizedAssignees);
 
         const updatedChecklist = Array.isArray(prevState.todoChecklist)
@@ -251,6 +297,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setTaskData(createDefaultTaskData());
     setError("");
     setAssignedUserDetails([]);
+    setKraCategories([]);
+    setSelectedKraCategory(null);
   }, []);
 
   const handleCreateTask = async ({
@@ -288,6 +336,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         ...taskData,
         startDate: startDateValue ? startDateValue.toISOString() : null,
         dueDate: dueDateValue ? dueDateValue.toISOString() : null,
+        kraColumnId: selectedKraCategory,
         todoChecklist,
       };
 
@@ -341,6 +390,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         ...taskData,
         startDate: startDateValue.toISOString(),
         dueDate: dueDateValue.toISOString(),
+        kraColumnId: selectedKraCategory,
         todoChecklist,
       };
 
@@ -420,6 +470,11 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
 
     if (!taskData.assignedTo?.length) {
       setError("Assign the task to at least one member.");
+      return;
+    }
+
+    if (hasKraCategories && !selectedKraCategory) {
+      setError("Select a KRA category for the assigned employee.");
       return;
     }
 
@@ -558,6 +613,13 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
             .map((value) => value.toString()),
           todoChecklist: normalizedChecklist,
         });
+        setSelectedKraCategory(
+          taskInfo?.kraColumnId?._id ||
+            taskInfo?.kraColumnId?.id ||
+            taskInfo?.kraColumnId?.toString?.() ||
+            taskInfo?.kraColumnId ||
+            null
+        );
       } catch (requestError) {
         console.error("Error fetching task:", requestError);
         const message =
@@ -582,6 +644,37 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     personalAssigneeDetails,
     personalAssigneeId,
   ]);
+
+  useEffect(() => {
+    if (!isOpen || !selectedKraEmployeeId) {
+      setKraCategories([]);
+      if (!selectedKraEmployeeId) {
+        setSelectedKraCategory(null);
+      }
+      return;
+    }
+
+    fetchKraCategories(selectedKraEmployeeId);
+  }, [fetchKraCategories, isOpen, selectedKraEmployeeId]);
+
+  useEffect(() => {
+    if (!selectedKraCategory) {
+      return;
+    }
+
+    if (!kraCategoryOptions.length) {
+      setSelectedKraCategory(null);
+      return;
+    }
+
+    const hasSelectedOption = kraCategoryOptions.some(
+      (option) => option.value === selectedKraCategory
+    );
+
+    if (!hasSelectedOption) {
+      setSelectedKraCategory(null);
+    }
+  }, [kraCategoryOptions, selectedKraCategory]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -861,6 +954,37 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                                 </p>
                               </div>
                             )}
+                          </div>
+
+                          <div className="space-y-2.5">
+                            <label className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                              KRA Category
+                            </label>
+                            <div
+                              className="form-input mt-0 rounded-xl border border-slate-200 bg-white/80 p-0 shadow-sm transition duration-200 hover:shadow-[0_0_0_4px_rgba(59,130,246,0.08)] focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.14)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 dark:border-slate-700 dark:bg-slate-900/60"
+                              data-skip-enter-submit="true"
+                            >
+                              <SelectDropdown
+                                options={kraCategoryOptions}
+                                value={selectedKraCategory}
+                                onChange={setSelectedKraCategory}
+                                placeholder={
+                                  selectedKraEmployeeId
+                                    ? hasKraCategories
+                                      ? "Select KRA Category"
+                                      : "No KRA categories configured"
+                                    : "Select one assignee to load categories"
+                                }
+                                disabled={loading || !selectedKraEmployeeId || !hasKraCategories}
+                              />
+                            </div>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">
+                              {selectedKraEmployeeId
+                                ? hasKraCategories
+                                  ? "Required when the assigned employee has KRA columns."
+                                  : "This employee has no configured KRA columns."
+                                : "KRA categories are available only when exactly one employee is assigned."}
+                            </p>
                           </div>
 
                         </div>

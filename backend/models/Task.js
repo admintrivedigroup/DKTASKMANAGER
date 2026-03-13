@@ -30,6 +30,11 @@ const taskSchema = new mongoose.Schema(
     assignedTo: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" }
     ],
+    kraColumnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "EmployeeKraColumn",
+      default: null,
+    },
     isPersonal: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     attachments: [{ type: String }],
@@ -37,6 +42,8 @@ const taskSchema = new mongoose.Schema(
     estimatedHours: { type: Number, min: 0, max: 1000, default: null },
     progress: { type: Number, default: 0 },
     completedAt: { type: Date, default: null },
+    earnedPoints: { type: Number, default: null },
+    lostPoints: { type: Number, default: null },
     completionRequestedAt: { type: Date, default: null },
     completionRequestedBy: {
       type: mongoose.Schema.Types.ObjectId,
