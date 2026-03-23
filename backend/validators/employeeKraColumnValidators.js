@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 const { createHttpError } = require("../utils/httpError");
 
-const BASE_POINTS_CAP = 100;
-
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 const isNonEmptyString = (value) =>
@@ -136,11 +134,6 @@ const validateCreateEmployeeKraColumnPayload = (payload) => {
     targetText: normalizeOptionalString(payload.targetText) ?? "",
     sourceText: normalizeOptionalString(payload.sourceText) ?? "",
     frequencyText: normalizeOptionalString(payload.frequencyText) ?? "",
-    basePoints: normalizeNumber(payload.basePoints, "basePoints", {
-      required: true,
-      min: 0,
-      max: BASE_POINTS_CAP,
-    }),
     requiresApproval: normalizeBoolean(payload.requiresApproval, "requiresApproval") ?? false,
     order: normalizeNumber(payload.order, "order", {
       required: true,
@@ -182,14 +175,6 @@ const validateUpdateEmployeeKraColumnPayload = (payload) => {
     sanitized.frequencyText = normalizeOptionalString(payload.frequencyText) ?? "";
   }
 
-  if (hasOwn(payload, "basePoints")) {
-    sanitized.basePoints = normalizeNumber(payload.basePoints, "basePoints", {
-      required: true,
-      min: 0,
-      max: BASE_POINTS_CAP,
-    });
-  }
-
   if (hasOwn(payload, "requiresApproval")) {
     sanitized.requiresApproval = normalizeBoolean(
       payload.requiresApproval,
@@ -216,7 +201,6 @@ const validateUpdateEmployeeKraColumnPayload = (payload) => {
 };
 
 module.exports = {
-  BASE_POINTS_CAP,
   validateEmployeeKraColumnQuery,
   validateCreateEmployeeKraColumnPayload,
   validateUpdateEmployeeKraColumnPayload,

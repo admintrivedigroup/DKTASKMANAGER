@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   LuBriefcaseBusiness,
   LuCalendarRange,
   LuCheck,
   LuChevronDown,
+  LuChevronRight,
   LuChevronUp,
   LuFilePenLine,
   LuLayoutGrid,
@@ -33,7 +34,6 @@ const KRA_COLUMN_SETUP_COLUMNS = [
   { key: "targetText", label: "Target", widthClass: "min-w-[180px]" },
   { key: "sourceText", label: "Source", widthClass: "min-w-[170px]" },
   { key: "frequencyText", label: "Frequency", widthClass: "min-w-[130px]" },
-  { key: "basePoints", label: "Base Points", widthClass: "min-w-[130px]" },
   { key: "requiresApproval", label: "Approval Required", widthClass: "min-w-[160px]" },
   { key: "order", label: "Order", widthClass: "min-w-[90px]" },
   { key: "isActive", label: "Active", widthClass: "min-w-[100px]" },
@@ -44,11 +44,12 @@ const createDefaultKraColumnForm = (employeeId = "") => ({
   id: "",
   employeeId,
   label: "",
+  columnType: "standard",
+  isSystemColumn: false,
   weightage: "",
   targetText: "",
   sourceText: "",
   frequencyText: "",
-  basePoints: "",
   requiresApproval: false,
   order: "",
   isActive: true,
@@ -56,6 +57,13 @@ const createDefaultKraColumnForm = (employeeId = "") => ({
 
 const MONTH_SEQUENCE = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 const FREQUENCY_OPTIONS = ["WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"];
+const SYSTEM_KRA_COLUMN_TYPE = "over_and_beyond";
+const TOTAL_WEIGHTAGE_LIMIT = 200;
+const isOverAndBeyondColumn = (column) =>
+  Boolean(
+    column &&
+      (column.isSystemColumn === true || column.columnType === SYSTEM_KRA_COLUMN_TYPE)
+  );
 
 const formatScore = (value) => {
   if (typeof value !== "number") {
@@ -67,18 +75,17 @@ const formatScore = (value) => {
 };
 
 const buildMatrixColumns = (employeeColumns) => [
-  { key: "label", label: "KRA Measure", widthClass: "min-w-[190px]" },
-  { key: "month", label: "Month", widthClass: "min-w-[110px]" },
+  { key: "label", label: "KRA Measure", widthClass: "min-w-[92px]" },
   ...employeeColumns.map((column) => ({
     key: column.id,
     label: column.isActive ? column.label : `${column.label} (Inactive)`,
-    widthClass: "min-w-[220px]",
+    widthClass: "min-w-[102px]",
   })),
-  { key: "finalScore", label: "Final Score", widthClass: "min-w-[130px]" },
+  { key: "finalScore", label: "Final Score", widthClass: "min-w-[88px]" },
 ];
 
 const buildMetaRow = (label, employeeColumns, getValue) => {
-  const row = { label, month: "", finalScore: "" };
+  const row = { label, finalScore: "" };
 
   employeeColumns.forEach((column) => {
     row[column.id] = getValue(column);
@@ -87,25 +94,41 @@ const buildMetaRow = (label, employeeColumns, getValue) => {
   return row;
 };
 
-const buildEmptyMonthRows = (month, employeeColumns) => {
-  const achievedRow = { label: "Revenue Points", month, finalScore: "", tone: "standard" };
-  const basePointsRow = { label: "Points", month, finalScore: "", tone: "standard" };
-  const weightageRow = { label: "Weightage", month, finalScore: "", tone: "muted" };
+const buildMonthRows = (monthData, employeeColumns) => {
+  const achievedRow = { label: "Reverse Points", finalScore: "", tone: "standard" };
+  const pointsRow = { label: "Points", finalScore: "", tone: "standard" };
+  const weightageRow = { label: "Weightage", finalScore: "", tone: "muted" };
   const finalScoreRow = {
     label: "Final Score",
-    month,
     finalScore: "",
     tone: "final",
   };
 
   employeeColumns.forEach((column) => {
-    achievedRow[column.id] = "";
-    basePointsRow[column.id] = "";
-    weightageRow[column.id] = "";
-    finalScoreRow[column.id] = "";
+    const reverseValue = monthData?.reversePoints?.[column.id];
+    const pointsValue = monthData?.points?.[column.id];
+    const weightageValue = monthData?.weightage?.[column.id];
+    const finalScoreValue = monthData?.finalScore?.[column.id];
+
+    achievedRow[column.id] =
+      reverseValue === "N/A"
+        ? "N/A"
+        : reverseValue || reverseValue === 0
+          ? formatScore(Number(reverseValue))
+          : "";
+    pointsRow[column.id] =
+      pointsValue || pointsValue === 0 ? formatScore(Number(pointsValue)) : "";
+    weightageRow[column.id] = `${Number(weightageValue ?? column.weightage ?? 0)}%`;
+    finalScoreRow[column.id] =
+      finalScoreValue || finalScoreValue === 0 ? formatScore(Number(finalScoreValue)) : "";
   });
 
-  return [achievedRow, basePointsRow, weightageRow, finalScoreRow];
+  finalScoreRow.finalScore =
+    monthData?.monthFinalScore || monthData?.monthFinalScore === 0
+      ? formatScore(Number(monthData.monthFinalScore))
+      : "";
+
+  return [achievedRow, pointsRow, weightageRow, finalScoreRow];
 };
 
 const normalizeKraColumn = (column) => ({
@@ -115,11 +138,13 @@ const normalizeKraColumn = (column) => ({
       ? column.employeeId._id || column.employeeId.id || ""
       : column?.employeeId || "",
   label: column?.label || "",
+  columnType: column?.columnType || "standard",
+  isSystemColumn:
+    column?.isSystemColumn === true || column?.columnType === SYSTEM_KRA_COLUMN_TYPE,
   weightage: Number(column?.weightage || 0),
   targetText: column?.targetText || "",
   sourceText: column?.sourceText || "",
   frequencyText: column?.frequencyText || "",
-  basePoints: Number(column?.basePoints || 0),
   requiresApproval: Boolean(column?.requiresApproval),
   order: Number(column?.order || 0),
   isActive: column?.isActive ?? true,
@@ -130,27 +155,23 @@ const getStickyColumnClass = (columnIndex) => {
     return "sticky left-0";
   }
 
-  if (columnIndex === 1) {
-    return "sticky left-[190px]";
-  }
-
   return "";
 };
 
 const StatCard = ({ icon, label, value, hint }) => (
-  <div className="rounded-[26px] border border-white/60 bg-white/80 p-5 shadow-[0_18px_36px_rgba(15,23,42,0.08)] dark:border-slate-700/60 dark:bg-slate-900/60">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+  <div className="rounded-[22px] border border-white/60 bg-white/85 p-3.5 shadow-[0_14px_28px_rgba(15,23,42,0.06)] dark:border-slate-700/60 dark:bg-slate-900/60">
+    <div className="flex items-start justify-between gap-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
           {label}
         </p>
-        <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+        <p className="mt-1.5 truncate text-[1.05rem] font-semibold leading-tight text-slate-900 sm:text-[1.25rem] dark:text-slate-100">
           {value}
         </p>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{hint}</p>
+        <p className="mt-1 text-[11px] leading-4.5 text-slate-500/90 dark:text-slate-400">{hint}</p>
       </div>
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-primary/10 text-primary dark:border-slate-700 dark:bg-primary/15">
-        {React.createElement(icon, { className: "h-5 w-5" })}
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-xl border border-white/70 bg-primary/10 text-primary dark:border-slate-700 dark:bg-primary/15">
+        {React.createElement(icon, { className: "h-4 w-4" })}
       </span>
     </div>
   </div>
@@ -164,11 +185,18 @@ const renderSetupBadge = (value, palette) => (
   </span>
 );
 
-const ToggleField = ({ label, checked, onChange }) => (
-  <label className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-slate-700/80 dark:bg-slate-950/40">
+const ToggleField = ({ label, checked, onChange, disabled = false }) => (
+  <label
+    className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
+      disabled
+        ? "cursor-not-allowed border-slate-200/70 bg-slate-100/80 opacity-70 dark:border-slate-700/70 dark:bg-slate-900/40"
+        : "border-slate-200/80 bg-slate-50/80 dark:border-slate-700/80 dark:bg-slate-950/40"
+    }`}
+  >
     <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
     <button
       type="button"
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
         checked ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
@@ -184,7 +212,7 @@ const ToggleField = ({ label, checked, onChange }) => (
   </label>
 );
 
-const KraKpiWorkspace = () => {
+const KraKpiWorkspace = ({ readOnly = false, currentUser = null }) => {
   const financialYearOptions = useMemo(
     () =>
       buildFinancialYearOptions({
@@ -201,28 +229,78 @@ const KraKpiWorkspace = () => {
     financialYearOptions[1]?.value || financialYearOptions[0]?.value || ""
   );
   const [kraColumns, setKraColumns] = useState([]);
-  const [kraMatrix] = useState([]);
+  const [kraMatrixData, setKraMatrixData] = useState({
+    columns: [],
+    months: [],
+    averageRow: null,
+    annualScoreRow: null,
+  });
   const [loading, setLoading] = useState(false);
   const [isKraColumnsLoading, setIsKraColumnsLoading] = useState(false);
+  const [isMatrixLoading, setIsMatrixLoading] = useState(false);
   const [isSavingKraColumn, setIsSavingKraColumn] = useState(false);
+  const [manualPointEditor, setManualPointEditor] = useState(null);
+  const [manualPointDraft, setManualPointDraft] = useState("");
+  const [manualPointSavingKey, setManualPointSavingKey] = useState("");
+  const [isMatrixDragging, setIsMatrixDragging] = useState(false);
   const [isKraColumnModalOpen, setIsKraColumnModalOpen] = useState(false);
   const [kraColumnToDelete, setKraColumnToDelete] = useState(null);
   const [editingKraColumnId, setEditingKraColumnId] = useState("");
   const [kraColumnForm, setKraColumnForm] = useState(() => createDefaultKraColumnForm(""));
   const [kraColumnFormErrors, setKraColumnFormErrors] = useState({});
+  const matrixScrollContainerRef = useRef(null);
+  const matrixDragStateRef = useRef({
+    isDragging: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
+
+  const normalizedCurrentUserRole = useMemo(
+    () => normalizeRole(currentUser?.role),
+    [currentUser?.role]
+  );
+  const isPrivilegedUser = matchesRole(normalizedCurrentUserRole, "admin") || matchesRole(normalizedCurrentUserRole, "super_admin");
 
   const fetchEmployees = async () => {
+    if (!isPrivilegedUser) {
+      const currentUserId = currentUser?._id || currentUser?.id || "";
+      const currentUserLabel =
+        currentUser?.name?.trim() || currentUser?.email?.trim() || "My KRA / KPI";
+
+      setEmployees(
+        currentUserId
+          ? [
+              {
+                value: currentUserId,
+                label: currentUser?.email?.trim()
+                  ? `${currentUserLabel} (${currentUser.email.trim()})`
+                  : currentUserLabel,
+              },
+            ]
+          : []
+      );
+
+      if (currentUserId) {
+        setSelectedEmployee(currentUserId);
+      }
+
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await axiosInstance.get(API_PATHS.USERS.GET_ALL_USERS);
       const users = Array.isArray(response.data) ? response.data : [];
       const employeeOptions = users
-        .filter((user) => user?._id && !matchesRole(user?.role, "client"))
+        .filter(
+          (user) =>
+            user?._id &&
+            (matchesRole(user?.role, "admin") || matchesRole(user?.role, "member"))
+        )
         .sort((firstUser, secondUser) => {
           const rolePriority = {
-            super_admin: 0,
-            admin: 1,
-            member: 2,
+            admin: 0,
+            member: 1,
           };
 
           const normalizedFirstRole = normalizeRole(firstUser?.role);
@@ -258,7 +336,7 @@ const KraKpiWorkspace = () => {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [currentUser?._id, currentUser?.id, currentUser?.email, currentUser?.name, isPrivilegedUser]);
 
   const fetchKraColumns = async (employeeId) => {
     if (!employeeId) {
@@ -297,6 +375,53 @@ const KraKpiWorkspace = () => {
     setKraColumnFormErrors({});
   }, [selectedEmployee]);
 
+  const fetchKraMatrix = async (employeeId, fyStartYear) => {
+    if (!employeeId || !fyStartYear) {
+      setKraMatrixData({
+        columns: [],
+        months: [],
+        averageRow: null,
+        annualScoreRow: null,
+      });
+      return;
+    }
+
+    try {
+      setIsMatrixLoading(true);
+      const response = await axiosInstance.get(
+        API_PATHS.KRA_KPI.GET_MATRIX(employeeId, fyStartYear)
+      );
+      const responseData =
+        response?.data && typeof response.data === "object" ? response.data : {};
+
+      setKraMatrixData({
+        columns: Array.isArray(responseData.columns)
+          ? responseData.columns.map(normalizeKraColumn)
+          : [],
+        months: Array.isArray(responseData.months) ? responseData.months : [],
+        averageRow: responseData.averageRow || null,
+        annualScoreRow: responseData.annualScoreRow || null,
+      });
+    } catch (error) {
+      console.error("Error fetching KRA/KPI matrix:", error);
+      const message =
+        error?.response?.data?.message || "Unable to load KRA/KPI matrix. Please try again.";
+      toast.error(message);
+      setKraMatrixData({
+        columns: [],
+        months: [],
+        averageRow: null,
+        annualScoreRow: null,
+      });
+    } finally {
+      setIsMatrixLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchKraMatrix(selectedEmployee, selectedFinancialYear);
+  }, [selectedEmployee, selectedFinancialYear]);
+
   const selectedEmployeeLabel = useMemo(
     () =>
       employees.find((option) => option.value === selectedEmployee)?.label ||
@@ -318,39 +443,52 @@ const KraKpiWorkspace = () => {
       ),
     [kraColumns, selectedEmployee]
   );
-  const selectedEmployeeMatrixColumns = useMemo(
-    () => buildMatrixColumns(selectedEmployeeColumnSetup),
+  const selectedEmployeeActiveColumnSetup = useMemo(
+    () => selectedEmployeeColumnSetup.filter((column) => column.isActive),
     [selectedEmployeeColumnSetup]
+  );
+  const selectedEmployeeColumnMap = useMemo(
+    () => new Map(selectedEmployeeActiveColumnSetup.map((column) => [column.id, column])),
+    [selectedEmployeeActiveColumnSetup]
+  );
+  const overAndBeyondColumn = useMemo(
+    () => selectedEmployeeActiveColumnSetup.find((column) => isOverAndBeyondColumn(column)) || null,
+    [selectedEmployeeActiveColumnSetup]
+  );
+  const selectedEmployeeMatrixColumns = useMemo(
+    () => buildMatrixColumns(selectedEmployeeActiveColumnSetup),
+    [selectedEmployeeActiveColumnSetup]
   );
   const matrixMetaRows = useMemo(
     () => [
-      buildMetaRow("Target", selectedEmployeeColumnSetup, (column) => column.targetText || "-"),
-      buildMetaRow("Source", selectedEmployeeColumnSetup, (column) => column.sourceText || "-"),
+      buildMetaRow("Target", selectedEmployeeActiveColumnSetup, (column) => column.targetText || "-"),
+      buildMetaRow("Source", selectedEmployeeActiveColumnSetup, (column) => column.sourceText || "-"),
       buildMetaRow(
         "Frequency",
-        selectedEmployeeColumnSetup,
+        selectedEmployeeActiveColumnSetup,
         (column) => column.frequencyText || "-"
       ),
     ],
-    [selectedEmployeeColumnSetup]
+    [selectedEmployeeActiveColumnSetup]
   );
   const selectedEmployeeMonthlyPerformance = useMemo(
     () =>
       MONTH_SEQUENCE.map((month) => {
         const matrixRow =
-          kraMatrix.find(
-            (item) =>
-              item?.employeeId === selectedEmployee &&
-              item?.month?.toLowerCase?.() === month.toLowerCase()
+          kraMatrixData.months.find(
+            (item) => item?.month?.toLowerCase?.() === month.toLowerCase()
           ) || {};
 
         return {
           month,
-          columnScores: matrixRow.columnScores || {},
-          finalScore: Number(matrixRow.finalScore || 0),
+          reversePoints: matrixRow.reversePoints || {},
+          points: matrixRow.points || {},
+          weightage: matrixRow.weightage || {},
+          finalScore: matrixRow.finalScore || {},
+          monthFinalScore: Number(matrixRow.monthFinalScore || 0),
         };
       }),
-    [kraMatrix, selectedEmployee]
+    [kraMatrixData.months]
   );
   const kraColumnWeightageSummary = useMemo(() => {
     const totalActiveWeightage = selectedEmployeeColumnSetup.reduce(
@@ -360,47 +498,81 @@ const KraKpiWorkspace = () => {
 
     return {
       totalActiveWeightage,
-      remainingWeightage: 100 - totalActiveWeightage,
-      isOverweight: totalActiveWeightage > 100,
+      remainingWeightage: TOTAL_WEIGHTAGE_LIMIT - totalActiveWeightage,
+      isOverweight: totalActiveWeightage > TOTAL_WEIGHTAGE_LIMIT,
     };
   }, [selectedEmployeeColumnSetup]);
   const summary = useMemo(() => {
-    const monthCount = selectedEmployeeMonthlyPerformance.length || 1;
-    const hasMatrixValues = kraMatrix.some((item) => item?.employeeId === selectedEmployee);
-    const annualFinalScore = selectedEmployeeMonthlyPerformance.reduce(
-      (total, item) => total + item.finalScore,
-      0
+    const hasMatrixValues = selectedEmployeeMonthlyPerformance.some(
+      (item) => Number(item.monthFinalScore || 0) > 0
     );
+    const annualFinalScore = Number(kraMatrixData.annualScoreRow?.monthFinalScore || 0);
     const highestMonth = hasMatrixValues
       ? selectedEmployeeMonthlyPerformance.reduce(
-          (best, item) => (item.finalScore > best.finalScore ? item : best),
-          selectedEmployeeMonthlyPerformance[0] || { month: "--", finalScore: 0 }
-        ) || { month: "--", finalScore: 0 }
-      : { month: "--", finalScore: 0 };
+          (best, item) => (item.monthFinalScore > best.monthFinalScore ? item : best),
+          selectedEmployeeMonthlyPerformance[0] || { month: "--", monthFinalScore: 0 }
+        ) || { month: "--", monthFinalScore: 0 }
+      : { month: "--", monthFinalScore: 0 };
     const averageColumnScores = {};
 
-    selectedEmployeeColumnSetup.forEach((column) => {
-      const totalColumnScore = selectedEmployeeMonthlyPerformance.reduce(
-        (total, item) =>
-          total +
-          Number(
-            item.columnScores?.[column.id]?.weightedScore ??
-              item.columnScores?.[column.id]?.finalScore ??
-              0
-          ),
-        0
-      );
-      averageColumnScores[column.id] = totalColumnScore ? formatScore(totalColumnScore / monthCount) : "";
+    selectedEmployeeActiveColumnSetup.forEach((column) => {
+      const averageValue = Number(kraMatrixData.averageRow?.finalScore?.[column.id] || 0);
+      averageColumnScores[column.id] =
+        averageValue || averageValue === 0 ? formatScore(averageValue) : "";
     });
 
     return {
-      averageFinalScore: hasMatrixValues ? annualFinalScore / monthCount : 0,
+      averageFinalScore: Number(kraMatrixData.averageRow?.monthFinalScore || 0),
       annualFinalScore,
       highestMonth,
       averageColumnScores,
     };
-  }, [kraMatrix, selectedEmployee, selectedEmployeeColumnSetup, selectedEmployeeMonthlyPerformance]);
+  }, [kraMatrixData.annualScoreRow, kraMatrixData.averageRow, selectedEmployeeActiveColumnSetup, selectedEmployeeMonthlyPerformance]);
   const isEditingKraColumn = Boolean(editingKraColumnId);
+
+  const canEditManualPoints = isPrivilegedUser && !readOnly;
+
+  const handleMatrixPointerDown = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    if (event.target.closest("button, input, select, textarea, a")) {
+      return;
+    }
+
+    const container = matrixScrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    matrixDragStateRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      scrollLeft: container.scrollLeft,
+    };
+    setIsMatrixDragging(true);
+  };
+
+  const handleMatrixPointerMove = (event) => {
+    const container = matrixScrollContainerRef.current;
+    const dragState = matrixDragStateRef.current;
+    if (!container || !dragState.isDragging) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startX;
+    container.scrollLeft = dragState.scrollLeft - deltaX;
+  };
+
+  const stopMatrixDragging = () => {
+    if (!matrixDragStateRef.current.isDragging) {
+      return;
+    }
+
+    matrixDragStateRef.current.isDragging = false;
+    setIsMatrixDragging(false);
+  };
 
   const resetKraColumnModalState = () => {
     setIsKraColumnModalOpen(false);
@@ -425,7 +597,6 @@ const KraKpiWorkspace = () => {
     setKraColumnForm({
       ...column,
       weightage: `${column.weightage}`,
-      basePoints: `${column.basePoints}`,
       order: `${column.order}`,
     });
     setKraColumnFormErrors({});
@@ -456,10 +627,6 @@ const KraKpiWorkspace = () => {
       nextErrors.weightage = "Weightage is required.";
     }
 
-    if (kraColumnForm.basePoints === "" || Number(kraColumnForm.basePoints) < 0) {
-      nextErrors.basePoints = "Base points are required.";
-    }
-
     if (kraColumnForm.order === "" || Number(kraColumnForm.order) < 1) {
       nextErrors.order = "Order is required.";
     }
@@ -476,7 +643,6 @@ const KraKpiWorkspace = () => {
       targetText: kraColumnForm.targetText.trim(),
       sourceText: kraColumnForm.sourceText.trim(),
       frequencyText: kraColumnForm.frequencyText.trim(),
-      basePoints: Number(kraColumnForm.basePoints),
       requiresApproval: Boolean(kraColumnForm.requiresApproval),
       order: Number(kraColumnForm.order),
       isActive: Boolean(kraColumnForm.isActive),
@@ -542,7 +708,7 @@ const KraKpiWorkspace = () => {
 
   const handleMoveKraColumn = async (columnId, direction) => {
     const currentColumn = kraColumns.find((row) => row.id === columnId);
-    if (!currentColumn) {
+    if (!currentColumn || currentColumn.isSystemColumn) {
       return;
     }
 
@@ -552,8 +718,14 @@ const KraKpiWorkspace = () => {
 
     const currentIndex = employeeRows.findIndex((row) => row.id === columnId);
     const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetRow = employeeRows[targetIndex];
 
-    if (currentIndex === -1 || targetIndex < 0 || targetIndex >= employeeRows.length) {
+    if (
+      currentIndex === -1 ||
+      targetIndex < 0 ||
+      targetIndex >= employeeRows.length ||
+      targetRow?.isSystemColumn
+    ) {
       return;
     }
 
@@ -576,7 +748,6 @@ const KraKpiWorkspace = () => {
             targetText: row.targetText,
             sourceText: row.sourceText,
             frequencyText: row.frequencyText,
-            basePoints: row.basePoints,
             requiresApproval: row.requiresApproval,
             order: row.order,
             isActive: row.isActive,
@@ -593,53 +764,100 @@ const KraKpiWorkspace = () => {
     }
   };
 
+  const openManualPointEditor = (monthKey, columnId, currentValue) => {
+    setManualPointEditor({ monthKey, columnId });
+    setManualPointDraft(`${currentValue ?? 0}`);
+  };
+
+  const closeManualPointEditor = () => {
+    setManualPointEditor(null);
+    setManualPointDraft("");
+    setManualPointSavingKey("");
+  };
+
+  const handleManualPointSave = async () => {
+    if (!manualPointEditor || !selectedEmployee || !overAndBeyondColumn) {
+      return;
+    }
+
+    const normalizedValue = Number(manualPointDraft);
+    if (!Number.isFinite(normalizedValue)) {
+      toast.error("Manual points must be numeric.");
+      return;
+    }
+
+    const saveKey = `${manualPointEditor.monthKey}:${manualPointEditor.columnId}`;
+
+    try {
+      setManualPointSavingKey(saveKey);
+      await axiosInstance.put(API_PATHS.KRA_KPI.UPDATE_MANUAL_POINT, {
+        employeeId: selectedEmployee,
+        kraColumnId: manualPointEditor.columnId,
+        fyStartYear: Number(selectedFinancialYear),
+        monthKey: manualPointEditor.monthKey,
+        manualPoints: normalizedValue,
+      });
+      toast.success("Over & Beyond points updated successfully.");
+      await fetchKraMatrix(selectedEmployee, selectedFinancialYear);
+      closeManualPointEditor();
+    } catch (error) {
+      console.error("Error updating Over & Beyond points:", error);
+      const message =
+        error?.response?.data?.message || "Unable to update Over & Beyond points.";
+      toast.error(message);
+    } finally {
+      setManualPointSavingKey("");
+    }
+  };
+
 
   return (
     <DashboardLayout activeMenu="KRA / KPI">
-      <section className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-slate-900 via-indigo-800 to-sky-700 px-5 py-8 text-white shadow-[0_24px_50px_rgba(30,64,175,0.35)] sm:px-8 sm:py-10">
+      <div className="mx-auto w-full max-w-[1400px] space-y-3.5 sm:space-y-4">
+      <section className="relative overflow-hidden rounded-[24px] border border-white/60 bg-gradient-to-br from-slate-900 via-indigo-800 to-sky-700 px-4 py-4.5 text-white shadow-[0_18px_38px_rgba(30,64,175,0.28)] sm:px-6 sm:py-5">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.16),_transparent_65%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.18),_transparent_55%)]" />
-        <div className="relative space-y-4">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs font-medium uppercase tracking-[0.28em] text-white/70">
+        <div className="relative space-y-2.5">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/75">
             <LuLayoutGrid className="h-3.5 w-3.5" />
             Performance Review
           </span>
-          <div>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+          <div className="space-y-1.5">
+            <h1 className="text-[1.75rem] font-semibold leading-tight sm:text-[1.9rem]">
               KRA / KPI
             </h1>
-            <p className="mt-3 max-w-2xl text-sm text-white/75">
+            <p className="max-w-xl text-[13px] text-white/72 sm:text-sm">
               Employee-wise monthly performance matrix
             </p>
           </div>
-          <div className="inline-flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.34em] text-white/60">
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+          <div className="inline-flex flex-wrap gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/65">
+            <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">
               Monthly Matrix
             </span>
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">
+            <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">
               Backend Ready
             </span>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-white/60 bg-white/75 p-5 shadow-[0_18px_36px_rgba(15,23,42,0.08)] dark:border-slate-800/60 dark:bg-slate-900/60">
-        <div className="grid gap-4 md:grid-cols-2">
+      <section className="rounded-[22px] border border-white/60 bg-white/80 px-4 py-3 shadow-[0_14px_30px_rgba(15,23,42,0.07)] dark:border-slate-800/60 dark:bg-slate-900/60 sm:px-5 sm:py-3.5">
+        <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
           <div>
             <label
               htmlFor="kra-kpi-employee"
-              className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500"
+              className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"
             >
               Employee
             </label>
-            <div className="relative mt-2">
-              <LuUser className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <div className="relative mt-1">
+              <LuUser className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-slate-400" />
               <select
                 id="kra-kpi-employee"
                 value={selectedEmployee}
                 onChange={(event) => setSelectedEmployee(event.target.value)}
                 disabled={loading}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white/90 py-3 pl-10 pr-4 text-sm text-slate-700 transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
+                className="w-full appearance-none rounded-lg border border-slate-200 bg-white/90 py-2.25 pl-9 pr-4 text-sm text-slate-700 transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
               >
                 <option value="">
                   {loading
@@ -660,17 +878,17 @@ const KraKpiWorkspace = () => {
           <div>
             <label
               htmlFor="kra-kpi-financial-year"
-              className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500"
+              className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"
             >
               Financial Year
             </label>
-            <div className="relative mt-2">
-              <LuCalendarRange className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <div className="relative mt-1">
+              <LuCalendarRange className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-slate-400" />
               <select
                 id="kra-kpi-financial-year"
                 value={selectedFinancialYear}
                 onChange={(event) => setSelectedFinancialYear(event.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white/90 py-3 pl-10 pr-4 text-sm text-slate-700 transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
+                className="w-full appearance-none rounded-lg border border-slate-200 bg-white/90 py-2.25 pl-9 pr-4 text-sm text-slate-700 transition focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
               >
                 {financialYearOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -683,12 +901,12 @@ const KraKpiWorkspace = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={LuUser}
           label="Selected Employee"
           value={selectedEmployeeLabel}
-          hint="Employee options will load from API"
+          hint=""
         />
         <StatCard
           icon={LuCalendarRange}
@@ -707,54 +925,66 @@ const KraKpiWorkspace = () => {
           label="Top Performing Month"
           value={summary.highestMonth.month}
           hint={
-            summary.highestMonth.finalScore
-              ? `Final score ${formatScore(summary.highestMonth.finalScore)}`
+            summary.highestMonth.monthFinalScore
+              ? `Final score ${formatScore(summary.highestMonth.monthFinalScore)}`
               : "No monthly score data available"
           }
         />
       </section>
 
-      <section className="rounded-[30px] border border-white/60 bg-white/80 p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] dark:border-slate-700/60 dark:bg-slate-900/70">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <section className="rounded-[22px] border border-white/60 bg-white/85 px-4 py-3 shadow-[0_14px_30px_rgba(15,23,42,0.07)] dark:border-slate-700/60 dark:bg-slate-900/70 sm:px-5 sm:py-3.5">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-[1.05rem] font-semibold text-slate-900 dark:text-slate-100 sm:text-[1.15rem]">
               Monthly performance matrix
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-[13px] leading-5 text-slate-500 dark:text-slate-400">
               Each month is visually grouped and the score rows are emphasized for faster review.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-slate-500 dark:text-slate-400">
-            <span>
+          <div className="grid gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 md:justify-items-end">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs dark:bg-slate-800/80">
               Average final score:{" "}
               {summary.averageFinalScore ? formatScore(summary.averageFinalScore) : "--"}
             </span>
-            <span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs dark:bg-slate-800/80">
               Annual score: {summary.annualFinalScore ? formatScore(summary.annualFinalScore) : "--"}
             </span>
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white/60 dark:border-slate-700/80 dark:bg-slate-950/20">
-          {isKraColumnsLoading ? (
-            <div className="border-b border-slate-200/80 px-4 py-4 text-sm text-slate-500 dark:border-slate-800/80 dark:text-slate-400">
+        <div className="mt-2.5 overflow-hidden rounded-[18px] border border-slate-200/80 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-slate-700/80 dark:bg-slate-950/20">
+          {isMatrixLoading ? (
+            <div className="flex min-h-16 items-center px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+              Loading KRA/KPI matrix...
+            </div>
+          ) : isKraColumnsLoading ? (
+            <div className="flex min-h-16 items-center px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
               Loading KRA categories...
             </div>
-          ) : selectedEmployeeColumnSetup.length === 0 ? (
-            <div className="border-b border-slate-200/80 px-4 py-4 text-sm text-slate-500 dark:border-slate-800/80 dark:text-slate-400">
+          ) : selectedEmployeeActiveColumnSetup.length === 0 ? (
+            <div className="flex min-h-16 items-center rounded-[18px] bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
               No KRA configuration found for this employee.
             </div>
           ) : null}
-          <div className="overflow-x-auto">
-            <table className="min-w-[1440px] border-separate border-spacing-0">
-              <thead className="bg-slate-900 text-white dark:bg-slate-950">
+          <div
+            ref={matrixScrollContainerRef}
+            onPointerDown={handleMatrixPointerDown}
+            onPointerMove={handleMatrixPointerMove}
+            onPointerUp={stopMatrixDragging}
+            onPointerLeave={stopMatrixDragging}
+            onPointerCancel={stopMatrixDragging}
+            className={`overflow-x-auto ${isMatrixDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          >
+            <table className="min-w-[1280px] border-separate border-spacing-0">
+              <thead className="bg-slate-950 text-white dark:bg-black">
                 <tr>
                   {selectedEmployeeMatrixColumns.map((column, columnIndex) => (
                     <th
                       key={column.key}
                       className={`${column.widthClass} ${getStickyColumnClass(
                         columnIndex
-                      )} z-30 border-b border-white/10 bg-slate-900 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.22em] text-white/85 dark:bg-slate-950`}
+                      )} z-30 border-b-2 border-slate-700 bg-slate-950 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-white dark:bg-black`}
                     >
                       {column.label}
                     </th>
@@ -768,8 +998,8 @@ const KraKpiWorkspace = () => {
                     key={row.label}
                     className={
                       rowIndex % 2 === 0
-                        ? "bg-slate-50/90 dark:bg-slate-900/70"
-                        : "bg-white/90 dark:bg-slate-900/40"
+                        ? "bg-slate-100 dark:bg-slate-900/80"
+                        : "bg-white dark:bg-slate-900/55"
                     }
                   >
                     {selectedEmployeeMatrixColumns.map((column, columnIndex) => (
@@ -777,9 +1007,9 @@ const KraKpiWorkspace = () => {
                         key={column.key}
                         className={`${column.widthClass} ${getStickyColumnClass(
                           columnIndex
-                        )} z-20 border-b border-dashed border-slate-200/90 bg-inherit px-4 py-3 text-sm text-slate-600 dark:border-slate-700/90 dark:text-slate-300 ${
+                        )} z-20 border-b border-slate-300 bg-inherit px-3 py-2 text-[13px] text-slate-700 dark:border-slate-700 dark:text-slate-200 ${
                           column.key === "label"
-                            ? "font-semibold text-slate-700 dark:text-slate-100"
+                            ? "font-semibold text-slate-800 dark:text-slate-100"
                             : ""
                         }`}
                       >
@@ -791,37 +1021,48 @@ const KraKpiWorkspace = () => {
               </tbody>
 
               {selectedEmployeeMonthlyPerformance.map((item, monthIndex) => {
-                const monthRows = buildEmptyMonthRows(item.month, selectedEmployeeColumnSetup);
+                const monthRows = buildMonthRows(item, selectedEmployeeActiveColumnSetup);
 
                 return (
                   <tbody key={item.month}>
-                    <tr className="bg-primary/5 dark:bg-primary/10">
+                    <tr className="bg-sky-100 dark:bg-sky-950/70">
                       <td
-                        colSpan={selectedEmployeeMatrixColumns.length}
-                        className="border-y border-primary/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-primary"
+                        className={`${selectedEmployeeMatrixColumns[0]?.widthClass || "min-w-[92px]"} ${getStickyColumnClass(
+                          0
+                        )} z-20 border-y border-sky-300 bg-sky-100 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-sky-700 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-200`}
                       >
                         {item.month} Review Block
                       </td>
+                      <td
+                        colSpan={Math.max(1, selectedEmployeeMatrixColumns.length - 1)}
+                        className="border-y border-sky-300 bg-sky-100 px-3 py-2 dark:border-sky-700 dark:bg-sky-950/70"
+                      />
                     </tr>
 
                     {monthRows.map((row, rowIndex) => {
                       const baseRowClass =
                         row.tone === "final"
-                          ? "bg-rose-50/90 dark:bg-rose-500/10"
+                          ? "bg-rose-100 dark:bg-rose-950/45"
                           : row.tone === "muted"
-                          ? "bg-slate-50/70 dark:bg-slate-900/60"
+                          ? "bg-amber-50 dark:bg-amber-950/30"
                           : monthIndex % 2 === 0
-                          ? "bg-white/95 dark:bg-slate-900/35"
-                          : "bg-slate-50/80 dark:bg-slate-900/50";
+                          ? "bg-white dark:bg-slate-900/40"
+                          : "bg-slate-100 dark:bg-slate-900/60";
 
                       return (
                         <tr
                           key={`${item.month}-${row.label}`}
-                          className={`${baseRowClass} transition hover:bg-primary/5 dark:hover:bg-primary/10`}
+                          className={`${baseRowClass} transition hover:bg-sky-50 dark:hover:bg-sky-950/30`}
                         >
                           {selectedEmployeeMatrixColumns.map((column, columnIndex) => {
+                            const employeeColumn = selectedEmployeeColumnMap.get(column.key);
                             const cellValue = row[column.key];
                             const isFinalValue = column.key === "finalScore";
+                            const isOverAndBeyondPointsCell =
+                              row.label === "Points" && isOverAndBeyondColumn(employeeColumn);
+                            const isEditingManualPoint =
+                              manualPointEditor?.monthKey === item.month &&
+                              manualPointEditor?.columnId === employeeColumn?.id;
 
                             return (
                               <td
@@ -830,19 +1071,66 @@ const KraKpiWorkspace = () => {
                                   columnIndex
                                 )} z-20 border-b ${
                                   rowIndex === monthRows.length - 1
-                                    ? "border-primary/20"
-                                    : "border-slate-200/80 dark:border-slate-800/80"
-                                } bg-inherit px-4 py-3 text-sm text-slate-600 dark:text-slate-300 ${
+                                    ? "border-rose-300 dark:border-rose-800"
+                                    : "border-slate-300 dark:border-slate-700"
+                                } bg-inherit px-3 py-2 text-[13px] text-slate-700 dark:text-slate-200 ${
                                   column.key === "label"
-                                    ? "font-semibold text-slate-800 dark:text-slate-100"
+                                    ? "font-semibold text-slate-900 dark:text-slate-100"
                                     : ""
                                 } ${
                                   row.tone === "final" && isFinalValue
-                                    ? "text-base font-bold text-rose-700 dark:text-rose-200"
+                                    ? "text-sm font-bold text-rose-800 dark:text-rose-100"
                                     : ""
                                 }`}
                               >
-                                {cellValue}
+                                {isOverAndBeyondPointsCell && canEditManualPoints ? (
+                                  isEditingManualPoint ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={manualPointDraft}
+                                        onChange={(event) => setManualPointDraft(event.target.value)}
+                                        className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-950/80 dark:text-slate-100"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={handleManualPointSave}
+                                        disabled={
+                                          manualPointSavingKey ===
+                                          `${item.month}:${employeeColumn?.id}`
+                                        }
+                                        className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={closeManualPointEditor}
+                                        className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openManualPointEditor(
+                                          item.month,
+                                          employeeColumn.id,
+                                          item.points?.[employeeColumn.id] ?? 0
+                                        )
+                                      }
+                                      className="inline-flex items-center gap-1.5 rounded-md px-0.5 py-0.5 text-left text-[13px] text-slate-700 transition hover:text-primary dark:text-slate-200"
+                                    >
+                                      <span>{cellValue}</span>
+                                      <LuChevronRight className="h-3.5 w-3.5 opacity-70" />
+                                    </button>
+                                  )
+                                ) : (
+                                  cellValue
+                                )}
                               </td>
                             );
                           })}
@@ -854,17 +1142,16 @@ const KraKpiWorkspace = () => {
               })}
 
               <tbody>
-                <tr className="bg-amber-50 dark:bg-amber-500/10">
+                <tr className="bg-amber-100 dark:bg-amber-950/35">
                   {selectedEmployeeMatrixColumns.map((column, columnIndex) => {
                     const row = {
                       label: "Average Score",
-                      month: "Average",
                       finalScore: summary.averageFinalScore
                         ? formatScore(summary.averageFinalScore)
                         : "",
                     };
 
-                    selectedEmployeeColumnSetup.forEach((employeeColumn) => {
+                    selectedEmployeeActiveColumnSetup.forEach((employeeColumn) => {
                       row[employeeColumn.id] = summary.averageColumnScores[employeeColumn.id] || "";
                     });
 
@@ -873,8 +1160,8 @@ const KraKpiWorkspace = () => {
                         key={column.key}
                         className={`${column.widthClass} ${getStickyColumnClass(
                           columnIndex
-                        )} z-20 border-y border-amber-200/80 bg-inherit px-4 py-4 text-sm font-semibold text-amber-900 dark:border-amber-500/20 dark:text-amber-100 ${
-                          column.key === "finalScore" ? "text-lg font-bold" : ""
+                        )} z-20 border-y border-amber-300 bg-inherit px-3 py-2.5 text-[13px] font-bold text-amber-950 dark:border-amber-700 dark:text-amber-100 ${
+                          column.key === "finalScore" ? "text-base font-bold" : ""
                         }`}
                       >
                         {row[column.key]}
@@ -887,13 +1174,12 @@ const KraKpiWorkspace = () => {
                   {selectedEmployeeMatrixColumns.map((column, columnIndex) => {
                     const row = {
                       label: "Annual Score",
-                      month: "Annual",
                       finalScore: summary.annualFinalScore
                         ? formatScore(summary.annualFinalScore)
                         : "",
                     };
 
-                    selectedEmployeeColumnSetup.forEach((employeeColumn) => {
+                    selectedEmployeeActiveColumnSetup.forEach((employeeColumn) => {
                       row[employeeColumn.id] = "";
                     });
 
@@ -902,8 +1188,8 @@ const KraKpiWorkspace = () => {
                         key={column.key}
                         className={`${column.widthClass} ${getStickyColumnClass(
                           columnIndex
-                        )} z-20 border-t border-white/20 bg-inherit px-4 py-4 text-sm font-semibold ${
-                          column.key === "finalScore" ? "text-lg font-bold" : ""
+                        )} z-20 border-t border-white/30 bg-inherit px-3 py-2.5 text-[13px] font-bold ${
+                          column.key === "finalScore" ? "text-base font-bold" : ""
                         }`}
                       >
                         {row[column.key]}
@@ -917,6 +1203,7 @@ const KraKpiWorkspace = () => {
         </div>
       </section>
 
+      {isPrivilegedUser && !readOnly ? (
       <section className="rounded-[30px] border border-white/60 bg-white/80 p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] dark:border-slate-700/60 dark:bg-slate-900/70">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -980,7 +1267,7 @@ const KraKpiWorkspace = () => {
                 }`}
               >
                 {kraColumnWeightageSummary.isOverweight
-                  ? "Warning: active weightage exceeds 100%"
+                  ? `Warning: active weightage exceeds ${TOTAL_WEIGHTAGE_LIMIT}%`
                   : "Status: active weightage is within limit"}
               </div>
             </div>
@@ -1032,9 +1319,6 @@ const KraKpiWorkspace = () => {
                     <td className="min-w-[130px] border-b border-slate-200/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-800/80 dark:text-slate-300">
                       {item.frequencyText}
                     </td>
-                    <td className="min-w-[130px] border-b border-slate-200/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-800/80 dark:text-slate-300">
-                      {item.basePoints}
-                    </td>
                     <td className="min-w-[160px] border-b border-slate-200/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-800/80 dark:text-slate-300">
                       {renderSetupBadge(
                         item.requiresApproval ? "Yes" : "No",
@@ -1059,7 +1343,11 @@ const KraKpiWorkspace = () => {
                         <button
                           type="button"
                           onClick={() => handleMoveKraColumn(item.id, "up")}
-                          disabled={index === 0}
+                          disabled={
+                            index === 0 ||
+                            item.isSystemColumn ||
+                            selectedEmployeeColumnSetup[index - 1]?.isSystemColumn
+                          }
                           className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300"
                         >
                           <LuChevronUp className="h-3.5 w-3.5" />
@@ -1068,7 +1356,11 @@ const KraKpiWorkspace = () => {
                         <button
                           type="button"
                           onClick={() => handleMoveKraColumn(item.id, "down")}
-                          disabled={index === selectedEmployeeColumnSetup.length - 1}
+                          disabled={
+                            index === selectedEmployeeColumnSetup.length - 1 ||
+                            item.isSystemColumn ||
+                            selectedEmployeeColumnSetup[index + 1]?.isSystemColumn
+                          }
                           className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300"
                         >
                           <LuChevronDown className="h-3.5 w-3.5" />
@@ -1085,6 +1377,7 @@ const KraKpiWorkspace = () => {
                         <button
                           type="button"
                           onClick={() => setKraColumnToDelete(item)}
+                          disabled={item.isSystemColumn}
                           className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
                         >
                           <LuTrash2 className="h-3.5 w-3.5" />
@@ -1099,9 +1392,12 @@ const KraKpiWorkspace = () => {
           </div>
         </div>
       </section>
+      ) : null}
+
+      </div>
 
       <Modal
-        isOpen={isKraColumnModalOpen}
+        isOpen={isPrivilegedUser && !readOnly && isKraColumnModalOpen}
         onClose={resetKraColumnModalState}
         title={isEditingKraColumn ? "Edit KRA Column" : "Add KRA Column"}
         maxWidthClass="max-w-3xl"
@@ -1116,6 +1412,7 @@ const KraKpiWorkspace = () => {
                 type="text"
                 value={kraColumnForm.label}
                 onChange={(event) => handleKraColumnFormChange("label", event.target.value)}
+                disabled={kraColumnForm.isSystemColumn}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
                 placeholder="Enter column label"
               />
@@ -1137,33 +1434,13 @@ const KraKpiWorkspace = () => {
                 onChange={(event) =>
                   handleKraColumnFormChange("weightage", event.target.value)
                 }
+                disabled={kraColumnForm.isSystemColumn}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
                 placeholder="0"
               />
               {kraColumnFormErrors.weightage ? (
                 <p className="mt-1 text-xs font-medium text-rose-500">
                   {kraColumnFormErrors.weightage}
-                </p>
-              ) : null}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                Base Points
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={kraColumnForm.basePoints}
-                onChange={(event) =>
-                  handleKraColumnFormChange("basePoints", event.target.value)
-                }
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
-                placeholder="0"
-              />
-              {kraColumnFormErrors.basePoints ? (
-                <p className="mt-1 text-xs font-medium text-rose-500">
-                  {kraColumnFormErrors.basePoints}
                 </p>
               ) : null}
             </div>
@@ -1227,6 +1504,7 @@ const KraKpiWorkspace = () => {
                 min="1"
                 value={kraColumnForm.order}
                 onChange={(event) => handleKraColumnFormChange("order", event.target.value)}
+                disabled={kraColumnForm.isSystemColumn}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200"
                 placeholder="1"
               />
@@ -1247,7 +1525,14 @@ const KraKpiWorkspace = () => {
             <ToggleField
               label="Active"
               checked={kraColumnForm.isActive}
-              onChange={(value) => handleKraColumnFormChange("isActive", value)}
+              disabled={kraColumnForm.isSystemColumn}
+              onChange={(value) => {
+                if (kraColumnForm.isSystemColumn) {
+                  return;
+                }
+
+                handleKraColumnFormChange("isActive", value);
+              }}
             />
           </div>
 
@@ -1277,7 +1562,7 @@ const KraKpiWorkspace = () => {
       </Modal>
 
       <Modal
-        isOpen={Boolean(kraColumnToDelete)}
+        isOpen={isPrivilegedUser && !readOnly && Boolean(kraColumnToDelete)}
         onClose={closeDeleteKraColumnAlert}
         title="Delete KRA Category"
       >

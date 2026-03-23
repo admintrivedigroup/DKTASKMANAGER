@@ -15,6 +15,13 @@ import { API_PATHS } from "../utils/apiPaths";
 import { formatDateTimeLocal } from "../utils/dateUtils";
 import { UserContext } from "../context/userContext.jsx";
 
+const SYSTEM_KRA_COLUMN_TYPE = "over_and_beyond";
+const isManualOnlyKraCategory = (category) =>
+  Boolean(
+    category &&
+      (category.isSystemColumn === true || category.columnType === SYSTEM_KRA_COLUMN_TYPE)
+  );
+
 const createDefaultTaskData = () => ({
   title: "",
   description: "",
@@ -94,7 +101,7 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         value: category?._id || category?.id,
         label: `${category?.label || "Untitled"} | Weightage: ${
           Number(category?.weightage) || 0
-        }% | Base Points: ${Number(category?.basePoints) || 0}`,
+        }%`,
       })),
     [kraCategories]
   );
@@ -110,7 +117,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
       const response = await axiosInstance.get(
         API_PATHS.KRA_COLUMNS.GET_BY_EMPLOYEE(employeeId)
       );
-      setKraCategories(Array.isArray(response.data) ? response.data : []);
+      const categories = Array.isArray(response.data) ? response.data : [];
+      setKraCategories(categories.filter((category) => !isManualOnlyKraCategory(category)));
     } catch (requestError) {
       console.error("Error fetching KRA categories:", requestError);
       setKraCategories([]);

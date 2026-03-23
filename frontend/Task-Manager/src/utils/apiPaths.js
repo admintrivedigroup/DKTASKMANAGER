@@ -104,4 +104,11 @@ export const API_PATHS = {
     UPDATE: (columnId) => `/api/kra-columns/${columnId}`,
     DELETE: (columnId) => `/api/kra-columns/${columnId}`,
   },
+  KRA_KPI: {
+    GET_MATRIX: (employeeId, fyStartYear) =>
+      `/api/kra-kpi/matrix?employeeId=${employeeId}&fyStartYear=${fyStartYear}`,
+    GET_MANUAL_POINTS: (employeeId, fyStartYear) =>
+      `/api/kra-kpi/manual-points?employeeId=${employeeId}&fyStartYear=${fyStartYear}`,
+    UPDATE_MANUAL_POINT: "/api/kra-kpi/manual-points",
+  },
 };

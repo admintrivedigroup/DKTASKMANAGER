@@ -15,6 +15,16 @@ const employeeKraColumnSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    columnType: {
+      type: String,
+      enum: ["standard", "over_and_beyond"],
+      default: "standard",
+      trim: true,
+    },
+    isSystemColumn: {
+      type: Boolean,
+      default: false,
+    },
     weightage: {
       type: Number,
       required: true,
@@ -41,7 +51,7 @@ const employeeKraColumnSchema = new mongoose.Schema(
     },
     basePoints: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
       max: BASE_POINTS_CAP,
       validate: {
@@ -85,5 +95,13 @@ const employeeKraColumnSchema = new mongoose.Schema(
 employeeKraColumnSchema.virtual("id").get(function getId() {
   return this._id.toString();
 });
+
+employeeKraColumnSchema.index(
+  { employeeId: 1, columnType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isSystemColumn: true, columnType: "over_and_beyond" },
+  }
+);
 
 module.exports = mongoose.model("EmployeeKraColumn", employeeKraColumnSchema);

@@ -18,6 +18,7 @@ const {
   logEntityActivity,
 } = require("../utils/activityLogger");
 const { createHttpError } = require("../utils/httpError");
+const { isSystemKraColumn } = require("../utils/employeeKraColumnSystem");
 
 const isPrivileged = (role) => hasPrivilegedAccess(role);
 
@@ -101,6 +102,13 @@ const resolveTaskKraColumnId = async ({ kraColumnId, assignedTo }) => {
 
   if (!kraColumn) {
     throw createHttpError("Selected KRA column could not be found.", 400);
+  }
+
+  if (isSystemKraColumn(kraColumn)) {
+    throw createHttpError(
+      "Manual-only KRA columns cannot be selected for tasks.",
+      400
+    );
   }
 
   if (kraColumn.employeeId.toString() !== normalizedAssigneeIds[0]) {
