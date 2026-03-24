@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  LuArrowUpDown,
   LuCalendarRange,
   LuChevronLeft,
   LuChevronRight,
@@ -18,12 +19,14 @@ import TaskFormModal from "../../components/TaskFormModal";
 import ViewToggle from "../../components/ViewToggle";
 import TaskListTable from "../../components/TaskListTable";
 import SearchableSelect from "../../components/SearchableSelect";
+import TaskSortDialog from "../../components/TaskSortDialog";
 import useQueryParamState from "../../hooks/useQueryParamState";
 import useTasks from "../../hooks/useTasks";
 import useTaskNotifications from "../../hooks/useTaskNotifications";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { navigateWithReturn } from "../../utils/routeNavigation";
+import { getTaskSortLabel, sortTasks } from "../../utils/taskHelpers";
 
 const normalizeAssigneeOption = (assignee) => {
   if (!assignee) {
@@ -105,12 +108,16 @@ const Tasks = () => {
   const [viewMode, setViewMode] = useQueryParamState("view", {
     defaultValue: "grid",
   });
+  const [sortMode] = useQueryParamState("sort", {
+    defaultValue: "default",
+  });
   const [highlightTaskId, setHighlightTaskId] = useState(
     locationState?.highlightTaskId || null
   );
   const [isHighlighting, setIsHighlighting] = useState(
     Boolean(locationState?.highlightTaskId)
   );
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useQueryParamState("page", {
     defaultValue: 1,
     parse: (value) => {
@@ -135,6 +142,7 @@ const Tasks = () => {
               (key === "employeeId" && value === "all") ||
               (key === "tab" && value === "All Tasks") ||
               (key === "view" && value === "grid") ||
+              (key === "sort" && value === "default") ||
               (key === "page" && value === 1);
 
             if (shouldDelete) {
@@ -347,9 +355,14 @@ const Tasks = () => {
     });
   }, [tasks, searchQuery, selectedDate, assignedFilter]);
 
+  const sortedTasks = useMemo(
+    () => sortTasks(filteredTasks, { mode: sortMode, includePrioritySort: true }),
+    [filteredTasks, sortMode]
+  );
+
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE)),
-    [filteredTasks.length]
+    () => Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE)),
+    [sortedTasks.length]
   );
 
   useEffect(() => {
@@ -362,8 +375,8 @@ const Tasks = () => {
 
   const paginatedTasks = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-    return filteredTasks.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [currentPage, filteredTasks]);
+    return sortedTasks.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [currentPage, sortedTasks]);
 
   useEffect(() => {
     if (!highlightTaskId || !isHighlighting) {
@@ -374,7 +387,7 @@ const Tasks = () => {
       setViewMode("grid");
     }
 
-    const targetIndex = filteredTasks.findIndex(
+    const targetIndex = sortedTasks.findIndex(
       (task) => task._id === highlightTaskId
     );
 
@@ -406,13 +419,13 @@ const Tasks = () => {
   }, [
     PAGE_SIZE,
     currentPage,
-    filteredTasks,
+    sortedTasks,
     highlightTaskId,
     isHighlighting,
     viewMode,
   ]);
 
-  const filteredTaskCount = filteredTasks.length;
+  const filteredTaskCount = sortedTasks.length;
   const totalTasksCount = tasks.length;
   const pageStart = filteredTaskCount ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
   const pageEnd = filteredTaskCount
@@ -421,6 +434,7 @@ const Tasks = () => {
   const metaChips = [
     `Scope · ${taskScope}`,
     `${filteredTaskCount} of ${totalTasksCount || 0} tasks`,
+    `Sort · ${getTaskSortLabel(sortMode)}`,
     viewMode === "grid" ? "Card view" : "Table view",
   ];
 
@@ -554,6 +568,14 @@ const Tasks = () => {
                       />
                     </div>
                     <div className="flex items-center justify-end gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsSortDialogOpen(true)}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700 dark:border-slate-700/70 dark:bg-slate-800/70 dark:text-slate-200"
+                      >
+                        <LuArrowUpDown className="text-base" />
+                        Sort by
+                      </button>
                       <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
                         View
                       </span>
@@ -679,7 +701,7 @@ const Tasks = () => {
                   />
                 ))}
 
-                {!filteredTasks.length && (
+                {!sortedTasks.length && (
                   <div className="md:col-span-2 xl:col-span-3">
                     <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 transition-colors duration-300 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300">
                       No tasks match the selected filters.
@@ -689,7 +711,7 @@ const Tasks = () => {
               </section>
             ) : (
               <section>
-                {filteredTasks.length ? (
+                {sortedTasks.length ? (
                   <TaskListTable
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
@@ -705,11 +727,30 @@ const Tasks = () => {
               </section>
             )}
 
-            {filteredTasks.length > 0 && renderPagination()}
+            {sortedTasks.length > 0 && renderPagination()}
           </>
         )}
       </div>
 
+      <TaskSortDialog
+        isOpen={isSortDialogOpen}
+        onClose={() => setIsSortDialogOpen(false)}
+        sortMode={sortMode}
+        onApply={(value) => {
+          updateTaskListParams({
+            sort: value,
+            page: 1,
+          });
+          setIsSortDialogOpen(false);
+        }}
+        onReset={() => {
+          updateTaskListParams({
+            sort: "default",
+            page: 1,
+          });
+          setIsSortDialogOpen(false);
+        }}
+      />
       <TaskFormModal
         isOpen={isTaskFormOpen}
         onClose={closeTaskForm}

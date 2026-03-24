@@ -1,20 +1,28 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { LuChevronLeft, LuChevronRight, LuSparkles } from "react-icons/lu";
+import {
+  LuArrowUpDown,
+  LuChevronLeft,
+  LuChevronRight,
+  LuSparkles,
+} from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import TaskCard from "../../components/Cards/TaskCard";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import useListSearchParams from "../../hooks/useListSearchParams";
 import useTasks from "../../hooks/useTasks";
 import TaskFormModal from "../../components/TaskFormModal";
+import TaskSortDialog from "../../components/TaskSortDialog";
 import useTaskNotifications from "../../hooks/useTaskNotifications";
 import { navigateWithReturn } from "../../utils/routeNavigation";
+import { getTaskSortLabel, sortTasks } from "../../utils/taskHelpers";
 
 const MyTasks = () => {
   const { state, setParam } = useListSearchParams({
     status: { defaultValue: "All" },
     tab: { defaultValue: "assigned" },
+    sort: { defaultValue: "default" },
     page: {
       defaultValue: 1,
       parse: (value) => {
@@ -24,8 +32,14 @@ const MyTasks = () => {
       serialize: (value) => String(value),
     },
   });
-  const { status: filterStatus, tab: taskType, page: currentPage } = state;
+  const {
+    status: filterStatus,
+    tab: taskType,
+    sort: sortMode,
+    page: currentPage,
+  } = state;
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
   const PAGE_SIZE = 9;
 
   const navigate = useNavigate();
@@ -44,6 +58,7 @@ const MyTasks = () => {
               value === "" ||
               (key === "status" && value === "All") ||
               (key === "tab" && value === "assigned") ||
+              (key === "sort" && value === "default") ||
               (key === "page" && value === 1);
 
             if (shouldDelete) {
@@ -72,7 +87,10 @@ const MyTasks = () => {
     navigateWithReturn(navigate, `/user/task-details/${taskId}`, location);
   };
 
-  const allTasks = useMemo(() => fetchedTasks, [fetchedTasks]);
+  const allTasks = useMemo(
+    () => sortTasks(fetchedTasks, { mode: sortMode, includePrioritySort: false }),
+    [fetchedTasks, sortMode]
+  );
   const isPersonalView = taskType === "personal";
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(allTasks.length / PAGE_SIZE)),
@@ -158,6 +176,7 @@ const MyTasks = () => {
   const metaChips = [
     isPersonalView ? "Scope: Personal Tasks" : "Scope: Assigned Tasks",
     `Status: ${filterStatus}`,
+    `Sort: ${getTaskSortLabel(sortMode)}`,
     `${allTasks.length || 0} total`,
   ];
 
@@ -228,16 +247,26 @@ const MyTasks = () => {
                   Filter tasks by status to keep momentum.
                 </div>
 
-                <TaskStatusTabs
-                  tabs={tabs}
-                  activeTab={filterStatus}
-                  setActiveTab={(value) => {
-                    updateTaskListParams({
-                      status: value,
-                      page: 1,
-                    });
-                  }}
-                />
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsSortDialogOpen(true)}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700"
+                  >
+                    <LuArrowUpDown className="text-base" />
+                    Sort by
+                  </button>
+                  <TaskStatusTabs
+                    tabs={tabs}
+                    activeTab={filterStatus}
+                    setActiveTab={(value) => {
+                      updateTaskListParams({
+                        status: value,
+                        page: 1,
+                      });
+                    }}
+                  />
+                </div>
               </div>
             )}
 
@@ -293,6 +322,25 @@ const MyTasks = () => {
           setIsTaskFormOpen(false);
         }}
         mode="personal"
+      />
+      <TaskSortDialog
+        isOpen={isSortDialogOpen}
+        onClose={() => setIsSortDialogOpen(false)}
+        sortMode={sortMode}
+        onApply={(value) => {
+          updateTaskListParams({
+            sort: value,
+            page: 1,
+          });
+          setIsSortDialogOpen(false);
+        }}
+        onReset={() => {
+          updateTaskListParams({
+            sort: "default",
+            page: 1,
+          });
+          setIsSortDialogOpen(false);
+        }}
       />
     </DashboardLayout>
   );
