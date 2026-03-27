@@ -43,6 +43,25 @@ const getEmployeeKraColumns = async (req, res, next) => {
   }
 };
 
+const getEmployeeKraColumnById = async (req, res, next) => {
+  try {
+    const columnId = typeof req.params?.id === "string" ? req.params.id.trim() : "";
+    if (!isValidObjectId(columnId)) {
+      throw createHttpError("A valid column id is required", 400);
+    }
+
+    const column = await EmployeeKraColumn.findById(columnId);
+    if (!column) {
+      throw createHttpError("KRA column not found", 404);
+    }
+
+    await ensureEmployeeExists(column.employeeId.toString());
+    res.json(column);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createEmployeeKraColumn = async (req, res, next) => {
   try {
     await ensureEmployeeExists(req.body.employeeId);
@@ -151,6 +170,7 @@ const deleteEmployeeKraColumn = async (req, res, next) => {
 
 module.exports = {
   getEmployeeKraColumns,
+  getEmployeeKraColumnById,
   createEmployeeKraColumn,
   updateEmployeeKraColumn,
   deleteEmployeeKraColumn,

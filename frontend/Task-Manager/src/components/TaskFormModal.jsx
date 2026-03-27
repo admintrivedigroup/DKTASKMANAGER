@@ -21,6 +21,43 @@ const isManualOnlyKraCategory = (category) =>
     category &&
       (category.isSystemColumn === true || category.columnType === SYSTEM_KRA_COLUMN_TYPE)
   );
+const isInactiveKraCategory = (category) => category?.isActive === false;
+const normalizeKraColumnId = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const rawValue =
+    value?._id || value?.id || (typeof value?.toString === "function" ? value.toString() : value);
+
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
+    return null;
+  }
+
+  return rawValue.toString();
+};
+const getKraCategoryOptionLabel = (category, { isFallback = false, isUnavailable = false } = {}) => {
+  if (isUnavailable) {
+    return "Saved KRA category (unavailable)";
+  }
+
+  const baseLabel = category?.label || "Saved KRA category";
+  const suffixParts = [];
+
+  if (category?.isActive === false) {
+    suffixParts.push("inactive");
+  } else if (isFallback) {
+    suffixParts.push("legacy");
+  }
+
+  return `${baseLabel}${suffixParts.length ? ` (${suffixParts.join(", ")})` : ""} | Weightage: ${
+    Number(category?.weightage) || 0
+  }%`;
+};
+const buildKraCategoryOption = (category, options = {}) => ({
+  value: normalizeKraColumnId(category) || options.fallbackValue || null,
+  label: getKraCategoryOptionLabel(category, options),
+});
 
 const createDefaultTaskData = () => ({
   title: "",
@@ -43,6 +80,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [kraCategories, setKraCategories] = useState([]);
   const [selectedKraCategory, setSelectedKraCategory] = useState(null);
+  const [fallbackKraCategoryOption, setFallbackKraCategoryOption] = useState(null);
+  const [isFetchingKraCategories, setIsFetchingKraCategories] = useState(false);
+  const [isSavedKraCategoryMissing, setIsSavedKraCategoryMissing] = useState(false);
   const { user } = useContext(UserContext);
 
   const isPersonalMode = mode === "personal";
@@ -96,32 +136,97 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     return taskData.assignedTo[0] || null;
   }, [taskData.assignedTo]);
   const kraCategoryOptions = useMemo(
-    () =>
-      kraCategories.map((category) => ({
-        value: category?._id || category?.id,
-        label: `${category?.label || "Untitled"} | Weightage: ${
-          Number(category?.weightage) || 0
-        }%`,
-      })),
-    [kraCategories]
+    () => {
+      const options = kraCategories.map((category) => buildKraCategoryOption(category));
+      const fallbackValue = normalizeKraColumnId(fallbackKraCategoryOption?.value);
+
+      if (
+        fallbackKraCategoryOption &&
+        fallbackValue &&
+        !options.some((option) => normalizeKraColumnId(option?.value) === fallbackValue)
+      ) {
+        options.push(fallbackKraCategoryOption);
+      }
+
+      return options;
+    },
+    [fallbackKraCategoryOption, kraCategories]
   );
   const hasKraCategories = kraCategoryOptions.length > 0;
 
   const fetchKraCategories = useCallback(async (employeeId) => {
     if (!employeeId) {
+      setIsFetchingKraCategories(false);
       setKraCategories([]);
       return;
     }
 
     try {
+      setIsFetchingKraCategories(true);
       const response = await axiosInstance.get(
         API_PATHS.KRA_COLUMNS.GET_BY_EMPLOYEE(employeeId)
       );
       const categories = Array.isArray(response.data) ? response.data : [];
-      setKraCategories(categories.filter((category) => !isManualOnlyKraCategory(category)));
+      const filteredCategories = categories.filter(
+        (category) => !isManualOnlyKraCategory(category) && !isInactiveKraCategory(category)
+      );
+      setKraCategories(filteredCategories);
+      console.debug(
+        "TaskFormModal fetched KRA category options:",
+        filteredCategories.map((category) => ({
+          value: normalizeKraColumnId(category),
+          label: category?.label || "Untitled",
+          weightage: Number(category?.weightage) || 0,
+        }))
+      );
     } catch (requestError) {
       console.error("Error fetching KRA categories:", requestError);
       setKraCategories([]);
+    } finally {
+      setIsFetchingKraCategories(false);
+    }
+  }, []);
+
+  const fetchSavedKraCategory = useCallback(async (kraColumnId) => {
+    const normalizedKraColumnId = normalizeKraColumnId(kraColumnId);
+    if (!normalizedKraColumnId) {
+      setFallbackKraCategoryOption(null);
+      setIsSavedKraCategoryMissing(false);
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get(
+        API_PATHS.KRA_COLUMNS.GET_BY_ID(normalizedKraColumnId)
+      );
+      const category = response?.data;
+      const fallbackOption = buildKraCategoryOption(category, {
+        isFallback: true,
+      });
+      setFallbackKraCategoryOption(fallbackOption);
+      setIsSavedKraCategoryMissing(false);
+      console.debug("TaskFormModal fallback category fetched/appended:", {
+        source: "api",
+        option: fallbackOption,
+        category,
+      });
+    } catch (requestError) {
+      const fallbackOption = buildKraCategoryOption(
+        { label: "Saved KRA category", weightage: 0 },
+        {
+          fallbackValue: normalizedKraColumnId,
+          isFallback: true,
+          isUnavailable: true,
+        }
+      );
+      setFallbackKraCategoryOption(fallbackOption);
+      setIsSavedKraCategoryMissing(true);
+      console.debug("TaskFormModal fallback category fetched/appended:", {
+        source: "synthetic",
+        kraColumnId: normalizedKraColumnId,
+        option: fallbackOption,
+        error: requestError?.response?.data?.message || requestError?.message,
+      });
     }
   }, []);
 
@@ -136,6 +241,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setShowMoreOptions(false);
     setKraCategories([]);
     setSelectedKraCategory(null);
+    setFallbackKraCategoryOption(null);
+    setIsFetchingKraCategories(false);
+    setIsSavedKraCategoryMissing(false);
   }, []);
 
   const handleModalClose = useCallback(() => {
@@ -169,6 +277,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
         normalizedAssignees[0] !== currentSingleAssignee
       ) {
         setSelectedKraCategory(null);
+        setFallbackKraCategoryOption(null);
+        setIsSavedKraCategoryMissing(false);
       }
       setTaskData((prevState) => {
         const validAssigneesSet = new Set(normalizedAssignees);
@@ -307,6 +417,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
     setAssignedUserDetails([]);
     setKraCategories([]);
     setSelectedKraCategory(null);
+    setFallbackKraCategoryOption(null);
+    setIsFetchingKraCategories(false);
+    setIsSavedKraCategoryMissing(false);
   }, []);
 
   const handleCreateTask = async ({
@@ -393,14 +506,40 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
       }
 
       const todoChecklist = mapChecklistPayload(taskData.todoChecklist);
+      const normalizedSelectedKraCategory = normalizeKraColumnId(selectedKraCategory);
+      const currentAssignedTo = Array.isArray(currentTask?.assignedTo)
+        ? currentTask.assignedTo
+        : currentTask?.assignedTo
+        ? [currentTask.assignedTo]
+        : [];
+      const originalAssignedTo = currentAssignedTo
+        .map((item) => normalizeKraColumnId(item))
+        .filter(Boolean)
+        .sort();
+      const nextAssignedTo = (Array.isArray(taskData.assignedTo) ? taskData.assignedTo : [])
+        .map((item) => normalizeKraColumnId(item))
+        .filter(Boolean)
+        .sort();
+      const assigneesChanged =
+        originalAssignedTo.length !== nextAssignedTo.length ||
+        originalAssignedTo.some((value, index) => value !== nextAssignedTo[index]);
+      const currentSavedKraColumnId = normalizeKraColumnId(currentTask?.kraColumnId);
 
       const payload = {
         ...taskData,
         startDate: startDateValue.toISOString(),
         dueDate: dueDateValue.toISOString(),
-        kraColumnId: selectedKraCategory,
         todoChecklist,
       };
+
+      if (
+        normalizedSelectedKraCategory &&
+        normalizedSelectedKraCategory !== currentSavedKraColumnId
+      ) {
+        payload.kraColumnId = normalizedSelectedKraCategory;
+      } else if (!currentSavedKraColumnId || assigneesChanged) {
+        payload.kraColumnId = null;
+      }
 
       await axiosInstance.put(
         API_PATHS.TASKS.UPDATE_TASK(taskId),
@@ -574,6 +713,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
           throw new Error("Unable to load task details.");
         }
 
+        const savedKraColumnId = normalizeKraColumnId(taskInfo?.kraColumnId);
+        console.debug("TaskFormModal task.kraColumnId on load:", savedKraColumnId);
+
         setCurrentTask(taskInfo);
 
         const assignedMembers = Array.isArray(taskInfo?.assignedTo)
@@ -621,13 +763,8 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
             .map((value) => value.toString()),
           todoChecklist: normalizedChecklist,
         });
-        setSelectedKraCategory(
-          taskInfo?.kraColumnId?._id ||
-            taskInfo?.kraColumnId?.id ||
-            taskInfo?.kraColumnId?.toString?.() ||
-            taskInfo?.kraColumnId ||
-            null
-        );
+        setSelectedKraCategory(savedKraColumnId);
+        setIsSavedKraCategoryMissing(false);
       } catch (requestError) {
         console.error("Error fetching task:", requestError);
         const message =
@@ -655,9 +792,12 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
 
   useEffect(() => {
     if (!isOpen || !selectedKraEmployeeId) {
+      setIsFetchingKraCategories(false);
       setKraCategories([]);
+      setFallbackKraCategoryOption(null);
       if (!selectedKraEmployeeId) {
         setSelectedKraCategory(null);
+        setIsSavedKraCategoryMissing(false);
       }
       return;
     }
@@ -666,23 +806,51 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
   }, [fetchKraCategories, isOpen, selectedKraEmployeeId]);
 
   useEffect(() => {
-    if (!selectedKraCategory) {
+    if (!selectedKraCategory || isFetchingKraCategories) {
       return;
     }
 
-    if (!kraCategoryOptions.length) {
-      setSelectedKraCategory(null);
+    const normalizedSelectedKraCategory = normalizeKraColumnId(selectedKraCategory);
+    const activeCategoryMatch =
+      kraCategories.find(
+        (category) => normalizeKraColumnId(category) === normalizedSelectedKraCategory
+      ) || null;
+
+    console.debug("TaskFormModal active category options fetched:", kraCategoryOptions);
+    console.debug("TaskFormModal saved category matched active list:", {
+      kraColumnId: normalizedSelectedKraCategory,
+      matched: Boolean(activeCategoryMatch),
+    });
+
+    if (activeCategoryMatch) {
+      const matchedOption = buildKraCategoryOption(activeCategoryMatch);
+      console.debug("TaskFormModal matched selected KRA option:", matchedOption);
+      setFallbackKraCategoryOption(null);
+      setIsSavedKraCategoryMissing(false);
       return;
     }
 
-    const hasSelectedOption = kraCategoryOptions.some(
-      (option) => option.value === selectedKraCategory
-    );
+    const matchedOption =
+      kraCategoryOptions.find(
+        (option) => normalizeKraColumnId(option?.value) === normalizedSelectedKraCategory
+      ) || null;
 
-    if (!hasSelectedOption) {
-      setSelectedKraCategory(null);
+    console.debug("TaskFormModal matched selected KRA option:", matchedOption);
+
+    if (!matchedOption) {
+      fetchSavedKraCategory(normalizedSelectedKraCategory);
+    } else {
+      setIsSavedKraCategoryMissing(
+        matchedOption.label === "Saved KRA category (unavailable)"
+      );
     }
-  }, [kraCategoryOptions, selectedKraCategory]);
+  }, [
+    fetchSavedKraCategory,
+    isFetchingKraCategories,
+    kraCategories,
+    kraCategoryOptions,
+    selectedKraCategory,
+  ]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -975,10 +1143,15 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                               <SelectDropdown
                                 options={kraCategoryOptions}
                                 value={selectedKraCategory}
-                                onChange={setSelectedKraCategory}
+                                onChange={(value) => {
+                                  setSelectedKraCategory(value);
+                                  setIsSavedKraCategoryMissing(false);
+                                }}
                                 placeholder={
                                   selectedKraEmployeeId
-                                    ? hasKraCategories
+                                    ? isSavedKraCategoryMissing
+                                      ? "Saved KRA category is no longer available"
+                                      : hasKraCategories
                                       ? "Select KRA Category"
                                       : "No KRA categories configured"
                                     : "Select one assignee to load categories"
@@ -988,7 +1161,9 @@ const TaskFormModal = ({ isOpen, onClose, taskId, onSuccess, mode = "standard" }
                             </div>
                             <p className="text-xs text-slate-400 dark:text-slate-500">
                               {selectedKraEmployeeId
-                                ? hasKraCategories
+                                ? isSavedKraCategoryMissing
+                                  ? "The saved KRA category is no longer available for this employee."
+                                  : hasKraCategories
                                   ? "Required when the assigned employee has KRA columns."
                                   : "This employee has no configured KRA columns."
                                 : "KRA categories are available only when exactly one employee is assigned."}

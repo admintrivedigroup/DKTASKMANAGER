@@ -118,6 +118,7 @@ const Tasks = () => {
     Boolean(locationState?.highlightTaskId)
   );
   const [isSortDialogOpen, setIsSortDialogOpen] = useState(false);
+  const [approvalActionTaskId, setApprovalActionTaskId] = useState(null);
   const [currentPage, setCurrentPage] = useQueryParamState("page", {
     defaultValue: 1,
     parse: (value) => {
@@ -236,6 +237,58 @@ const Tasks = () => {
     refetch();
     closeTaskForm();
   };
+
+  const handleApproveTaskCompletion = useCallback(
+    async (task) => {
+      const taskId = task?._id;
+      if (!taskId) {
+        return;
+      }
+
+      try {
+        setApprovalActionTaskId(taskId);
+        const response = await axiosInstance.post(
+          API_PATHS.TASKS.APPROVE_COMPLETION(taskId)
+        );
+        toast.success(response.data?.message || "Task completion approved");
+        await refetch();
+      } catch (error) {
+        console.error("Error approving task completion:", error);
+        toast.error(
+          error?.response?.data?.message || "Failed to approve task completion."
+        );
+      } finally {
+        setApprovalActionTaskId(null);
+      }
+    },
+    [refetch]
+  );
+
+  const handleRejectTaskCompletion = useCallback(
+    async (task) => {
+      const taskId = task?._id;
+      if (!taskId) {
+        return;
+      }
+
+      try {
+        setApprovalActionTaskId(taskId);
+        const response = await axiosInstance.post(
+          API_PATHS.TASKS.REJECT_COMPLETION(taskId)
+        );
+        toast.success(response.data?.message || "Task completion rejected");
+        await refetch();
+      } catch (error) {
+        console.error("Error rejecting task completion:", error);
+        toast.error(
+          error?.response?.data?.message || "Failed to reject task completion."
+        );
+      } finally {
+        setApprovalActionTaskId(null);
+      }
+    },
+    [refetch]
+  );
 
   const handleTaskCardClick = (taskId) => {
     if (!taskId) {
@@ -702,6 +755,9 @@ const Tasks = () => {
                     }
                     onClick={() => handleTaskCardClick(item._id)}
                     onEdit={() => openTaskForm(item._id)}
+                    onApprove={handleApproveTaskCompletion}
+                    onReject={handleRejectTaskCompletion}
+                    isApprovalActionLoading={approvalActionTaskId === item._id}
                   />
                 ))}
 
@@ -720,6 +776,9 @@ const Tasks = () => {
                     tableData={paginatedTasks}
                     onTaskClick={(task) => handleTaskCardClick(task?._id)}
                     onEdit={(task) => openTaskForm(task?._id)}
+                    onApprove={handleApproveTaskCompletion}
+                    onReject={handleRejectTaskCompletion}
+                    isApprovalActionLoading={Boolean(approvalActionTaskId)}
                     getUnreadCount={getUnreadCount}
                     className="mt-0"
                   />

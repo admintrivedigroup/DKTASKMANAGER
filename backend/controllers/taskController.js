@@ -761,12 +761,48 @@ const rejectTaskCompletionRequest = (task) => {
   task.approvalStatus = "rejected";
 };
 
+const rollbackTaskCompletionAfterRejection = (task) => {
+  if (!task) {
+    return;
+  }
+
+  if (Array.isArray(task.todoChecklist) && task.todoChecklist.length) {
+    for (let index = task.todoChecklist.length - 1; index >= 0; index -= 1) {
+      if (task.todoChecklist[index]?.completed) {
+        task.todoChecklist[index].completed = false;
+        break;
+      }
+    }
+
+    const completedCount = task.todoChecklist.filter((item) => item?.completed).length;
+    task.progress = Math.round((completedCount / task.todoChecklist.length) * 100);
+    return;
+  }
+
+  if (Number(task.progress || 0) >= 100) {
+    task.progress = 99;
+  }
+};
+
 const resetCompletionStateForOpenTask = (task) => {
   clearCompletionApprovalFields(task);
 };
 
 const isUserAssignedToTask = (task, userId) =>
   normalizeAssigneeIds(task?.assignedTo).includes(userId);
+
+const taskRequiresKraCompletionApproval = async (task) => {
+  const normalizedKraColumnId = normalizeObjectId(task?.kraColumnId);
+  if (!normalizedKraColumnId) {
+    return false;
+  }
+
+  const kraColumn = await EmployeeKraColumn.findById(normalizedKraColumnId).select(
+    "requiresApproval"
+  );
+
+  return Boolean(kraColumn?.requiresApproval);
+};
 
 const applyTaskCompletionState = async ({
   task,
@@ -788,6 +824,19 @@ const applyTaskCompletionState = async ({
     task.progress = 100;
 
     if (task.status === "Completed" && task.completedAt) {
+      return;
+    }
+
+    const requiresApproval = await taskRequiresKraCompletionApproval(task);
+    if (requiresApproval) {
+      if (isPrivileged(actor?.role)) {
+        await markTaskCompleted(task, actor);
+      } else if (
+        task.status !== PENDING_APPROVAL_STATUS ||
+        task.approvalStatus !== "pending"
+      ) {
+        requestTaskCompletion(task, actor);
+      }
       return;
     }
 
@@ -1763,6 +1812,8 @@ const rejectTaskCompletion = async (req, res, next) => {
 
     const previousStatus = task.status;
     rejectTaskCompletionRequest(task);
+    rollbackTaskCompletionAfterRejection(task);
+    task.status = task.progress > 0 ? "In Progress" : "Pending";
     await task.save();
 
     const statusChanges = buildFieldChanges(

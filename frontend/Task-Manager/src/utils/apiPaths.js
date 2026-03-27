@@ -37,6 +37,8 @@ export const API_PATHS = {
 
     UPDATE_TASK_STATUS: (taskId) => `/api/tasks/${taskId}/status`, // Update task status
     REQUEST_COMPLETION: (taskId) => `/api/tasks/${taskId}/request-complete`,
+    APPROVE_COMPLETION: (taskId) => `/api/tasks/${taskId}/approve-completion`,
+    REJECT_COMPLETION: (taskId) => `/api/tasks/${taskId}/reject-completion`,
     UPDATE_TODO_CHECKLIST: (taskId) => `/api/tasks/${taskId}/todo`, // Update todo checklist
     GET_TASK_MESSAGES: (taskId) => `/api/tasks/${taskId}/messages`,
     POST_TASK_MESSAGE: (taskId) => `/api/tasks/${taskId}/messages`,
@@ -100,6 +102,7 @@ export const API_PATHS = {
   },
   KRA_COLUMNS: {
     GET_BY_EMPLOYEE: (employeeId) => `/api/kra-columns?employeeId=${employeeId}`,
+    GET_BY_ID: (columnId) => `/api/kra-columns/${columnId}`,
     CREATE: "/api/kra-columns",
     UPDATE: (columnId) => `/api/kra-columns/${columnId}`,
     DELETE: (columnId) => `/api/kra-columns/${columnId}`,

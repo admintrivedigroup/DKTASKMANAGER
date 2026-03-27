@@ -3,6 +3,7 @@ const { protect, adminOnly } = require("../middlewares/authMiddleware");
 const { validateBody, validateQuery } = require("../middlewares/validationMiddleware");
 const {
   getEmployeeKraColumns,
+  getEmployeeKraColumnById,
   createEmployeeKraColumn,
   updateEmployeeKraColumn,
   deleteEmployeeKraColumn,
@@ -16,6 +17,7 @@ const {
 const router = express.Router();
 
 router.get("/", protect, validateQuery(validateEmployeeKraColumnQuery), getEmployeeKraColumns);
+router.get("/:id", protect, getEmployeeKraColumnById);
 router.post(
   "/",
   protect,
